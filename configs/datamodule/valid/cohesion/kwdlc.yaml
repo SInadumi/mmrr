@@ -1,0 +1,6 @@
+defaults:
+  - /datamodule/base/cohesion.yaml@kwdlc
+
+kwdlc:
+  data_path: ${dataset_path}/kwdlc/valid
+  training: false

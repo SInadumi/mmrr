@@ -1,0 +1,9 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": false,
+  "ruff.organizeImports": false,
+  "ruff.format.args": [
+    "--config=pyproject.toml"
+  ],
+}

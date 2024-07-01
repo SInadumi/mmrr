@@ -1,0 +1,10 @@
+defaults:
+        - train:
+                  - mmref/jcre3.yaml
+        - valid:
+                  - mmref/jcre3.yaml
+        - test:
+                  - mmref/jcre3.yaml
+
+batch_size: ${max_batches_per_device}
+num_workers: ${num_workers}
