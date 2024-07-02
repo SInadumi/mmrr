@@ -15,7 +15,7 @@
                 "DISABLE_CACHE": "",
                 "OVERWRITE_CACHE": ""
             },
-            "python": "./.venv/bin/python",
+            "python": ".venv/bin/python",
             "args": [
                 "--config-name=debug_mmref", // -cn
                 "max_batches_per_device=4",
@@ -34,7 +34,7 @@
                 "DISABLE_CACHE": "",
                 "OVERWRITE_CACHE": ""
             },
-            "python": "./.venv/bin/python",
+            "python": ".venv/bin/python",
             "args": [
                 "--config-name=debug_cohesion", // -cn
                 "max_batches_per_device=4",
