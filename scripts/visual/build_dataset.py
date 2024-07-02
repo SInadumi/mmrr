@@ -2,6 +2,7 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
+
 def main():
     parser = ArgumentParser()
     parser.add_argument("INPUT", type=str, help="path to input visual annotation dir")
@@ -33,10 +34,11 @@ def main():
         os.system(f"cp {source} {target}")
 
     for source in object_paths:
-        obj_id = source.stem[:-3] if "_gt" in source.stem else source.stem # FIXME:
+        obj_id = source.stem
         target = output_root / vis_id2split[obj_id] / f"{source.stem}.pth"
         print(f"cp {source} {target}")
         os.system(f"cp {source} {target}")
+
 
 if __name__ == "__main__":
     main()

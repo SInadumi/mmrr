@@ -3,7 +3,12 @@ import re
 
 # ---------- word module|word feature tagging ----------
 SUB_WORD_FEATURES = ("用言表記先頭", "用言表記末尾")  # メンテナンスしない単語素性
-WORD_FEATURES: tuple[str, ...] = ("基本句-主辞", "基本句-区切", "文節-区切", *SUB_WORD_FEATURES)
+WORD_FEATURES: tuple[str, ...] = (
+    "基本句-主辞",
+    "基本句-区切",
+    "文節-区切",
+    *SUB_WORD_FEATURES,
+)
 
 # ---------- word module|base phrase feature tagging ----------
 SUB_BASE_PHRASE_FEATURES = (  # メンテナンスしない基本句素性
@@ -869,7 +874,14 @@ CONJTYPE_TAG_CONJFORM_TAG2CONJFORM_ID: dict[str, dict[str, int]] = {
         "デス列基本形": 5,
         "デス列音便基本形": 6,
     },
-    "助動詞く型": {"*": 0, "語幹": 1, "基本形": 2, "基本連用形": 3, "文語連体形": 4, "文語未然形": 5},
+    "助動詞く型": {
+        "*": 0,
+        "語幹": 1,
+        "基本形": 2,
+        "基本連用形": 3,
+        "文語連体形": 4,
+        "文語未然形": 5,
+    },
     "動詞性接尾辞ます型": {
         "*": 0,
         "語幹": 1,

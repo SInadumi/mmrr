@@ -8,7 +8,6 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Any, Optional
 
-from cohesion_tools.extractors import PasExtractor
 from constants import (
     BASE_PHRASE_FEATURES,
     CONJTYPE_TAG_CONJFORM_TAG2CONJFORM_ID,
@@ -22,6 +21,7 @@ from rhoknp import KNP, Document, Jumanpp, Morpheme, Sentence
 from rhoknp.cohesion import RelTag
 from rhoknp.props import FeatureDict
 from rhoknp.utils.reader import chunk_by_document
+from src.cohesion_tools.extractors import PasExtractor
 
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -41,7 +41,10 @@ UNSUPPORTED_CONJUGATION_FALLBACK_TABLE = {
     ("判定詞", "ヤ列基本形"): ("判定詞", "*"),  # 950115185-003
     ("サ変動詞", "文語已然形"): ("サ変動詞", "*"),  # 950114053-007
     ("ナ形容詞", "語幹異形"): ("ナ形容詞", "語幹"),  # 950115169-035
-    ("助動詞そうだ型", "デアル列連用形"): ("助動詞そうだ型", "デアル列基本形"),  # 950115157-027
+    ("助動詞そうだ型", "デアル列連用形"): (
+        "助動詞そうだ型",
+        "デアル列基本形",
+    ),  # 950115157-027
 }
 
 UNSUPPORTED_POS_SUBPOS_FALLBACK_TABLE = {
@@ -53,26 +56,40 @@ class JumanppAugmenter:
     def __init__(self):
         self.jumanpp = Jumanpp(options=["--partial-input"])
 
-    def augment_document(self, original_document: Document, update_original: bool = True) -> Document:
+    def augment_document(
+        self, original_document: Document, update_original: bool = True
+    ) -> Document:
         buf = ""
         for sentence in original_document.sentences:
             buf += self._create_partial_input(sentence)
 
-        with Popen(self.jumanpp.run_command, stdout=PIPE, stdin=PIPE, encoding="utf-8") as p:
+        with Popen(
+            self.jumanpp.run_command, stdout=PIPE, stdin=PIPE, encoding="utf-8"
+        ) as p:
             jumanpp_text, _ = p.communicate(input=buf)
         augmented_document = Document.from_jumanpp(jumanpp_text)
 
-        for original_sentence, augmented_sentence in zip(original_document.sentences, augmented_document.sentences):
-            self._postprocess_sentence(original_sentence, augmented_sentence, update_original=update_original)
+        for original_sentence, augmented_sentence in zip(
+            original_document.sentences, augmented_document.sentences
+        ):
+            self._postprocess_sentence(
+                original_sentence, augmented_sentence, update_original=update_original
+            )
         return augmented_document
 
-    def augment_sentence(self, original_sentence: Sentence, update_original: bool = True) -> Sentence:
+    def augment_sentence(
+        self, original_sentence: Sentence, update_original: bool = True
+    ) -> Sentence:
         buf = self._create_partial_input(original_sentence)
-        with Popen(self.jumanpp.run_command, stdout=PIPE, stdin=PIPE, encoding="utf-8") as p:
+        with Popen(
+            self.jumanpp.run_command, stdout=PIPE, stdin=PIPE, encoding="utf-8"
+        ) as p:
             jumanpp_text, _ = p.communicate(input=buf)
         augmented_sentence = Sentence.from_jumanpp(jumanpp_text)
 
-        self._postprocess_sentence(original_sentence, augmented_sentence, update_original=update_original)
+        self._postprocess_sentence(
+            original_sentence, augmented_sentence, update_original=update_original
+        )
         return augmented_sentence
 
     @staticmethod
@@ -100,7 +117,9 @@ class JumanppAugmenter:
         augmented_sentence: Sentence,
         update_original: bool = True,
     ) -> None:
-        alignment = align_morphemes(original_sentence.morphemes, augmented_sentence.morphemes)
+        alignment = align_morphemes(
+            original_sentence.morphemes, augmented_sentence.morphemes
+        )
         if alignment is None:
             return None
         keys = []
@@ -117,7 +136,9 @@ class JumanppAugmenter:
                 keys = []
 
 
-def align_morphemes(morphemes1: list[Morpheme], morphemes2: list[Morpheme]) -> Optional[dict[str, list[Morpheme]]]:
+def align_morphemes(
+    morphemes1: list[Morpheme], morphemes2: list[Morpheme]
+) -> Optional[dict[str, list[Morpheme]]]:
     alignment = {}
     idx1, idx2 = 0, 0
     for _ in range(max(len(morphemes1), len(morphemes2))):
@@ -132,7 +153,9 @@ def align_morphemes(morphemes1: list[Morpheme], morphemes2: list[Morpheme]) -> O
                 [morphemes1[idx1 : idx1 + i], morphemes2[idx2 : idx2 + j]],
             )
             if subseq1 == subseq2:
-                key = "-".join(str(morpheme1.index) for morpheme1 in morphemes1[idx1 : idx1 + i])
+                key = "-".join(
+                    str(morpheme1.index) for morpheme1 in morphemes1[idx1 : idx1 + i]
+                )
                 alignment[key] = morphemes2[idx2 : idx2 + j]
                 idx1 += i
                 idx2 += j
@@ -144,7 +167,11 @@ def align_morphemes(morphemes1: list[Morpheme], morphemes2: list[Morpheme]) -> O
 
 
 def is_target_base_phrase_feature(k: str, v: Any) -> bool:
-    name = k + (f":{v}" if isinstance(v, str) and IGNORE_VALUE_FEATURE_PAT.match(k) is None else "")
+    name = k + (
+        f":{v}"
+        if isinstance(v, str) and IGNORE_VALUE_FEATURE_PAT.match(k) is None
+        else ""
+    )
     return name in BASE_PHRASE_FEATURES
 
 
@@ -154,7 +181,9 @@ def refresh(document: Document) -> None:
         feature_dict = FeatureDict()
         if morpheme.base_phrase.head == morpheme:
             feature_dict["基本句-主辞"] = True
-        feature_dict.update({key: morpheme.features[key] for key in keys if key in morpheme.features})
+        feature_dict.update(
+            {key: morpheme.features[key] for key in keys if key in morpheme.features}
+        )
         morpheme.features = feature_dict
 
     keys = [feature.split(":")[0] for feature in BASE_PHRASE_FEATURES]
@@ -170,7 +199,8 @@ def refresh(document: Document) -> None:
             {
                 key: base_phrase.features[key]
                 for key in keys
-                if key in base_phrase.features and is_target_base_phrase_feature(key, base_phrase.features[key])
+                if key in base_phrase.features
+                and is_target_base_phrase_feature(key, base_phrase.features[key])
             },
         )
         base_phrase.features = feature_dict
@@ -180,7 +210,10 @@ def refresh(document: Document) -> None:
 
 
 def assign_features_and_save(
-    knp_texts: list[str], output_root: Path, doc_id2split: dict[str, str], restore_coreferring_rels: bool
+    knp_texts: list[str],
+    output_root: Path,
+    doc_id2split: dict[str, str],
+    restore_coreferring_rels: bool,
 ) -> None:
     jumanpp_augmenter = JumanppAugmenter()
     knp = KNP(options=["-tab", "-dpnd-fast", "-read-feature"])
@@ -214,11 +247,15 @@ def assign_features_and_save(
                 morpheme.conjtype = conjtype
                 morpheme.conjtype_id = CONJTYPE_TAGS.index(conjtype)
                 morpheme.conjform = conjform
-                morpheme.conjform_id = CONJTYPE_TAG_CONJFORM_TAG2CONJFORM_ID[conjtype][conjform]
+                morpheme.conjform_id = CONJTYPE_TAG_CONJFORM_TAG2CONJFORM_ID[conjtype][
+                    conjform
+                ]
                 logger.info(
                     f"{morpheme.sentence.sid}: replaced unsupported conjugation (type: {morpheme.conjtype}, form: {morpheme.conjform}) with ({conjtype}, {conjform})",
                 )
-            if fallback_pos_subpos := UNSUPPORTED_POS_SUBPOS_FALLBACK_TABLE.get((morpheme.pos, morpheme.subpos)):
+            if fallback_pos_subpos := UNSUPPORTED_POS_SUBPOS_FALLBACK_TABLE.get(
+                (morpheme.pos, morpheme.subpos)
+            ):
                 unsupported_pos_subpos[morpheme.global_index] = (
                     morpheme.pos,
                     morpheme.pos_id,
@@ -260,7 +297,11 @@ def assign_features_and_save(
             for base_phrase in document.base_phrases:
                 if PasExtractor.is_pas_target(base_phrase, verbal=True, nominal=True):
                     continue
-                pas_rel_tags = [rel_tag for rel_tag in base_phrase.rel_tags if is_pas_rel_tag(rel_tag)]
+                pas_rel_tags = [
+                    rel_tag
+                    for rel_tag in base_phrase.rel_tags
+                    if is_pas_rel_tag(rel_tag)
+                ]
                 if pas_rel_tags:
                     assert base_phrase.features.get("用言", False) is False
                     base_phrase.features["非用言格解析"] = "不明"
@@ -274,12 +315,19 @@ def assign_features_and_save(
         for morpheme, features in zip(document.morphemes, morpheme_features):
             morpheme.features.update(features)
             if conjugation := unsupported_conjugations.get(morpheme.global_index):
-                morpheme.conjtype, morpheme.conjtype_id, morpheme.conjform, morpheme.conjform_id = conjugation
+                (
+                    morpheme.conjtype,
+                    morpheme.conjtype_id,
+                    morpheme.conjform,
+                    morpheme.conjform_id,
+                ) = conjugation
                 logger.info(
                     f"{morpheme.sentence.sid}: unsupported cojugation (type: {conjugation[0]}, form: {conjugation[2]}) restored",
                 )
             if pos_subpos := unsupported_pos_subpos.get(morpheme.global_index):
-                morpheme.pos, morpheme.pos_id, morpheme.subpos, morpheme.subpos_id = pos_subpos
+                morpheme.pos, morpheme.pos_id, morpheme.subpos, morpheme.subpos_id = (
+                    pos_subpos
+                )
                 logger.info(
                     f"{morpheme.sentence.sid}: unsupported pos/subpos (pos: {pos_subpos[0]}, subpos: {pos_subpos[2]}) restored",
                 )
@@ -465,7 +513,10 @@ def main():
     knp_texts = []
     for input_file in Path(args.INPUT).glob("**/*.knp"):
         with input_file.open(mode="r") as f:
-            knp_texts += [knp_text for knp_text in chunk_by_document(f, doc_id_format=args.doc_id_format)]
+            knp_texts += [
+                knp_text
+                for knp_text in chunk_by_document(f, doc_id_format=args.doc_id_format)
+            ]
 
     output_root = Path(args.OUTPUT)
     doc_id2split = {}
@@ -480,13 +531,20 @@ def main():
     if args.j > 0:
         chunk_size = len(knp_texts) // args.j + int(len(knp_texts) % args.j > 0)
         iterable = [
-            (knp_texts[slice(start, start + chunk_size)], output_root, doc_id2split, True)
+            (
+                knp_texts[slice(start, start + chunk_size)],
+                output_root,
+                doc_id2split,
+                True,
+            )
             for start in range(0, len(knp_texts), chunk_size)
         ]
         with mp.Pool(args.j) as pool:
             pool.starmap(assign_features_and_save, iterable)
     else:
-        assign_features_and_save(knp_texts, output_root, doc_id2split, restore_coreferring_rels=True)
+        assign_features_and_save(
+            knp_texts, output_root, doc_id2split, restore_coreferring_rels=True
+        )
 
 
 if __name__ == "__main__":
