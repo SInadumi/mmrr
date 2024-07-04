@@ -1,10 +1,10 @@
 defaults:
   - train:
-    - jcre3_mmref.yaml
+    - jcre3_cohesion.yaml
   - valid:
-    - jcre3_mmref.yaml
+    - jcre3_cohesion.yaml
   - test:
-    - jcre3_mmref.yaml
+    - jcre3_cohesion.yaml
 
 batch_size: ${max_batches_per_device}
 num_workers: ${num_workers}

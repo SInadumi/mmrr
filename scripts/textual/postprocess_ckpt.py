@@ -1,4 +1,3 @@
-# Copyright (c) 2020, Nobuhiro Ueda
 import argparse
 from pathlib import Path
 

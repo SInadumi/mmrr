@@ -5,10 +5,14 @@ from typing import Union
 
 from rhoknp import Document, Sentence
 
-SUB_DOC_PAT: re.Pattern = re.compile(r"^(?P<did>[a-zA-Z\d\-_]+?)-s(?P<stride>\d+?)i(?P<idx>\d+?)$")
+SUB_DOC_PAT: re.Pattern = re.compile(
+    r"^(?P<did>[a-zA-Z\d\-_]+?)-s(?P<stride>\d+?)i(?P<idx>\d+?)$"
+)
+
 
 def to_sub_doc_id(doc_id: str, idx: int, stride: int = 1) -> str:
     return f"{doc_id}-s{stride}i{idx}"
+
 
 def to_orig_doc_id(doc_id: str) -> str:
     match = SUB_DOC_PAT.match(doc_id)
@@ -17,9 +21,11 @@ def to_orig_doc_id(doc_id: str) -> str:
     else:
         return match["did"]
 
+
 def to_idx_from_sid(sid: str) -> int:
     # NOTE: '<did>-1-<idx>' -> idx
     return int(sid.split("-")[-1])
+
 
 def extract_target_sentences(document: Document) -> list[Sentence]:
     return [sentence for sentence in document.sentences if is_target_sentence(sentence)]
@@ -44,8 +50,8 @@ class SpanCandidate:
 
 
 class SequenceSplitter:
-    """
-    This class splits a sequence into sub-sequences where items can be overlapped.
+    """This class splits a sequence into sub-sequences where items can be overlapped.
+
     The split sub-sequences satisfy the following conditions:
     1. The union of the sub-sequences covers the original sequence.
     2. The length of each sub-sequence is less than or equal to `max_length`, unless the above is not violated.
@@ -58,7 +64,9 @@ class SequenceSplitter:
         stride: The stride of the sub-sequence span. -1 to dynamically determine the maximum stride by eliminating overlap.
     """
 
-    def __init__(self, sequence_lengths: list[int], max_length: int, stride: int) -> None:
+    def __init__(
+        self, sequence_lengths: list[int], max_length: int, stride: int
+    ) -> None:
         self.sequence_lengths = sequence_lengths
         self.max_length = max_length
         self.stride = stride
@@ -88,7 +96,9 @@ class SequenceSplitter:
             else:
                 yield span
 
-    def search_sub_sequence_span(self, prev_start: int, prev_end: int) -> tuple[SpanCandidate, list[SpanCandidate]]:
+    def search_sub_sequence_span(
+        self, prev_start: int, prev_end: int
+    ) -> tuple[SpanCandidate, list[SpanCandidate]]:
         if self.stride == -1:
             start = prev_end
             end = self._search_end(start, initial=prev_end + 1)
@@ -120,13 +130,16 @@ class SequenceSplitter:
     def _search_end(self, start: int, initial: int) -> int:
         end = initial
         while (
-            end + 1 <= len(self.sequence_lengths) and self._get_sub_sequence_length(start, end + 1) <= self.max_length
+            end + 1 <= len(self.sequence_lengths)
+            and self._get_sub_sequence_length(start, end + 1) <= self.max_length
         ):
             end += 1
         return end
 
     def _gen_span_candidate(self, start: int, end: int, stride: int) -> SpanCandidate:
-        return SpanCandidate(stride, self._get_sub_sequence_length(start, end), start, end)
+        return SpanCandidate(
+            stride, self._get_sub_sequence_length(start, end), start, end
+        )
 
     def _get_sub_sequence_length(self, start: int, end: int) -> int:
         return self._cumulative_lengths[end] - self._cumulative_lengths[start]

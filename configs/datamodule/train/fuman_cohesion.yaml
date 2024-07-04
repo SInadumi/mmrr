@@ -1,0 +1,6 @@
+defaults:
+  - /datamodule/base/cohesion.yaml@fuman
+
+fuman:
+  data_path: ${dataset_path}/fuman/train
+  training: true

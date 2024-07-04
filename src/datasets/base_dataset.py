@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -7,6 +8,8 @@ from rhoknp.utils.reader import chunk_by_document
 from transformers import PreTrainedTokenizerBase
 
 from utils.sub_document import SequenceSplitter, SpanCandidate, to_sub_doc_id
+
+logger = logging.getLogger(__name__)
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -22,7 +25,7 @@ class BaseDataset(torch.utils.data.Dataset):
 
         self.data_path: Path = data_path
         self.max_seq_length: int = max_seq_length
-        self.tokenizer = tokenizer
+        self.tokenizer: PreTrainedTokenizerBase = tokenizer
         self.document_split_stride: int = document_split_stride
         self.training: bool = training
 

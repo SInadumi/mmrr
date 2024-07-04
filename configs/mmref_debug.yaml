@@ -1,6 +1,6 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping, model_checkpoint, model_summary, lr_monitor]
+  - callbacks: [early_stopping, model_checkpoint, model_summary, progress_bar]
   - datamodule: mmref_all
   - logger: null
   - model: null
@@ -10,12 +10,12 @@ defaults:
   - _self_
 
 dataset_path: ./data
-max_seq_length: 128
+max_seq_length: 64
 model_name_or_path: "ku-nlp/deberta-v2-tiny-japanese"
 frw: false
 flip_reader_writer: ${frw}
 checkpoint: "" # path to trained checkpoint
-document_split_stride: -1
+document_split_stride: 2
 analysis_target_threshold: 0.3
 image_input_width: 0
 
@@ -31,14 +31,14 @@ special_tokens:
   ["[著者]", "[読者]", "[不特定:人]", "[不特定:物]", "[NULL]", "[NA]"]
 
 # hyper-parameters to be tuned
-effective_batch_size: 16
-max_epochs: 16
+effective_batch_size: 2
+max_epochs: 2
 lr: 0.00005
 warmup_steps: 1000
 warmup_ratio: null
 
 # environment-dependent settings
-devices: ${oc.env:DEVICES,0}
+devices: ${oc.env:DEVICES,1}
 max_batches_per_device: ${oc.env:MAX_BATCHES_PER_DEVICE,4}
-num_workers: ${oc.env:NUM_WORKERS,4}
+num_workers: ${oc.env:NUM_WORKERS,0}
 compile: ${oc.env:COMPILE,false}

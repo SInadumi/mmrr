@@ -15,9 +15,9 @@ save_dir: ${work_dir}/result
 seed: 10
 
 config_name: ${hydra:job.config_name}
-name: ${config_name}${hydra:job.override_dirname}
+name: default
 
-exp_dir: ${save_dir}/${name}
+exp_dir: ${save_dir}/${config_name}/${name}
 run_id: ${now:%m%d}_${now:%H%M%S}
 run_dir: ${exp_dir}/${run_id}
 
@@ -40,8 +40,8 @@ hydra:
   job:
     config:
       override_dirname:
-        kv_sep: "_"
-        item_sep: "-"
+        kv_sep: '_'
+        item_sep: '-'
         exclude_keys:
           - seed
           - name

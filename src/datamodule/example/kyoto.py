@@ -1,4 +1,3 @@
-# Copyright (c) 2020, Nobuhiro Ueda
 import copy
 import logging
 from dataclasses import dataclass
@@ -29,12 +28,14 @@ logger = logging.getLogger(__file__)
 class CohesionBasePhrase:
     """A wrapper class of BasePhrase for cohesion analysis"""
 
-    head_morpheme_global_index: int     # a phrase head index
+    head_morpheme_global_index: int  # a phrase head index
     morpheme_global_indices: list[int]  # indices of phrase span
-    morphemes: list[str]                # phrase span
-    is_target: bool                     # a flag of phrase span an analysis target
-    referent_candidates: list["CohesionBasePhrase"] # 本タスクの解析対象基本句かどうか
-    rel2tags: Optional[dict[str, list[str]]] = None # 解析対象基本句の解析対象
+    morphemes: list[str]  # phrase span
+    is_target: bool  # a flag of phrase span an analysis target
+    referent_candidates: list["CohesionBasePhrase"]
+    # case -> argument_tags / "=" -> mention_tags
+    rel2tags: Optional[dict[str, list[str]]] = None
+
 
 class KyotoExample:
     def __init__(self) -> None:
@@ -67,7 +68,9 @@ class KyotoExample:
 
         analysis_target_morpheme_indices = []
         for sentence in extract_target_sentences(document):
-            analysis_target_morpheme_indices += [m.global_index for m in sentence.morphemes]
+            analysis_target_morpheme_indices += [
+                m.global_index for m in sentence.morphemes
+            ]
         self.analysis_target_morpheme_indices = analysis_target_morpheme_indices
 
     def _wrap_base_phrases(
@@ -87,13 +90,18 @@ class KyotoExample:
             )
             for base_phrase in base_phrases
         ]
-        for base_phrase, cohesion_base_phrase in zip(base_phrases, cohesion_base_phrases):
+        for base_phrase, cohesion_base_phrase in zip(
+            base_phrases, cohesion_base_phrases
+        ):
             if cohesion_base_phrase.is_target:
                 all_rels = extractor.extract_rels(base_phrase)
                 rel_type_to_tags: dict[str, list[str]]
                 if isinstance(extractor, (PasExtractor, BridgingExtractor)):
                     assert isinstance(all_rels, dict)
-                    rel_type_to_tags = {rel_type: _get_argument_tags(all_rels[rel_type]) for rel_type in rel_types}
+                    rel_type_to_tags = {
+                        rel_type: _get_argument_tags(all_rels[rel_type])
+                        for rel_type in rel_types
+                    }
                 elif isinstance(extractor, CoreferenceExtractor):
                     assert rel_types == ["="]
                     assert isinstance(all_rels, list)
@@ -106,10 +114,13 @@ class KyotoExample:
                 ):
                     flip_map = {"[著者]": "[読者]", "[読者]": "[著者]"}
                     rel_type_to_tags = {
-                        rel_type: [flip_map.get(s, s) for s in tags] for rel_type, tags in rel_type_to_tags.items()
+                        rel_type: [flip_map.get(s, s) for s in tags]
+                        for rel_type, tags in rel_type_to_tags.items()
                     }
                 cohesion_base_phrase.rel2tags = rel_type_to_tags
-            referent_candidates = extractor.get_candidates(base_phrase, base_phrase.document.base_phrases)
+            referent_candidates = extractor.get_candidates(
+                base_phrase, base_phrase.document.base_phrases
+            )
             cohesion_base_phrase.referent_candidates = [
                 cohesion_base_phrases[cand.global_index] for cand in referent_candidates
             ]
@@ -137,7 +148,9 @@ def _get_argument_tags(arguments: list[Argument]) -> list[str]:
     return argument_tags or ["[NULL]"]
 
 
-def _get_referent_tags(referents: list[Union[BasePhrase, ExophoraReferent]]) -> list[str]:
+def _get_referent_tags(
+    referents: list[Union[BasePhrase, ExophoraReferent]],
+) -> list[str]:
     """Get referent tags.
 
     Note:

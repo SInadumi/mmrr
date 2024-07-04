@@ -8,8 +8,8 @@ from typing import TextIO, Union
 from rhoknp import Document
 
 from cohesion_tools.task import Task
-from datamodule.dataset import CohesionDataset
 from datamodule.example import KyotoExample
+from datasets.cohesion_dataset import CohesionDataset
 from utils.sub_document import extract_target_sentences, to_orig_doc_id
 from utils.util import CamelCaseDataClassJsonMixin
 
@@ -72,13 +72,17 @@ class ProbabilityJsonWriter:
         elif not (destination is None or isinstance(destination, io.TextIOBase)):
             logger.warning("invalid output destination")
 
-        did2probability: dict[str, list] = {self.examples[eid].doc_id: prob for eid, prob in probabilities.items()}
+        did2probability: dict[str, list] = {
+            self.examples[eid].doc_id: prob for eid, prob in probabilities.items()
+        }
         did2orig_probability: dict[str, list[list[list[float]]]] = defaultdict(list)
         did2num_pre_pads: dict[str, list[int]] = defaultdict(list)
         for document in self.documents:
             doc_id = document.doc_id
             if doc_id in did2probability:
-                probability: list[list[list[float]]] = did2probability[doc_id]  # (phrase, rel, 0 or phrase+special)
+                probability: list[list[list[float]]] = did2probability[
+                    doc_id
+                ]  # (phrase, rel, 0 or phrase+special)
             else:
                 if skip_untagged:
                     continue
@@ -106,11 +110,18 @@ class ProbabilityJsonWriter:
                 for rel, ps in zip(self.rel_types, prob):
                     if not ps:
                         continue
-                    num_post_pad = num_orig_phrases + self.num_special_tokens - num_pre_pad - len(ps)
+                    num_post_pad = (
+                        num_orig_phrases
+                        + self.num_special_tokens
+                        - num_pre_pad
+                        - len(ps)
+                    )
                     rel_probs.append(
                         RelProb(
                             rel=rel,
-                            probs=[-1.0] * num_pre_pad + ps[: -self.num_special_tokens] + [-1.0] * num_post_pad,
+                            probs=[-1.0] * num_pre_pad
+                            + ps[: -self.num_special_tokens]
+                            + [-1.0] * num_post_pad,
                             special_probs=ps[-self.num_special_tokens :],
                         ),
                     )
@@ -121,7 +132,9 @@ class ProbabilityJsonWriter:
                 phrases=phrases,
             )
             doc_probs.append(doc_prob)
-            json_string = doc_prob.to_json(ensure_ascii=False, indent=2, sort_keys=False)
+            json_string = doc_prob.to_json(
+                ensure_ascii=False, indent=2, sort_keys=False
+            )
             if isinstance(destination, Path):
                 destination.joinpath(f"{doc_id}.json").write_text(json_string)
             elif isinstance(destination, io.TextIOBase):

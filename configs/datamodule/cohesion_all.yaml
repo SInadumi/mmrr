@@ -1,12 +1,19 @@
 defaults:
-        - train:
-                  - cohesion/jcre3.yaml
-        - valid:
-                  - cohesion/jcre3.yaml
-        - test:
-                  - cohesion/jcre3.yaml
-#   - predict:
-#       - custom.yaml
+  - train:
+    - fuman_cohesion.yaml
+    - jcre3_cohesion.yaml
+    - kwdlc_cohesion.yaml
+    - wac_cohesion.yaml
+  - valid:
+    - fuman_cohesion.yaml
+    - jcre3_cohesion.yaml
+    - kwdlc_cohesion.yaml
+    - wac_cohesion.yaml
+  - test:
+    - fuman_cohesion.yaml
+    - jcre3_cohesion.yaml
+    - kwdlc_cohesion.yaml
+    - wac_cohesion.yaml
 
 batch_size: ${max_batches_per_device}
 num_workers: ${num_workers}

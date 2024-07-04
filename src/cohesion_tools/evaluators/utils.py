@@ -10,12 +10,18 @@ class F1Metric:
     tp: int = 0
 
     def __add__(self, other: "F1Metric") -> "F1Metric":
-        return F1Metric(self.tp_fp + other.tp_fp, self.tp_fn + other.tp_fn, self.tp + other.tp)
+        return F1Metric(
+            self.tp_fp + other.tp_fp, self.tp_fn + other.tp_fn, self.tp + other.tp
+        )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
             return False
-        return (self.tp_fp == other.tp_fp) and (self.tp_fn == other.tp_fn) and (self.tp == other.tp)
+        return (
+            (self.tp_fp == other.tp_fp)
+            and (self.tp_fn == other.tp_fn)
+            and (self.tp == other.tp)
+        )
 
     @property
     def precision(self) -> float:

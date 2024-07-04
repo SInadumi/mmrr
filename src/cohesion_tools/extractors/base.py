@@ -24,6 +24,11 @@ class BaseExtractor(ABC):
     def is_candidate(possible_candidate: T, anaphor: T) -> bool:
         raise NotImplementedError
 
-    def get_candidates(self, anaphor: T, morphemes_or_base_phrases: Collection[T]) -> List[T]:
-        return [unit for unit in morphemes_or_base_phrases if self.is_candidate(unit, anaphor) is True]
-
+    def get_candidates(
+        self, anaphor: T, morphemes_or_base_phrases: Collection[T]
+    ) -> List[T]:
+        return [
+            unit
+            for unit in morphemes_or_base_phrases
+            if self.is_candidate(unit, anaphor) is True
+        ]

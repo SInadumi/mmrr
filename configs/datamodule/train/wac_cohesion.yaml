@@ -1,0 +1,6 @@
+defaults:
+  - /datamodule/base/cohesion.yaml@wac
+
+wac:
+  data_path: ${dataset_path}/wac/train
+  training: true

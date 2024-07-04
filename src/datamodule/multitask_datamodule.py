@@ -18,8 +18,8 @@ class MTDataModule(pl.LightningDataModule):
         self.batch_size: int = cfg.batch_size
         self.num_workers: int = cfg.num_workers
         self.train_dataset: Optional[Dataset] = None
-        self.valid_datasets: dict[str, Dataset] = None
-        self.test_datasets: dict[str, Dataset] = None
+        self.val_datasets: dict[str, Dataset] = {}
+        self.test_datasets: dict[str, Dataset] = {}
 
     # 1. Download Dataset
     def prepare_data(self):
@@ -27,14 +27,20 @@ class MTDataModule(pl.LightningDataModule):
 
     # 2. Load Dataset Partition (train, valid, test)
     def setup(self, stage: Optional[str] = None):
-
         if stage == TrainerFn.FITTING:
-            self.train_dataset = ConcatDataset([hydra.utils.instantiate(conf) for conf in self.cfg.train.values()])
+            self.train_dataset = ConcatDataset(
+                [hydra.utils.instantiate(conf) for conf in self.cfg.train.values()]
+            )
         if stage in (TrainerFn.FITTING, TrainerFn.VALIDATING, TrainerFn.TESTING):
-            self.valid_datasets = {corpus: hydra.utils.instantiate(conf) for corpus, conf in self.cfg.valid.items()}
+            self.val_datasets = {
+                corpus: hydra.utils.instantiate(conf)
+                for corpus, conf in self.cfg.valid.items()
+            }
         if stage == TrainerFn.TESTING:
-            self.test_datasets = {corpus: hydra.utils.instantiate(conf) for corpus, conf in self.cfg.test.items()}
-
+            self.test_datasets = {
+                corpus: hydra.utils.instantiate(conf)
+                for corpus, conf in self.cfg.test.items()
+            }
 
     # 3. Return Train Dataloader from "self.train_dataset"
     # NOTE: When running under a distributed strategy, Lightning handles the distributed sampler for you by default.
@@ -43,13 +49,17 @@ class MTDataModule(pl.LightningDataModule):
         assert self.train_dataset is not None
         return self._get_dataloader(self.train_dataset, shuffle=True)
 
-    def valid_dataloader(self) -> DataLoader:
-        assert self.valid_dataset is not None
-        return {corpus: self._get_dataloader(dataset, shuffle=False) for corpus, dataset in self.valid_datasets.items()}
+    def val_dataloader(self) -> dict[str, DataLoader]:
+        return {
+            corpus: self._get_dataloader(dataset, shuffle=False)
+            for corpus, dataset in self.val_datasets.items()
+        }
 
-    def test_dataloader(self) -> DataLoader:
-        assert self.test_dataset is not None
-        return {corpus: self._get_dataloader(dataset, shuffle=False) for corpus, dataset in self.test_datasets.items()}
+    def test_dataloader(self) -> dict[str, DataLoader]:
+        return {
+            corpus: self._get_dataloader(dataset, shuffle=False)
+            for corpus, dataset in self.test_datasets.items()
+        }
 
     def _get_dataloader(self, dataset: Dataset, shuffle: bool) -> DataLoader:
         return DataLoader(

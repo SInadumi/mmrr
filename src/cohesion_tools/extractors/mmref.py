@@ -17,7 +17,9 @@ class MMRefExtractor(BaseExtractor):
         super().__init__(exophora_referent_types)
         self.cases: List[str] = cases
 
-    def extract_rels(self, predicate: dict[str, list], candidates: dict, is_neg: bool=False) -> dict[str, list[str]]:
+    def extract_rels(
+        self, predicate: dict[str, list], candidates: dict, is_neg: bool = False
+    ) -> dict[str, list[str]]:
         all_arguments: dict[str, list[str]] = defaultdict(list)
         for case in self.cases:
             cat_ids = set()

@@ -38,7 +38,9 @@ class CohesionEvaluator:
         pas_cases: Collection[str],
         bridging_rel_types: Optional[Collection[str]] = None,
     ) -> None:
-        self.exophora_referent_types: List[ExophoraReferentType] = list(exophora_referent_types)
+        self.exophora_referent_types: List[ExophoraReferentType] = list(
+            exophora_referent_types
+        )
         self.pas_cases: List[str] = list(pas_cases)
         self.tasks: List[Task] = list(map(Task, tasks))
         self.pas_evaluator = PASAnalysisEvaluator(exophora_referent_types, pas_cases)
@@ -46,9 +48,15 @@ class CohesionEvaluator:
             exophora_referent_types,
             bridging_rel_types if bridging_rel_types is not None else ["ノ"],
         )
-        self.coreference_evaluator = CoreferenceResolutionEvaluator(exophora_referent_types)
+        self.coreference_evaluator = CoreferenceResolutionEvaluator(
+            exophora_referent_types
+        )
 
-    def run(self, predicted_documents: Sequence[Document], gold_documents: Sequence[Document]) -> "CohesionScore":
+    def run(
+        self,
+        predicted_documents: Sequence[Document],
+        gold_documents: Sequence[Document],
+    ) -> "CohesionScore":
         """読み込んだ正解文書集合とシステム予測文書集合に対して評価を行う
 
         Args:
@@ -59,10 +67,16 @@ class CohesionEvaluator:
             CohesionScore: 評価結果のスコア
         """
         # long document may have been ignored
-        assert {d.doc_id for d in predicted_documents} <= {d.doc_id for d in gold_documents}
+        assert {d.doc_id for d in predicted_documents} <= {
+            d.doc_id for d in gold_documents
+        }
         doc_ids: List[str] = [d.doc_id for d in predicted_documents]
-        doc_id2predicted_document: Dict[str, Document] = {d.doc_id: d for d in predicted_documents}
-        doc_id2gold_document: Dict[str, Document] = {d.doc_id: d for d in gold_documents}
+        doc_id2predicted_document: Dict[str, Document] = {
+            d.doc_id: d for d in predicted_documents
+        }
+        doc_id2gold_document: Dict[str, Document] = {
+            d.doc_id: d for d in gold_documents
+        }
 
         results = []
         for doc_id in doc_ids:
@@ -71,12 +85,16 @@ class CohesionEvaluator:
             results.append(self.run_single(predicted_document, gold_document))
         return reduce(add, results)
 
-    def run_single(self, predicted_document: Document, gold_document: Document) -> "CohesionScore":
+    def run_single(
+        self, predicted_document: Document, gold_document: Document
+    ) -> "CohesionScore":
         """Compute cohesion scores for a pair of gold document and predicted document"""
         assert len(predicted_document.base_phrases) == len(gold_document.base_phrases)
 
         pas_metrics = (
-            self.pas_evaluator.run(predicted_document, gold_document) if Task.PAS_ANALYSIS in self.tasks else None
+            self.pas_evaluator.run(predicted_document, gold_document)
+            if Task.PAS_ANALYSIS in self.tasks
+            else None
         )
         bridging_metrics = (
             self.bridging_evaluator.run(predicted_document, gold_document)
@@ -106,7 +124,9 @@ class CohesionScore:
         if self.pas_metrics is not None:
             df_pas: pd.DataFrame = self.pas_metrics.copy()
             df_pas["overt_dep"] = df_pas["overt"] + df_pas["dep"]
-            df_pas["endophora"] = df_pas["overt"] + df_pas["dep"] + df_pas["zero_endophora"]
+            df_pas["endophora"] = (
+                df_pas["overt"] + df_pas["dep"] + df_pas["zero_endophora"]
+            )
             df_pas["zero"] = df_pas["zero_endophora"] + df_pas["exophora"]
             df_pas["dep_zero"] = df_pas["dep"] + df_pas["zero"]
             df_pas["all"] = df_pas["overt"] + df_pas["dep_zero"]
@@ -116,8 +136,12 @@ class CohesionScore:
 
         if self.bridging_metrics is not None:
             df_bridging: pd.DataFrame = self.bridging_metrics.copy()
-            df_bridging["endophora"] = df_bridging["dep"] + df_bridging["zero_endophora"]
-            df_bridging["zero"] = df_bridging["zero_endophora"] + df_bridging["exophora"]
+            df_bridging["endophora"] = (
+                df_bridging["dep"] + df_bridging["zero_endophora"]
+            )
+            df_bridging["zero"] = (
+                df_bridging["zero_endophora"] + df_bridging["exophora"]
+            )
             df_bridging["dep_zero"] = df_bridging["dep"] + df_bridging["zero"]
             df_bridging["all"] = df_bridging["dep_zero"]
             df_bridging = df_bridging.rename(index=lambda x: f"bridging_{x}")
@@ -130,7 +154,8 @@ class CohesionScore:
             df_all.loc["coreference"] = df_coref
 
         return {
-            k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)} for k1, v1 in df_all.to_dict(orient="index").items()
+            k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)}
+            for k1, v1 in df_all.to_dict(orient="index").items()
         }
 
     def export_txt(self, destination: Union[str, Path, TextIO]) -> None:
@@ -144,8 +169,12 @@ class CohesionScore:
             lines.append(rel_type)
             for analysis_type, metric in analysis_type_to_metric.items():
                 lines.append(f"  {analysis_type}")
-                lines.append(f"    precision: {metric.precision:.4f} ({metric.tp}/{metric.tp_fp})")
-                lines.append(f"    recall   : {metric.recall:.4f} ({metric.tp}/{metric.tp_fn})")
+                lines.append(
+                    f"    precision: {metric.precision:.4f} ({metric.tp}/{metric.tp_fp})"
+                )
+                lines.append(
+                    f"    recall   : {metric.recall:.4f} ({metric.tp}/{metric.tp_fn})"
+                )
                 lines.append(f"    F        : {metric.f1:.4f}")
         text = "\n".join(lines) + "\n"
 
@@ -167,7 +196,10 @@ class CohesionScore:
         text += sep.join(columns) + "\n"
         for task, measures in result_dict.items():
             text += task + sep
-            text += sep.join(f"{measures[column].f1:.6}" if column in measures else "" for column in columns)
+            text += sep.join(
+                f"{measures[column].f1:.6}" if column in measures else ""
+                for column in columns
+            )
             text += "\n"
 
         if isinstance(destination, (Path, str)):
