@@ -19,6 +19,7 @@ document_split_stride: 2
 analysis_target_threshold: 0.3
 
 # experimental settings
+metric_learning_loss: {"contrastive_alignment_loss": 1.0}
 cases: ["ガ", "ヲ", "ニ"]
 bar_rels: ["ノ"]
 exophora_referents:

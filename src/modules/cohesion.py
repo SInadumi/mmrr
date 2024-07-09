@@ -12,8 +12,14 @@ from typing_extensions import override
 
 from metrics import CohesionMetric
 from modules.base import BaseModule
-from modules.model.loss import binary_cross_entropy_with_logits, cross_entropy_loss
+from modules.model.loss import (
+    ContrastiveLoss,
+    binary_cross_entropy_with_logits,
+    cross_entropy_loss,
+)
 from utils.util import IGNORE_INDEX
+
+LossType = CohesionMetric
 
 
 class CohesionModule(BaseModule[CohesionMetric]):
@@ -29,17 +35,25 @@ class CohesionModule(BaseModule[CohesionMetric]):
             + int("coreference" in hparams.tasks)
             + int("bridging" in hparams.tasks),
         )
+        self.ml_loss_weights: dict[str, float] = hparams.metric_learning_loss
+        self.ml_loss: dict[str, LossType] = {}
 
     def setup(self, stage: Optional[str] = None) -> None:
-        pass
+        for name in self.ml_loss_weights.keys():
+            if name == "contrastive_alignment_loss":
+                self.ml_loss[name] = ContrastiveLoss(dist_func_name="cosine")
+            else:
+                NotImplementedError
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, source_mask_logits = self.model(**batch)
+        relation_logits, source_mask_logits, h_src, h_tgt = self.model(**batch)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["target_mask"], -1024.0
             ),
             "source_mask_logits": source_mask_logits,
+            "h_src": h_src,
+            "h_tgt": h_tgt,
         }
 
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -68,6 +82,13 @@ class CohesionModule(BaseModule[CohesionMetric]):
         )
         # weighted sum
         losses["loss"] = losses["relation_loss"] + losses["source_mask_loss"] * 0.5
+
+        # add metric learning losses
+        for name, _loss in self.ml_loss.items():
+            _weight = self.ml_loss_weights[name]
+            losses[name] = _loss.compute_loss(ret["h_src"], ret["h_tgt"], relation_mask)
+            losses["loss"] += losses[name] * _weight
+
         self.log_dict({f"train/{key}": value for key, value in losses.items()})
         return losses["loss"]
 

@@ -81,7 +81,7 @@ class BaselineModel(nn.Module):
 
         source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
 
-        return relation_logits, source_mask_logits
+        return relation_logits, source_mask_logits, h_src, h_tgt
 
 
 class TokenBinaryClassificationHead(nn.Module):

@@ -79,7 +79,7 @@ class LoRARelationWiseWordSelectionHead(nn.Module):
 
         source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
 
-        return relation_logits, source_mask_logits
+        return relation_logits, source_mask_logits, source_out, target_out
 
 
 class LoRADelta(nn.Module):
