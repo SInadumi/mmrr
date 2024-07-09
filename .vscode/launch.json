@@ -11,15 +11,12 @@
             "program": "./src/train.py",
             "console": "internalConsole",
             "env": {
-                "CUDA_LAUNCH_BLOCKING": "1",
                 "DISABLE_CACHE": "",
                 "OVERWRITE_CACHE": ""
             },
             "python": ".venv/bin/python",
             "args": [
-                "--config-name=debug_mmref", // -cn
-                "max_batches_per_device=4",
-                "devices=[0]"
+                "--config-name=mmref_debug", // -cn
             ],
             "justMyCode": false,
         },
@@ -30,13 +27,12 @@
             "program": "./src/train.py",
             "console": "internalConsole",
             "env": {
-                "CUDA_LAUNCH_BLOCKING": "1",
                 "DISABLE_CACHE": "",
                 "OVERWRITE_CACHE": ""
             },
             "python": ".venv/bin/python",
             "args": [
-                "--config-name=debug_cohesion", // -cn
+                "--config-name=cohesion_debug", // -cn
                 "max_batches_per_device=4",
                 "devices=[0]"
             ],
