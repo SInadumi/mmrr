@@ -26,7 +26,7 @@ exophora_referents:
   - 読者
   - 不特定:人
   - 不特定:物
-tasks: ["vis_pas", "phrase_grounding"]
+tasks: ["vis_pas", "vis_coreference"]
 special_tokens:
   ["[著者]", "[読者]", "[不特定:人]", "[不特定:物]", "[NULL]", "[NA]"]
 

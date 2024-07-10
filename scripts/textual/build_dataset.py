@@ -1,4 +1,3 @@
-# Copyright (c) 2020, Nobuhiro Ueda
 import logging
 import multiprocessing as mp
 import textwrap
@@ -21,7 +20,8 @@ from rhoknp import KNP, Document, Jumanpp, Morpheme, Sentence
 from rhoknp.cohesion import RelTag
 from rhoknp.props import FeatureDict
 from rhoknp.utils.reader import chunk_by_document
-from src.cohesion_tools.extractors import PasExtractor
+
+from cohesion_tools.extractors import PasExtractor
 
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -94,9 +94,7 @@ class JumanppAugmenter:
 
     @staticmethod
     def _create_partial_input(sentence: Sentence) -> str:
-        """
-        create raw string for jumanpp --partial-input
-        """
+        """Create raw string for jumanpp --partial-input"""
         buf = ""
         for morpheme in sentence.morphemes:
             buf += (

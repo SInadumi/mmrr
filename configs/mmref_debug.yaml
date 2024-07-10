@@ -15,7 +15,7 @@ model_name_or_path: "ku-nlp/deberta-v2-tiny-japanese"
 frw: false
 flip_reader_writer: ${frw}
 checkpoint: "" # path to trained checkpoint
-document_split_stride: 2
+document_split_stride: -1
 analysis_target_threshold: 0.3
 image_input_width: 0
 
@@ -26,7 +26,7 @@ exophora_referents:
   - 読者
   - 不特定:人
   - 不特定:物
-tasks: ["vis_pas", "phrase_grounding"]
+tasks: ["vis_pas", "vis_coreference"]
 special_tokens:
   ["[著者]", "[読者]", "[不特定:人]", "[不特定:物]", "[NULL]", "[NA]"]
 

@@ -65,7 +65,7 @@ class MMRefDataset(BaseDataset):
         self,
         dataset_path: Union[str, Path],
         data_path: Union[str, Path],
-        tasks: ListConfig,  # "vis-pas", "coreference", "phrase-grounding"
+        tasks: ListConfig,  # "vis-pas", "vis-coref"
         cases: ListConfig,  # target case frames
         max_seq_length: int,
         document_split_stride: int,
@@ -108,11 +108,11 @@ class MMRefDataset(BaseDataset):
                 list(self.cases),
                 exophora_referent_types,
             ),
-            Task.PHRASE_GROUNDING: MMRefExtractor(["="], exophora_referent_types),
+            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(["="], exophora_referent_types),
         }
         self.task_to_rels: dict[Task, list[str]] = {
             Task.VIS_PAS_ANALYSIS: self.cases,
-            Task.PHRASE_GROUNDING: ["="],
+            Task.VIS_COREFERENCE_RESOLUTION: ["="],
         }
 
         # load visual annotations
