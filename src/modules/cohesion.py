@@ -19,7 +19,7 @@ from modules.model.loss import (
 )
 from utils.util import IGNORE_INDEX
 
-LossType = CohesionMetric
+LossType = ContrastiveLoss
 
 
 class CohesionModule(BaseModule[CohesionMetric]):
