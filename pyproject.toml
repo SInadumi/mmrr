@@ -76,8 +76,6 @@ pandas = "^2.0"
 rich = "^13.3"
 wandb = "^0.16.0"
 jaconv = "^0.3.4"
-
-cohesion-tools = "^0.7.3"
 typing-extensions = ">=4.4"
 
 [tool.poetry.group.dev.dependencies]
