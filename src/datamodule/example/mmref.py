@@ -1,32 +1,13 @@
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Optional
 
-import torch
 from rhoknp import BasePhrase, Document
 from tokenizers import Encoding
 
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
+from utils.dataset import MMRefBasePhrase, ObjectFeature
 from utils.sub_document import extract_target_sentences
-
-
-@dataclass
-class ObjectFeature:
-    class_id: torch.Tensor
-    score: torch.Tensor
-    bbox: torch.Tensor
-    feature: torch.Tensor
-
-
-@dataclass
-class MMRefBasePhrase:
-    head_morpheme_global_index: int  # a phrase head index
-    morpheme_global_indices: list[int]  # indices of phrase span
-    morphemes: list[str]  # phrase span
-    is_target: bool  # a flag of phrase span an analysis target
-    positive_candidates: list["ObjectFeature"]
-    negative_candidates: list["ObjectFeature"]
 
 
 class MMRefExample:

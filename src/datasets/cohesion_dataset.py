@@ -2,7 +2,6 @@ import hashlib
 import logging
 import os
 import pickle
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
@@ -25,33 +24,13 @@ from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example import KyotoExample
 from datamodule.example.kyoto import CohesionBasePhrase
+from utils.dataset import CohesionInputFeatures
 from utils.sub_document import to_orig_doc_id
 from utils.util import IGNORE_INDEX, DatasetInfo, sigmoid, softmax
 
 from .base_dataset import BaseDataset
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class InputFeatures:
-    """A dataclass which represents a raw model input.
-
-    The attributes of this class correspond to arguments of forward method of each model.
-    """
-
-    example_id: int
-    input_ids: list[int]
-    attention_mask: list[bool]
-    token_type_ids: list[int]
-    source_mask: list[
-        bool
-    ]  # loss を計算する対象の基本句かどうか（文書分割によって文脈としてのみ使用される場合は False）
-    target_mask: list[
-        list[list[bool]]
-    ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）
-    source_label: list[list[int]]  # 解析対象基本句かどうか
-    target_label: list[list[list[float]]]  # source と関係を持つかどうか
 
 
 class CohesionDataset(BaseDataset):
@@ -322,7 +301,7 @@ class CohesionDataset(BaseDataset):
             phrase_task_scores.append(phrase_level_scores)
         return np.array(phrase_task_scores).transpose()
 
-    def _convert_example_to_feature(self, example: KyotoExample) -> InputFeatures:
+    def _convert_example_to_feature(self, example: KyotoExample) -> CohesionInputFeatures:
         """Loads a data file into a list of input features"""
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
         candidates_set: list[list[list[int]]] = []  # (rel, src, tgt)
@@ -355,7 +334,7 @@ class CohesionDataset(BaseDataset):
         merged_encoding: Encoding = Encoding.merge(
             [example.encoding, self.special_encoding]
         )
-        return InputFeatures(
+        return CohesionInputFeatures(
             example_id=example.example_id,
             input_ids=merged_encoding.ids,
             attention_mask=merged_encoding.attention_mask,
@@ -421,5 +400,5 @@ class CohesionDataset(BaseDataset):
     def __len__(self) -> int:
         return len(self.examples)
 
-    def __getitem__(self, idx: int) -> InputFeatures:
+    def __getitem__(self, idx: int) -> CohesionInputFeatures:
         return self._convert_example_to_feature(self.examples[idx])

@@ -1,6 +1,5 @@
 import copy
 import logging
-from dataclasses import dataclass
 from typing import Optional, Union
 
 from rhoknp import BasePhrase, Document
@@ -19,22 +18,10 @@ from cohesion_tools.extractors import (
 )
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
+from utils.dataset import CohesionBasePhrase
 from utils.sub_document import extract_target_sentences
 
 logger = logging.getLogger(__file__)
-
-
-@dataclass
-class CohesionBasePhrase:
-    """A wrapper class of BasePhrase for cohesion analysis"""
-
-    head_morpheme_global_index: int  # a phrase head index
-    morpheme_global_indices: list[int]  # indices of phrase span
-    morphemes: list[str]  # phrase span
-    is_target: bool  # a flag of phrase span an analysis target
-    referent_candidates: list["CohesionBasePhrase"]
-    # case -> argument_tags / "=" -> mention_tags
-    rel2tags: Optional[dict[str, list[str]]] = None
 
 
 class KyotoExample:

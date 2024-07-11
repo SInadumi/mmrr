@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pickle
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
@@ -21,43 +20,13 @@ from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example.mmref import MMRefExample
+from utils.dataset import MMRefInputFeatures
 from utils.sub_document import to_idx_from_sid, to_orig_doc_id
 from utils.util import DatasetInfo
 
 from .base_dataset import BaseDataset
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class TextualFeatures:
-    input_ids: list[int]
-    attention_mask: list[bool]
-    token_type_ids: list[int]
-    source_mask: list[bool]  # loss を計算する対象の基本句かどうか
-    source_label: list[list[int]]  # 解析対象基本句かどうか
-
-
-@dataclass(frozen=True)
-class VisualFeatures:
-    input_embeds: list[torch.Tensor]
-    attention_mask: list[bool]
-    target_mask: list[
-        list[list[bool]]
-    ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）
-    target_label: list[list[list[float]]]  # source と関係を持つかどうか
-
-
-@dataclass(frozen=True)
-class InputFeatures:
-    """A dataclass which represents a language encoder and interaction layer input
-
-    TODO: The attributes of this class correspond to arguments of forward method of each encoder
-    """
-
-    example_id: int
-    textual: TextualFeatures
-    visual: VisualFeatures
 
 
 class MMRefDataset(BaseDataset):
@@ -108,7 +77,9 @@ class MMRefDataset(BaseDataset):
                 list(self.cases),
                 exophora_referent_types,
             ),
-            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(["="], exophora_referent_types),
+            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(
+                ["="], exophora_referent_types
+            ),
         }
         self.task_to_rels: dict[Task, list[str]] = {
             Task.VIS_PAS_ANALYSIS: self.cases,
@@ -345,12 +316,12 @@ class MMRefDataset(BaseDataset):
         return example
 
     # TODO:
-    def _convert_example_to_feature(self, example: MMRefExample) -> InputFeatures:
+    def _convert_example_to_feature(self, example: MMRefExample) -> MMRefInputFeatures:
         """Loads a data file into a list of input features"""
         pass
 
     def __len__(self) -> int:
         return len(self.examples)
 
-    def __getitem__(self, idx: int) -> InputFeatures:
+    def __getitem__(self, idx: int) -> MMRefInputFeatures:
         return self._convert_example_to_feature(self.examples[idx])
