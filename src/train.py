@@ -17,7 +17,6 @@ from lightning.pytorch.utilities.warnings import PossibleUserWarning
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from datamodule.multitask_datamodule import MTDataModule
-from modules.cohesion import CohesionModule
 from utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)
@@ -54,15 +53,6 @@ def main(cfg: DictConfig):
     if isinstance(cfg.num_workers, str):
         cfg.num_workers = int(cfg.num_workers)
     cfg.seed = pl.seed_everything(seed=cfg.seed, workers=True)
-
-    # Instantiate lightning module
-    model = CohesionModule(hparams=cfg)
-    if cfg.checkpoint:
-        model.load_from_checkpoint(
-            checkpoint_path=hydra.utils.to_absolute_path(cfg.checkpoint)
-        )
-    if cfg.compile is True:
-        model = torch.compile(model)  # type: ignore
 
     # Instantiate lightning loggers
     logger: Union[Logger, bool] = cfg.get("logger", False) and hydra.utils.instantiate(
@@ -102,7 +92,20 @@ def main(cfg: DictConfig):
     )
 
     # Instantiate lightning datamodule
-    datamodule = MTDataModule(cfg=cfg.datamodule)
+    datamodule: pl.LightningDataModule = MTDataModule(cfg=cfg.datamodule)
+
+    # Instantiate lightning module
+    model: pl.LightningDataModule
+    if cfg.checkpoint:
+        model = hydra.utils.call(cfg.module.load_from_checkpoint, _recursive_=False)
+    else:
+        model = hydra.utils.instantiate(
+            cfg.module.cls,
+            hparams=cfg,
+            _recursive_=False
+        )
+    if cfg.compile is True:
+        model = torch.compile(model)  # type: ignore
 
     # Run training
     trainer.fit(model=model, datamodule=datamodule)

@@ -20,7 +20,6 @@ from callbacks import CohesionWriter
 from cohesion_tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
 from datamodule.multitask_datamodule import MTDataModule
 from datasets.cohesion_dataset import CohesionDataset
-from modules import CohesionModule
 from utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)
@@ -51,8 +50,9 @@ def main(eval_cfg: DictConfig):
         eval_cfg.num_workers = int(eval_cfg.num_workers)
 
     # Load saved model and config
-    model = CohesionModule.load_from_checkpoint(
-        checkpoint_path=hydra.utils.to_absolute_path(eval_cfg.checkpoint)
+    model: pl.LightningModule = hydra.utils.call(
+        eval_cfg.module.load_from_checkpoint,
+        _recursive_=False
     )
     if eval_cfg.compile is True:
         model = torch.compile(model)

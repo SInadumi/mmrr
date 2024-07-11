@@ -4,6 +4,7 @@ defaults:
   - datamodule: cohesion_all
   - logger: wandb
   - model: cohesion_baseline
+  - module: cohesion
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup
   - trainer: default

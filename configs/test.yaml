@@ -1,6 +1,7 @@
 defaults:
   - _self_
   - callbacks: [progress_bar]
+  - module: null
 
 checkpoint: null  # path to trained checkpoint
 eval_set: test  # or valid

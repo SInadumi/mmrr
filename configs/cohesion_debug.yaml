@@ -4,6 +4,7 @@ defaults:
   - datamodule: cohesion_jcre3
   - logger: null
   - model: cohesion_baseline
+  - module: cohesion
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup
   - trainer: debug
