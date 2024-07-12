@@ -97,9 +97,7 @@ class MMRefDataset(BaseDataset):
                 document.doc_id
             )  # sub_doc_id -> orig_doc_id
             mapper: dict[str, int] = iid_to_cid[orig_doc_id]
-            utterances = self._split_utterances(
-                document, vis_grounding[orig_doc_id]["utterances"]
-            )
+            utterances = vis_grounding[orig_doc_id]["utterances"]
             base_phrases_to_vis: list[dict] = []
             for sentence in document.sentences:
                 sid = to_idx_from_sid(sentence.sid)
@@ -161,34 +159,6 @@ class MMRefDataset(BaseDataset):
                     mapper.update({bbox["instanceId"]: cat2id[bbox["className"]]})
             mappers.update({orig_doc_id: mapper})
         return mappers
-
-    @staticmethod
-    def _split_utterances(document: Document, utterances: list[dict]) -> list[dict]:
-        """visual_annotation/*.jsonの"utterances"エントリをRegexSenterでtextual_annotation/*.knpの文分割に揃える処理
-
-        c.f.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
-        TODO: "info.json"を参照する実装に変更
-        """
-        # split utterances field
-        senter = RegexSenter()
-        ret = []
-        for utt in utterances:
-            sents = senter.apply_to_document(utt["text"])
-            ret.extend(
-                [{"text": s.text, "phrases": utt["phrases"]} for s in sents.sentences]
-            )
-
-        # format "ret" phrase entries by base_phrases
-        for sentence in document.sentences:
-            s_idx = to_idx_from_sid(sentence.sid)  # a index of sid
-            utt = ret[s_idx]
-            if len(sentence.base_phrases) != len(utt["phrases"]):
-                doc_phrase = [b.text for b in sentence.base_phrases]
-                vis_phrase = [up["text"] for up in utt["phrases"]]
-                st_idx = vis_phrase.index(doc_phrase[0])
-                end_idx = st_idx + len(doc_phrase)
-                utt["phrases"] = utt["phrases"][st_idx:end_idx]
-        return ret
 
     @property
     def special_indices(self) -> list[int]:

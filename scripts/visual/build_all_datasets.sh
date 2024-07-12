@@ -28,5 +28,5 @@ fi
 mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{f30k_ent_jp,jcre3}
 
 echo "Processing J-CRe3 ..."
-poetry run python ./scripts/visual/build_dataset.py "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
+poetry run python ./scripts/visual/build_jcre3.py "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
     --id "${DATASET_ROOT}/J-CRe3/id"

@@ -1,4 +1,3 @@
-# Copyright (c) 2020, Nobuhiro Ueda
 #!/usr/bin/env bash
 
 set -euCo pipefail
