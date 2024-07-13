@@ -20,10 +20,9 @@ from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example.mmref import MMRefExample
-from utils.annotation import ImageTextAnnotation
+from utils.annotation import DatasetInfo, ImageTextAnnotation
 from utils.dataset import MMRefInputFeatures
 from utils.sub_document import to_orig_doc_id
-from utils.util import DatasetInfo
 
 from .base_dataset import BaseDataset
 

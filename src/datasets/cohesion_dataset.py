@@ -24,9 +24,10 @@ from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example import KyotoExample
 from datamodule.example.kyoto import CohesionBasePhrase
+from utils.annotation import DatasetInfo
 from utils.dataset import CohesionInputFeatures
 from utils.sub_document import to_orig_doc_id
-from utils.util import IGNORE_INDEX, DatasetInfo, sigmoid, softmax
+from utils.util import IGNORE_INDEX, sigmoid, softmax
 
 from .base_dataset import BaseDataset
 
@@ -301,7 +302,9 @@ class CohesionDataset(BaseDataset):
             phrase_task_scores.append(phrase_level_scores)
         return np.array(phrase_task_scores).transpose()
 
-    def _convert_example_to_feature(self, example: KyotoExample) -> CohesionInputFeatures:
+    def _convert_example_to_feature(
+        self, example: KyotoExample
+    ) -> CohesionInputFeatures:
         """Loads a data file into a list of input features"""
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
         candidates_set: list[list[list[int]]] = []  # (rel, src, tgt)

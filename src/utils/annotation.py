@@ -6,6 +6,31 @@ from pydantic.dataclasses import (
 from utils.util import CamelCaseDataClassJsonMixin, Rectangle
 
 
+@dataclass
+class ImageInfo(CamelCaseDataClassJsonMixin):
+    id: str
+    path: str
+    time: int
+
+
+@dataclass
+class UtteranceInfo(CamelCaseDataClassJsonMixin):
+    text: str
+    sids: list[str]
+    start: int
+    end: int
+    duration: int
+    speaker: str
+    image_ids: list[str]
+
+
+@dataclass
+class DatasetInfo(CamelCaseDataClassJsonMixin):
+    scenario_id: str
+    utterances: list[UtteranceInfo]
+    images: list[ImageInfo]
+
+
 @dataclass(frozen=True)
 class BoundingBox(CamelCaseDataClassJsonMixin):
     imageId: str
