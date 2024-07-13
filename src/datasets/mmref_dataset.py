@@ -9,7 +9,7 @@ from typing import Union
 import torch
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import ListConfig
-from rhoknp import Document, RegexSenter
+from rhoknp import Document
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
 from tokenizers import Encoding
 from tqdm import tqdm
@@ -20,8 +20,9 @@ from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example.mmref import MMRefExample
+from utils.annotation import ImageTextAnnotation
 from utils.dataset import MMRefInputFeatures
-from utils.sub_document import to_idx_from_sid, to_orig_doc_id
+from utils.sub_document import to_orig_doc_id
 from utils.util import DatasetInfo
 
 from .base_dataset import BaseDataset
@@ -87,32 +88,23 @@ class MMRefDataset(BaseDataset):
         }
 
         # load visual annotations
-        vis_grounding = self._load_visual_grounding(self.data_path, "json")
-        iid_to_cid = self._get_instance_id_mapper(self.dataset_path, vis_grounding)
+        visual_annotation: list[ImageTextAnnotation] = self._load_visual_annotation(
+            self.data_path, "json"
+        )
 
-        # visual grounding annotations tailored for documents
-        self.doc_id2grounding: dict[str, dict] = {}
+        # visual annotations tailored for documents
+        self.doc_id2vis: dict[str, dict] = {}
         for document in self.documents:
-            orig_doc_id: str = to_orig_doc_id(
-                document.doc_id
-            )  # sub_doc_id -> orig_doc_id
-            mapper: dict[str, int] = iid_to_cid[orig_doc_id]
-            utterances = vis_grounding[orig_doc_id]["utterances"]
+            # sub_doc_id -> orig_doc_id
+            orig_doc_id: str = to_orig_doc_id(document.doc_id)
+            doc_sentence_indices = [sentence.sid for sentence in document.sentences]
             base_phrases_to_vis: list[dict] = []
-            for sentence in document.sentences:
-                sid = to_idx_from_sid(sentence.sid)
-                utt = utterances[sid]
-                # find category id with mapper
-                for p in utt["phrases"]:
-                    for rel in p["relations"]:
-                        #  HACK: visual/*.json の "images"中にclassNameが存在しないinstanceIdを回避する例外処理
-                        try:
-                            rel["categoryId"] = mapper[rel["instanceId"]]
-                        except Exception as e:
-                            rel["categoryId"] = -1  # HACK: dummy category ID
-                            print(f"{orig_doc_id}: {e.__class__.__name__}: {e}")
-                base_phrases_to_vis.extend(utt["phrases"])
-            self.doc_id2grounding.update({document.doc_id: base_phrases_to_vis})
+            utterances = visual_annotation[orig_doc_id].utterances
+            for utterance in utterances:
+                if utterance.sid not in doc_sentence_indices:
+                    continue
+                base_phrases_to_vis.extend(utterance.phrases)
+            self.doc_id2vis.update({document.doc_id: base_phrases_to_vis})
 
         self.examples: list[MMRefExample] = self._load_examples(
             self.documents, str(data_path)
@@ -127,12 +119,13 @@ class MMRefDataset(BaseDataset):
         ).encodings[0]
 
     @staticmethod
-    def _load_visual_grounding(data_path: Path, ext: str = "json") -> dict[str, dict]:
+    def _load_visual_annotation(data_path: Path, ext: str = "json") -> dict[str, dict]:
         visuals = {}
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
-            vis = json.load(open(path, "r", encoding="utf-8"))
-            visuals.update({vis["scenarioId"]: vis})
+            annot = json.load(open(path, "r", encoding="utf-8"))
+            annot = ImageTextAnnotation(**annot)  # for faster loading
+            visuals.update({annot.scenarioId: annot})
         return visuals
 
     @staticmethod
@@ -140,25 +133,6 @@ class MMRefDataset(BaseDataset):
         assert data_path.is_dir()
         path = data_path / (file_id + f".{ext}")
         return torch.load(path)
-
-    @staticmethod
-    def _get_instance_id_mapper(
-        dataset_path: Path, vis_grounding: dict
-    ) -> dict[str, dict]:
-        mappers = {}  # NOTE: key: orig_doc_id, value: a mapper from instanceId to className
-        id2cat = json.load(
-            open(dataset_path / "categories.json", "r", encoding="utf-8")
-        )
-        cat2id = {v: i for i, v in enumerate(id2cat)}
-
-        for orig_doc_id, annot in vis_grounding.items():
-            mapper: dict[str, str] = {}
-            image_annot = annot["images"]
-            for img in image_annot:
-                for bbox in img["boundingBoxes"]:
-                    mapper.update({bbox["instanceId"]: cat2id[bbox["className"]]})
-            mappers.update({orig_doc_id: mapper})
-        return mappers
 
     @property
     def special_indices(self) -> list[int]:
@@ -187,7 +161,7 @@ class MMRefDataset(BaseDataset):
         for document in tqdm(documents, desc="Loading examples"):
             hash_ = self._hash(
                 documents_path,
-                self.doc_id2grounding,
+                self.doc_id2vis,
                 self.tasks,
                 self.task_to_extractor,
                 self.flip_reader_writer,
@@ -248,7 +222,7 @@ class MMRefDataset(BaseDataset):
         return filtered
 
     def _load_example_from_document(self, document: Document) -> MMRefExample:
-        visual_phrases: dict = self.doc_id2grounding[document.doc_id]
+        visual_phrases: dict = self.doc_id2vis[document.doc_id]
         orig_doc_id: str = to_orig_doc_id(document.doc_id)
         sid_to_objects: dict[str, list] = {sent.sid: [] for sent in document.sentences}
 
@@ -262,7 +236,7 @@ class MMRefDataset(BaseDataset):
             for utterance in dataset_info.utterances:
                 if len(utterance.image_ids) == 0:
                     continue
-                # NOTE: info.jsonに記載の発話区間 + (and -) "image_input_width" フレーム
+                # info.jsonに記載の発話区間 + (and -) "image_input_width" フレーム
                 st_idx = max(
                     0, int(utterance.image_ids[0]) - 1 - self.image_input_width
                 )

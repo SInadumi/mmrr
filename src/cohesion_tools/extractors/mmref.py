@@ -24,13 +24,12 @@ class MMRefExtractor(BaseExtractor):
         for case in self.cases:
             cat_ids = set()
 
-            for relation in predicate["relations"]:
-                assert "categoryId" in relation
-                if case != relation["type"]:
+            for relation in predicate.relations:
+                if case != relation.type:
                     continue
-                cat_ids.add(relation["categoryId"])
+                cat_ids.add(relation.classId)
 
-            # NOTE: return difference set between candidate and gold data
+            # return difference set between candidate and gold data
             if is_neg:
                 cat_ids = set(candidates.keys()) - cat_ids
 
@@ -38,11 +37,11 @@ class MMRefExtractor(BaseExtractor):
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:
-        return self.is_pas_target(visual_phrase["relations"])
+        return self.is_pas_target(visual_phrase.relations)
 
     def is_pas_target(self, relations: list[dict]):
         for rel in relations:
-            if rel["type"] in self.cases:
+            if rel.type in self.cases:
                 return True
         return False
 

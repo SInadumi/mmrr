@@ -22,11 +22,6 @@ def to_orig_doc_id(doc_id: str) -> str:
         return match["did"]
 
 
-def to_idx_from_sid(sid: str) -> int:
-    # NOTE: '<did>-1-<idx>' -> idx
-    return int(sid.split("-")[-1])
-
-
 def extract_target_sentences(document: Document) -> list[Sentence]:
     return [sentence for sentence in document.sentences if is_target_sentence(sentence)]
 
