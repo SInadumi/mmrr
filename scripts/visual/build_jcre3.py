@@ -25,7 +25,7 @@ class ImageTextAugmenter:
     def split_utterances_to_sentences(self, annotation: dict) -> dict:
         """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理
 
-        c.f.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
+        cf.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
         """
         scenario_id = annotation["scenarioId"]
         document = Document.from_knp(
@@ -125,7 +125,7 @@ def main():
         vis_id = source.stem
         if vis_id in exclude_vis_ids:
             # FIXME: 20220302-56130295-0.knp の文分割におけるアノテーションミス
-            # c.f.) https://github.com/riken-grp/J-CRe3/blob/ca6f5e86a4939f60158ea2999ffab6bea6924527/textual_annotations/20220302-56130295-0.knp#L161-L198
+            # cf.) https://github.com/riken-grp/J-CRe3/blob/ca6f5e86a4939f60158ea2999ffab6bea6924527/textual_annotations/20220302-56130295-0.knp#L161-L198
             # "あそうそう。おもちゃを ..." が区切られていない
             continue
         image_text_annotation = json.load(open(source, "r", encoding="utf-8"))

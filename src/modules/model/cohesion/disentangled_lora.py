@@ -48,7 +48,9 @@ class LoRARelationWiseWordSelectionHead(nn.Module):
         attention_mask: torch.Tensor,  # (b, seq)
         token_type_ids: torch.Tensor,  # (b, seq)
         **_,
-    ) -> tuple[torch.Tensor, torch.Tensor]:  # (b, rel, seq, seq), (b, task, seq)
+    ) -> tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+    ]:  # (b, rel, seq, seq), (b, task, seq), (b, seq, rel, hid), (b, seq, rel, hid)
         encoder_last_hidden_state = self.pretrained_model(
             input_ids,
             attention_mask=attention_mask,

@@ -6,7 +6,7 @@ eps = 1e-6
 def calc_4d_cost_matrix(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Computes batched the euclidean distance between each pair of the two collections of row vectors.
 
-    c.f.) https://pytorch.org/docs/stable/generated/torch.cdist.html
+    cf.) https://pytorch.org/docs/stable/generated/torch.cdist.html
     """
     return torch.cdist(x, y, p=2)  # euclidean
 
@@ -14,7 +14,7 @@ def calc_4d_cost_matrix(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 def calc_4d_cost_cosine_matrix(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Computes batched the cosine distance between each pair of the two collections of row vectors.
 
-    c.f.) https://github.com/pytorch/pytorch/issues/48306
+    cf.) https://github.com/pytorch/pytorch/issues/48306
     """
     # (b, rel, seq, hid)
     x = torch.nn.functional.normalize(x, p=2, dim=-1, eps=eps)

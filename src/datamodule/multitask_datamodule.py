@@ -44,7 +44,7 @@ class MTDataModule(pl.LightningDataModule):
 
     # 3. Return Train Dataloader from "self.train_dataset"
     # NOTE: When running under a distributed strategy, Lightning handles the distributed sampler for you by default.
-    # c.f.) https://lightning.ai/docs/pytorch/stable/common/lightning_module.html
+    # cf.) https://lightning.ai/docs/pytorch/stable/common/lightning_module.html
     def train_dataloader(self) -> DataLoader:
         assert self.train_dataset is not None
         return self._get_dataloader(self.train_dataset, shuffle=True)
