@@ -1,6 +1,7 @@
 from collections.abc import Collection
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Union
+from typing import Any, Union
 
 import numpy as np
 from dataclasses_json import DataClassJsonMixin, LetterCase, config
@@ -8,6 +9,8 @@ from omegaconf import Container, OmegaConf
 from rhoknp import BasePhrase, Phrase
 
 IGNORE_INDEX = -100
+
+number = Union[int, float]
 
 
 class CamelCaseDataClassJsonMixin(DataClassJsonMixin):
@@ -57,3 +60,79 @@ def oc_resolve(cfg: Container, keys: Collection[str]) -> None:
         else:
             OmegaConf.is_interpolation(cfg, key)
             setattr(cfg, key, value)
+
+
+@dataclass(frozen=True, eq=True)
+class Rectangle(CamelCaseDataClassJsonMixin):
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+
+    @property
+    def w(self) -> int:
+        return abs(self.x2 - self.x1)
+
+    @property
+    def h(self) -> int:
+        return abs(self.y2 - self.y1)
+
+    @property
+    def cx(self) -> int:
+        return (self.x1 + self.x2) // 2
+
+    @property
+    def cy(self) -> int:
+        return (self.y1 + self.y2) // 2
+
+    @property
+    def area(self) -> int:
+        return self.w * self.h
+
+    @classmethod
+    def from_xyxy(cls, x1: number, y1: number, x2: number, y2: number) -> "Rectangle":
+        return cls(*map(int, (x1, y1, x2, y2)))
+
+    def to_xyxy(self) -> tuple[int, int, int, int]:
+        return (
+            min(self.x1, self.x2),
+            min(self.y1, self.y2),
+            max(self.x1, self.x2),
+            max(self.y1, self.y2),
+        )
+
+    @classmethod
+    def from_cxcywh(cls, x: number, y: number, w: number, h: number) -> "Rectangle":
+        if w < 0 or h < 0:
+            raise ValueError("w and h must be positive")
+        return cls.from_xyxy(x - w / 2, y - h / 2, x + w / 2, y + h / 2)
+
+    def to_cxcywh(self) -> tuple[int, int, int, int]:
+        return self.cx, self.cy, self.w, self.h
+
+    @classmethod
+    def from_xywh(
+        cls, top_left_x: number, top_left_y: number, w: number, h: number
+    ) -> "Rectangle":
+        if w < 0 or h < 0:
+            raise ValueError("w and h must be positive")
+        return cls.from_xyxy(top_left_x, top_left_y, top_left_x + w, top_left_y + h)
+
+    def to_xywh(self) -> tuple[int, int, int, int]:
+        return self.x1, self.y1, self.w, self.h
+
+    def __and__(self, other: Any) -> "Rectangle":
+        if isinstance(other, type(self)) is False:
+            raise TypeError(
+                f"unsupported operand type(s) for &: '{type(self)}' and '{type(other)}'"
+            )
+        xyxy1, xyxy2 = self.to_xyxy(), other.to_xyxy()
+        xyxy = (
+            max(xyxy1[0], xyxy2[0]),
+            max(xyxy1[1], xyxy2[1]),
+            min(xyxy1[2], xyxy2[2]),
+            min(xyxy1[3], xyxy2[3]),
+        )
+        return Rectangle.from_xyxy(
+            xyxy[0], xyxy[1], max(xyxy[0], xyxy[2]), max(xyxy[1], xyxy[3])
+        )
