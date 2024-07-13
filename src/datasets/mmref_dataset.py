@@ -236,16 +236,14 @@ class MMRefDataset(BaseDataset):
                 if len(utterance.image_ids) == 0:
                     continue
                 # info.jsonに記載の発話区間 + (and -) "image_input_width" フレーム
-                st_idx = max(
-                    0, int(utterance.image_ids[0]) - 1 - self.image_input_width
-                )
-                end_idx = min(
+                sidx = max(0, int(utterance.image_ids[0]) - 1 - self.image_input_width)
+                eidx = min(
                     len(obj_features) - 1,
                     int(utterance.image_ids[-1]) + self.image_input_width,
                 )
-                assert end_idx >= st_idx
+                assert eidx >= sidx
                 sid_to_objects.update(
-                    {sid: obj_features[st_idx:end_idx] for sid in utterance.sids}
+                    {sid: obj_features[sidx:eidx] for sid in utterance.sids}
                 )
 
         example = MMRefExample()

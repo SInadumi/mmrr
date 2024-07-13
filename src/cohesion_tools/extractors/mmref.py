@@ -1,24 +1,24 @@
 from collections import defaultdict
-from typing import List
 
 from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
 from cohesion_tools.extractors.base import BaseExtractor, T
+from utils.annotation import PhraseAnnotation
 
 
 class MMRefExtractor(BaseExtractor):
     def __init__(
         self,
-        cases: List[str],
-        exophora_referent_types: List[ExophoraReferentType],
+        cases: list[str],
+        exophora_referent_types: list[ExophoraReferentType],
     ) -> None:
         super().__init__(exophora_referent_types)
-        self.cases: List[str] = cases
+        self.cases: list[str] = cases
 
     def extract_rels(
-        self, predicate: dict[str, list], candidates: dict, is_neg: bool = False
+        self, predicate: PhraseAnnotation, candidates: dict, is_neg: bool = False
     ) -> dict[str, list[str]]:
         all_arguments: dict[str, list[str]] = defaultdict(list)
         for case in self.cases:
