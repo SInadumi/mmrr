@@ -5,50 +5,89 @@ from pathlib import Path
 
 from rhoknp import Document, RegexSenter
 
-senter = RegexSenter()
 exclude_vis_ids = ["20220302-56130295-0"]
 
 
-def to_idx_from_sid(sid: str) -> int:
-    # '<did>-1-<idx>' -> idx
-    return int(sid.split("-")[-1])
+class ImageTextAugmenter:
+    def __init__(self, dataset_dir: Path) -> None:
+        self.dataset_dir = dataset_dir
 
+        self.senter = RegexSenter()
 
-def split_utterances_to_sentences(dataset_dir: Path, source_path: Path) -> dict:
-    """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理
+        _id2cat = json.load(open("./data/categories.json", "r", encoding="utf-8"))
+        self.cat2id = {v: i for i, v in enumerate(_id2cat)}
 
-    c.f.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
-    """
-    annotation = json.load(open(source_path, "r", encoding="utf-8"))
-    scenario_id = source_path.stem
-    document = Document.from_knp(
-        (dataset_dir / "textual_annotations" / f"{scenario_id}.knp").read_text()
-    )
+    @staticmethod
+    def to_idx_from_sid(sid: str) -> int:
+        # '<did>-1-<idx>' -> idx
+        return int(sid.split("-")[-1])
 
-    repl_utterances = []
+    def split_utterances_to_sentences(self, annotation: dict) -> dict:
+        """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理
 
-    # split utterances field
-    for utterance in annotation["utterances"]:
-        _sentences = senter.apply_to_document(utterance["text"])
-        repl_utterances.extend(
-            [{"text": s.text, "phrases": utterance["phrases"]} for s in _sentences.sentences]
+        c.f.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
+        """
+        scenario_id = annotation["scenarioId"]
+        document = Document.from_knp(
+            (
+                self.dataset_dir / "textual_annotations" / f"{scenario_id}.knp"
+            ).read_text()
         )
-    assert len(repl_utterances) == len(document.sentences)
 
-    # format "ret" phrase entries by base_phrases
-    for sentence in document.sentences:
-        s_idx = to_idx_from_sid(sentence.sid) # a index of sid
-        _utterance = repl_utterances[s_idx]
-        if len(sentence.base_phrases) != len(_utterance["phrases"]):
-            doc_phrase = [b.text for b in sentence.base_phrases]
-            vis_phrase = [u["text"] for u in _utterance["phrases"]]
-            st_idx = vis_phrase.index(doc_phrase[0])
-            end_idx = st_idx + len(doc_phrase)
-            _utterance["phrases"] = _utterance["phrases"][st_idx:end_idx]
+        sentences = []
 
-    annotation["utterances"] = repl_utterances
+        # split utterances field
+        for utterance in annotation["utterances"]:
+            doc_sents = self.senter.apply_to_document(utterance["text"])
+            sentences.extend(
+                [
+                    {"text": s.text, "phrases": utterance["phrases"]}
+                    for s in doc_sents.sentences
+                ]
+            )
+        assert len(sentences) == len(document.sentences)
 
-    return annotation
+        # format "ret" phrase entries by base_phrases
+        for sentence in document.sentences:
+            s_idx = self.to_idx_from_sid(sentence.sid)  # a index of sid
+            sentences[s_idx]
+            _s = sentences[s_idx]
+            _s["sid"] = sentence.sid
+            if len(sentence.base_phrases) != len(_s["phrases"]):
+                doc_phrase = [b.text for b in sentence.base_phrases]
+                vis_phrase = [u["text"] for u in _s["phrases"]]
+                st_idx = vis_phrase.index(doc_phrase[0])
+                end_idx = st_idx + len(doc_phrase)
+                _s["phrases"] = _s["phrases"][st_idx:end_idx]
+
+        annotation["utterances"] = sentences
+
+        return annotation
+
+    def add_class_id(self, annotation: dict) -> dict:
+        scenario_id = annotation["scenarioId"]
+        iid2cid = {}
+
+        # add object class id to bounding box annotations
+        for image in annotation["images"]:
+            for bbox in image["boundingBoxes"]:
+                iid = bbox["instanceId"]
+                cid = self.cat2id[bbox["className"]]
+                bbox["classId"] = cid
+                iid2cid[iid] = cid
+
+        # add object class id to phrase to object relation annotations
+        for utterance in annotation["utterances"]:
+            for phrase in utterance["phrases"]:
+                for relation in phrase["relations"]:
+                    iid = relation["instanceId"]
+                    #  HACK: visual/*.json の "images"中にclassNameが存在しないinstanceIdを回避する例外処理
+                    try:
+                        relation["classId"] = iid2cid[iid]
+                    except Exception as e:
+                        relation["classId"] = -1  # HACK: dummy category ID
+                        print(f"{scenario_id}: {e.__class__.__name__}: {e}")
+        return annotation
 
 
 def main():
@@ -81,21 +120,23 @@ def main():
 
     # split visual annotations
     visual_paths = visual_dir.glob("*.json")
+    augmenter = ImageTextAugmenter(Path(args.INPUT))
     for source in visual_paths:
         vis_id = source.stem
         if vis_id in exclude_vis_ids:
             # FIXME: 20220302-56130295-0.knp の文分割におけるアノテーションミス
             # c.f.) https://github.com/riken-grp/J-CRe3/blob/ca6f5e86a4939f60158ea2999ffab6bea6924527/textual_annotations/20220302-56130295-0.knp#L161-L198
-            # "あそうそう。おもちゃを ..."が区切られていない
+            # "あそうそう。おもちゃを ..." が区切られていない
             continue
-        image_text_annotation = split_utterances_to_sentences(Path(args.INPUT), source)
+        image_text_annotation = json.load(open(source, "r", encoding="utf-8"))
+        image_text_annotation = augmenter.split_utterances_to_sentences(
+            image_text_annotation
+        )
+        image_text_annotation = augmenter.add_class_id(image_text_annotation)
         target = output_root / vis_id2split[vis_id] / f"{vis_id}.json"
-        json.dump(image_text_annotation,
-                  open(target, "w"),
-                  indent=1,
-                  ensure_ascii=False
-                )
-
+        json.dump(
+            image_text_annotation, open(target, "w"), indent=1, ensure_ascii=False
+        )
 
 
 if __name__ == "__main__":
