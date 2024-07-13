@@ -26,3 +26,4 @@ See [SInadumi/RegionCLIP](https://github.com/SInadumi/RegionCLIP).
 
 ### Acknowledgement
 - [Copyright (c) 2020, Nobuhiro Ueda](https://github.com/nobu-g/cohesion-analysis)
+- [Copyright (c) 2024, Nobuhiro Ueda](https://github.com/riken-grp/multimodal-reference)
