@@ -1,11 +1,10 @@
-from collections import defaultdict
-
 from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
 from cohesion_tools.extractors.base import BaseExtractor, T
 from utils.annotation import PhraseAnnotation
+from utils.dataset import ObjectFeature
 
 
 class MMRefExtractor(BaseExtractor):
@@ -18,22 +17,29 @@ class MMRefExtractor(BaseExtractor):
         self.cases: list[str] = cases
 
     def extract_rels(
-        self, predicate: PhraseAnnotation, candidates: dict, is_neg: bool = False
-    ) -> dict[str, list[str]]:
-        all_arguments: dict[str, list[str]] = defaultdict(list)
+        self,
+        predicate: PhraseAnnotation,
+        candidates: list[ObjectFeature],
+        is_neg: bool = False,
+    ) -> dict[str, list[ObjectFeature]]:
+        all_arguments: dict[str, list[ObjectFeature]] = {}
+        all_class_id: set = set([c.class_id.item() for c in candidates])
+
         for case in self.cases:
-            cat_ids = set()
+            class_ids = set()
 
             for relation in predicate.relations:
                 if case != relation.type:
                     continue
-                cat_ids.add(relation.classId)
-
-            # return difference set between candidate and gold data
+                class_ids.add(relation.classId)
             if is_neg:
-                cat_ids = set(candidates.keys()) - cat_ids
+                # return difference set between candidate and gold data
+                class_ids = all_class_id - class_ids
 
-            all_arguments[case] = [candidates[cid] for cid in list(cat_ids)]
+            all_arguments[case] = [
+                c for c in candidates if c.class_id.item() in list(class_ids)
+            ]
+
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:

@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Optional
 
 from rhoknp import BasePhrase, Document
@@ -85,20 +84,19 @@ class MMRefExample:
         return mmref_base_phrases
 
     @staticmethod
-    def _get_object_candidates(objects: list[dict]) -> dict[int, list[ObjectFeature]]:
+    def _get_object_candidates(objects: list[dict]) -> list[ObjectFeature]:
         """解析対象物体の候補を返す関数"""
-        ret: dict[int, list[ObjectFeature]] = defaultdict(list)
+        ret: list[ObjectFeature] = []
         for objs in objects:
-            for idx, cls_ in enumerate(objs["classes"]):
-                ret[cls_.item()].append(
+            for idx, class_id in enumerate(objs["classes"]):
+                ret.append(
                     ObjectFeature(
-                        class_id=cls_,
+                        class_id=class_id,
                         score=objs["scores"][idx],
                         bbox=objs["boxes"][idx],
                         feature=objs["feats"][idx],
                     )
                 )
-        # 物体クラス毎に最もconfidenceが高い物体候補を集計
-        for k, v in ret.items():
-            ret[k] = sorted(v, key=lambda x: x.score.item(), reverse=True)
+        # sort object candidates by detector confidences
+        ret = sorted(ret, key=lambda x: x.score.item(), reverse=True)
         return ret
