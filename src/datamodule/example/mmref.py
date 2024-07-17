@@ -5,6 +5,7 @@ from tokenizers import Encoding
 
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
+from utils.annotation import PhraseAnnotation
 from utils.dataset import MMRefBasePhrase, ObjectFeature
 from utils.sub_document import extract_target_sentences
 
@@ -46,7 +47,7 @@ class MMRefExample:
     def _wrap_base_phrases(
         self,
         base_phrases: list[BasePhrase],
-        visual_phrases: list[dict[str, list]],
+        visual_phrases: list[PhraseAnnotation],
         extractor: BaseExtractor,
     ) -> list[MMRefBasePhrase]:
         mmref_base_phrases = [
@@ -54,23 +55,25 @@ class MMRefExample:
                 base_phrase.head.global_index,
                 [morpheme.global_index for morpheme in base_phrase.morphemes],
                 [morpheme.text for morpheme in base_phrase.morphemes],
-                is_target=extractor.is_target(visual_phrase),
+                is_target=False,
                 referent_candidates=[],
             )
-            for base_phrase, visual_phrase in zip(base_phrases, visual_phrases)
+            for base_phrase in base_phrases
         ]
+
         assert len(base_phrases) == len(mmref_base_phrases) == len(visual_phrases)
         for idx in range(len(base_phrases)):
-            # input
             base_phrase: BasePhrase = base_phrases[idx]
-            visual_phrase: dict[str, list] = visual_phrases[idx]
-            # output
+            visual_phrase: PhraseAnnotation = visual_phrases[idx]
             mmref_base_phrase: MMRefBasePhrase = mmref_base_phrases[idx]
 
+            # set a parameter; "is_target"
+            objects = self.sid_to_objects[base_phrase.sentence.sid]
+            mmref_base_phrase.is_target = extractor.is_target(visual_phrase) and len(objects) > 0
+
+            # set parameters; "referent_candidates" and "rel2tags"
             if mmref_base_phrase.is_target:
-                candidates = self._get_object_candidates(
-                    self.sid_to_objects[base_phrase.sentence.sid]
-                )
+                candidates: list[ObjectFeature] = self._get_object_candidates(objects)
                 rel2tags: dict[str, list[int]] = extractor.extract_rels(
                     visual_phrase, candidates
                 )
@@ -92,4 +95,6 @@ class MMRefExample:
                         feature=objs["feats"][idx],
                     )
                 )
+        # sort object candidates by detector confidences
+        ret = sorted(ret, key=lambda x: x.score.item(), reverse=True)
         return ret
