@@ -78,14 +78,13 @@ class MMRefExample:
                 neg_candidates: dict[str, list] = extractor.extract_rels(
                     visual_phrase, candidates, is_neg=True
                 )
-                # assert list(pos_candidates.values()) != [[[]]]
                 mmref_base_phrase.positive_candidates = pos_candidates
                 mmref_base_phrase.negative_candidates = neg_candidates
         return mmref_base_phrases
 
     @staticmethod
     def _get_object_candidates(objects: list[dict]) -> list[ObjectFeature]:
-        """解析対象物体の候補を返す関数"""
+        """Get object candidates for parsing"""
         ret: list[ObjectFeature] = []
         for objs in objects:
             for idx, class_id in enumerate(objs["classes"]):
@@ -97,6 +96,4 @@ class MMRefExample:
                         feature=objs["feats"][idx],
                     )
                 )
-        # sort object candidates by detector confidences
-        ret = sorted(ret, key=lambda x: x.score.item(), reverse=True)
         return ret
