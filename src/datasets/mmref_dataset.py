@@ -21,8 +21,15 @@ from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example.mmref import MMRefExample
 from utils.annotation import DatasetInfo, ImageTextAnnotation
-from utils.dataset import MMRefInputFeatures
+from utils.dataset import (
+    MMRefInputFeatures,
+    MMRefBasePhrase,
+    TextualFeatures,
+    VisualFeatures,
+    ObjectFeature
+)
 from utils.sub_document import to_orig_doc_id
+from utils.util import IGNORE_INDEX
 
 from .base_dataset import BaseDataset
 
@@ -112,7 +119,7 @@ class MMRefDataset(BaseDataset):
         self.special_encoding: Encoding = self.tokenizer(
             self.special_tokens,
             is_split_into_words=True,
-            padding=PaddingStrategy.NO_NOT_PAD,
+            padding=PaddingStrategy.DO_NOT_PAD,
             truncation=False,
             add_special_tokens=False,
         ).encodings[0]
@@ -203,6 +210,15 @@ class MMRefDataset(BaseDataset):
         filtered = []
         for example in examples:
             phrases = next(iter(example.phrases.values()))
+
+            # truncate or pad candidates
+            for phrase in phrases:
+                if phrase.rel2tags is not None:
+                    if len(phrase.referent_candidates) > self.max_seq_length:
+                        phrase = self._truncate_candidates(phrase, self.max_seq_length)
+                    else:
+                        phrase = self._pad_candidates(phrase, self.max_seq_length)
+
             encoding: Encoding = self.tokenizer(
                 " ".join(
                     [morpheme for phrase in phrases for morpheme in phrase.morphemes]
@@ -219,6 +235,28 @@ class MMRefDataset(BaseDataset):
             filtered.append(example)
             idx += 1
         return filtered
+
+    @staticmethod
+    def _truncate_candidates(phrase: MMRefBasePhrase, max_seq_length: int) -> MMRefBasePhrase:
+        phrase.referent_candidates = phrase.referent_candidates[:max_seq_length]
+        filtered_rel2tags: dict[str, list[int]] = {}
+        for rel in phrase.rel2tags:
+            filtered_rel2tags[rel] = [idx for idx in phrase.rel2tags[rel] if idx < max_seq_length]
+        phrase.rel2tags = filtered_rel2tags
+        return phrase
+
+    @staticmethod
+    def _pad_candidates(phrase: MMRefBasePhrase, max_seq_length: int) -> MMRefBasePhrase:
+        assert len(phrase.referent_candidates) > 0
+        emb_size: torch.Size = phrase.referent_candidates[0].feature.shape
+        pad_mask: ObjectFeature = ObjectFeature(
+            class_id=torch.Tensor([-1.0]),
+            score=torch.Tensor([0.0]),
+            bbox=torch.zeros(4),
+            feature=torch.zeros(emb_size)
+        )
+        phrase.referent_candidates += [pad_mask] * (max_seq_length - len(phrase.referent_candidates))
+        return phrase
 
     def _load_example_from_document(self, document: Document) -> MMRefExample:
         visual_phrases: dict = self.doc_id2vis[document.doc_id]
