@@ -53,8 +53,8 @@ class MMRefBasePhrase:
     morpheme_global_indices: list[int]  # indices of phrase span
     morphemes: list[str]  # phrase span
     is_target: bool  # a flag of phrase span an analysis target
-    positive_candidates: list["ObjectFeature"]
-    negative_candidates: list["ObjectFeature"]
+    referent_candidates: list["ObjectFeature"]
+    rel2tags: Optional[dict[str, list[int]]] = None
 
 
 @dataclass(frozen=True)

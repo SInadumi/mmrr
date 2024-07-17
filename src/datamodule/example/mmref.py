@@ -55,8 +55,7 @@ class MMRefExample:
                 [morpheme.global_index for morpheme in base_phrase.morphemes],
                 [morpheme.text for morpheme in base_phrase.morphemes],
                 is_target=extractor.is_target(visual_phrase),
-                positive_candidates=[],
-                negative_candidates=[],
+                referent_candidates=[],
             )
             for base_phrase, visual_phrase in zip(base_phrases, visual_phrases)
         ]
@@ -72,14 +71,11 @@ class MMRefExample:
                 candidates = self._get_object_candidates(
                     self.sid_to_objects[base_phrase.sentence.sid]
                 )
-                pos_candidates: dict[str, list] = extractor.extract_rels(
+                rel2tags: dict[str, list[int]] = extractor.extract_rels(
                     visual_phrase, candidates
                 )
-                neg_candidates: dict[str, list] = extractor.extract_rels(
-                    visual_phrase, candidates, is_neg=True
-                )
-                mmref_base_phrase.positive_candidates = pos_candidates
-                mmref_base_phrase.negative_candidates = neg_candidates
+                mmref_base_phrase.referent_candidates = candidates
+                mmref_base_phrase.rel2tags= rel2tags
         return mmref_base_phrases
 
     @staticmethod

@@ -21,8 +21,8 @@ class MMRefExtractor(BaseExtractor):
         predicate: PhraseAnnotation,
         candidates: list[ObjectFeature],
         is_neg: bool = False,
-    ) -> dict[str, list[ObjectFeature]]:
-        all_arguments: dict[str, list[ObjectFeature]] = {}
+    ) -> dict[str, list[int]]:
+        all_arguments: dict[str, list[int]] = {}
         all_class_id: set = set([c.class_id.item() for c in candidates])
 
         for case in self.cases:
@@ -37,7 +37,7 @@ class MMRefExtractor(BaseExtractor):
                 class_ids = all_class_id - class_ids
 
             all_arguments[case] = [
-                c for c in candidates if c.class_id.item() in list(class_ids)
+                idx for idx, c in enumerate(candidates) if c.class_id.item() in list(class_ids)
             ]
 
         return all_arguments
