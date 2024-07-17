@@ -20,22 +20,16 @@ class MMRefExtractor(BaseExtractor):
         self,
         predicate: PhraseAnnotation,
         candidates: list[ObjectFeature],
-        is_neg: bool = False,
     ) -> dict[str, list[int]]:
         all_arguments: dict[str, list[int]] = {}
         all_class_id: set = set([c.class_id.item() for c in candidates])
 
         for case in self.cases:
             class_ids = set()
-
             for relation in predicate.relations:
                 if case != relation.type:
                     continue
                 class_ids.add(relation.classId)
-            if is_neg:
-                # return difference set between candidate and gold data
-                class_ids = all_class_id - class_ids
-
             all_arguments[case] = [
                 idx for idx, c in enumerate(candidates) if c.class_id.item() in list(class_ids)
             ]
