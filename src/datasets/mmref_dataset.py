@@ -99,12 +99,12 @@ class MMRefDataset(BaseDataset):
         )
 
         # visual annotations tailored for documents
-        self.doc_id2vis: dict[str, dict] = {}
+        self.doc_id2vis: dict[str, list[PhraseAnnotation]] = {}
         for document in self.documents:
             # sub_doc_id -> orig_doc_id
-            orig_doc_id: str = to_orig_doc_id(document.doc_id)
+            orig_doc_id = to_orig_doc_id(document.doc_id)
             doc_sentence_indices = [sentence.sid for sentence in document.sentences]
-            base_phrases_to_vis: list[dict] = []
+            base_phrases_to_vis: list[PhraseAnnotation] = []
             utterances = visual_annotation[orig_doc_id].utterances
             for utterance in utterances:
                 if utterance.sid not in doc_sentence_indices:
@@ -126,7 +126,7 @@ class MMRefDataset(BaseDataset):
 
     @staticmethod
     def _load_visual_annotation(data_path: Path, ext: str = "json") -> dict[str, dict]:
-        visuals = {}
+        visuals: dict[str, ImageTextAnnotation] = {}
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
             annot = json.load(open(path, "r", encoding="utf-8"))
