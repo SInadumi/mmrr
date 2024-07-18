@@ -12,6 +12,8 @@ defaults:
 
 dataset_path: ./data
 max_seq_length: 64
+vis_max_seq_length: 256
+vis_emb_size: 1024
 model_name_or_path: "ku-nlp/deberta-v2-tiny-japanese"
 frw: false
 flip_reader_writer: ${frw}

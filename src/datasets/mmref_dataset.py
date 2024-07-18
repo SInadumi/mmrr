@@ -44,6 +44,8 @@ class MMRefDataset(BaseDataset):
         tasks: ListConfig,  # "vis-pas", "vis-coref"
         cases: ListConfig,  # target case frames
         max_seq_length: int,
+        vis_max_seq_length: int,
+        vis_emb_size: int,
         document_split_stride: int,
         tokenizer: PreTrainedTokenizerBase,
         exophora_referents: ListConfig,
@@ -73,6 +75,8 @@ class MMRefDataset(BaseDataset):
             for i, token in enumerate(self.special_tokens)
         }
         self.flip_reader_writer: bool = flip_reader_writer
+        self.vis_max_seq_length = vis_max_seq_length
+        self.vis_emb_size = vis_emb_size
         self.image_input_width = image_input_width
         self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
 
@@ -237,25 +241,27 @@ class MMRefDataset(BaseDataset):
         return filtered
 
     @staticmethod
-    def _truncate_candidates(phrase: MMRefBasePhrase, max_seq_length: int) -> MMRefBasePhrase:
+    def _truncate_candidates(
+        phrase: MMRefBasePhrase, max_seq_length: int
+    ) -> MMRefBasePhrase:
         phrase.referent_candidates = phrase.referent_candidates[:max_seq_length]
         filtered_rel2tags: dict[str, list[int]] = {}
         for rel in phrase.rel2tags:
-            filtered_rel2tags[rel] = [idx for idx in phrase.rel2tags[rel] if idx < max_seq_length]
+            filtered_rel2tags[rel] = [
+                idx for idx in phrase.rel2tags[rel] if idx < max_seq_length
+            ]
         phrase.rel2tags = filtered_rel2tags
         return phrase
 
-    @staticmethod
-    def _pad_candidates(phrase: MMRefBasePhrase, max_seq_length: int) -> MMRefBasePhrase:
-        assert len(phrase.referent_candidates) > 0
-        emb_size: torch.Size = phrase.referent_candidates[0].feature.shape
         pad_mask: ObjectFeature = ObjectFeature(
             class_id=torch.Tensor([-1.0]),
             score=torch.Tensor([0.0]),
             bbox=torch.zeros(4),
-            feature=torch.zeros(emb_size)
+            feature=torch.zeros(emb_size),
         )
-        phrase.referent_candidates += [pad_mask] * (max_seq_length - len(phrase.referent_candidates))
+        phrase.referent_candidates += [pad_mask] * (
+            max_seq_length - len(phrase.referent_candidates)
+        )
         return phrase
 
     def _load_example_from_document(self, document: Document) -> MMRefExample:
