@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import pickle
+import random
 from pathlib import Path
 from typing import Union
 
@@ -20,13 +21,13 @@ from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example.mmref import MMRefExample
-from utils.annotation import DatasetInfo, ImageTextAnnotation
+from utils.annotation import DatasetInfo, ImageTextAnnotation, PhraseAnnotation
 from utils.dataset import (
-    MMRefInputFeatures,
     MMRefBasePhrase,
+    MMRefInputFeatures,
+    ObjectFeature,
     TextualFeatures,
     VisualFeatures,
-    ObjectFeature
 )
 from utils.sub_document import to_orig_doc_id
 from utils.util import IGNORE_INDEX
@@ -215,13 +216,17 @@ class MMRefDataset(BaseDataset):
         for example in examples:
             phrases = next(iter(example.phrases.values()))
 
+            # collect candidates
+            all_candidates, phrases = self._collect_candidates(phrases)
+
             # truncate or pad candidates
-            for phrase in phrases:
-                if phrase.rel2tags is not None:
-                    if len(phrase.referent_candidates) > self.max_seq_length:
-                        phrase = self._truncate_candidates(phrase, self.max_seq_length)
-                    else:
-                        phrase = self._pad_candidates(phrase, self.max_seq_length)
+            if len(all_candidates) > self.vis_max_seq_length:
+                all_candidates, phrases = self._truncate_candidates(
+                    all_candidates, phrases
+                )
+            else:
+                all_candidates = self._pad_candidates(all_candidates)
+            example.all_candidates = all_candidates
 
             encoding: Encoding = self.tokenizer(
                 " ".join(
@@ -241,28 +246,75 @@ class MMRefDataset(BaseDataset):
         return filtered
 
     @staticmethod
-    def _truncate_candidates(
-        phrase: MMRefBasePhrase, max_seq_length: int
-    ) -> MMRefBasePhrase:
-        phrase.referent_candidates = phrase.referent_candidates[:max_seq_length]
-        filtered_rel2tags: dict[str, list[int]] = {}
-        for rel in phrase.rel2tags:
-            filtered_rel2tags[rel] = [
-                idx for idx in phrase.rel2tags[rel] if idx < max_seq_length
-            ]
-        phrase.rel2tags = filtered_rel2tags
-        return phrase
+    def _collect_candidates(
+        phrases: list[MMRefBasePhrase],
+    ) -> tuple[list[ObjectFeature], list[MMRefBasePhrase]]:
+        all_candidates: list[ObjectFeature] = []
+        candidate_sidx: list[int] = [0]
+        for idx, phrase in enumerate(phrases):
+            all_candidates.extend(phrase.referent_candidates)
+            candidate_sidx.append(candidate_sidx[idx] + len(phrase.referent_candidates))
 
+        for idx, phrase in enumerate(phrases):
+            if phrase.rel2tags is not None:
+                sidx = candidate_sidx[idx]
+                for rel, tags in phrase.rel2tags.items():
+                    phrase.rel2tags[rel] = [tag + sidx for tag in tags]
+        return all_candidates, phrases
+
+    def _truncate_candidates(
+        self,
+        all_candidates: list[ObjectFeature],
+        phrases: list[MMRefBasePhrase],
+    ) -> tuple[list[ObjectFeature], list[MMRefBasePhrase]]:
+        max_seq_length: int = self.vis_max_seq_length
+
+        # collect pos/neg candidate indices
+        pos_cand_indices = set()
+        for phrase in phrases:
+            if phrase.rel2tags is not None:
+                pos_cand_indices |= set(
+                    [tag for tags in phrase.rel2tags.values() for tag in tags]
+                )
+        neg_cand_indices = set(range(len(all_candidates))) - set(pos_cand_indices)
+
+        # truncate negative candidates
+        assert max_seq_length - len(pos_cand_indices) > 0
+        pos_cand_indices = list(pos_cand_indices)
+        neg_cand_indices = list(neg_cand_indices)
+        neg_cand_indices = random.sample(
+            neg_cand_indices, max_seq_length - len(pos_cand_indices)
+        )
+        all_cand_indices = sorted(pos_cand_indices + neg_cand_indices)
+        all_candidates = [all_candidates[idx] for idx in all_cand_indices]
+
+        # reallocate rel2tag values
+        pos_mapper: dict[int, int] = {
+            pidx: nidx
+            for nidx, pidx in enumerate(all_cand_indices)
+            if pidx in pos_cand_indices
+        }  # prev idx to new idx
+        for phrase in phrases:
+            if phrase.rel2tags is not None:
+                for rel, tags in phrase.rel2tags.items():
+                    phrase.rel2tags[rel] = [pos_mapper[tag] for tag in tags]
+
+        return all_candidates, phrases
+
+    def _pad_candidates(
+        self,
+        all_candidates: list[ObjectFeature],
+    ) -> MMRefBasePhrase:
+        emb_size: torch.Size = self.vis_emb_size
+        max_seq_length: int = self.vis_max_seq_length
         pad_mask: ObjectFeature = ObjectFeature(
             class_id=torch.Tensor([-1.0]),
             score=torch.Tensor([0.0]),
             bbox=torch.zeros(4),
             feature=torch.zeros(emb_size),
         )
-        phrase.referent_candidates += [pad_mask] * (
-            max_seq_length - len(phrase.referent_candidates)
-        )
-        return phrase
+        all_candidates += [pad_mask] * (max_seq_length - len(all_candidates))
+        return all_candidates
 
     def _load_example_from_document(self, document: Document) -> MMRefExample:
         visual_phrases: dict = self.doc_id2vis[document.doc_id]

@@ -18,6 +18,7 @@ class MMRefExample:
         self.sid_to_objects: dict[str, list] = {}
         self.analysis_target_morpheme_indices: list[int] = []
         self.encoding: Optional[Encoding] = None
+        self.all_candidates: list[ObjectFeature] = None
 
     def load(
         self,
