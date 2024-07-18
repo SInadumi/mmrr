@@ -23,9 +23,8 @@ from cohesion_tools.extractors import (
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example import KyotoExample
-from datamodule.example.kyoto import CohesionBasePhrase
 from utils.annotation import DatasetInfo
-from utils.dataset import CohesionInputFeatures
+from utils.dataset import CohesionBasePhrase, CohesionInputFeatures
 from utils.sub_document import to_orig_doc_id
 from utils.util import IGNORE_INDEX, sigmoid, softmax
 
