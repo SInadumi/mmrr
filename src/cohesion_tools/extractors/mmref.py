@@ -22,7 +22,6 @@ class MMRefExtractor(BaseExtractor):
         candidates: list[ObjectFeature],
     ) -> dict[str, list[int]]:
         all_arguments: dict[str, list[int]] = {}
-        all_class_id: set = set([c.class_id.item() for c in candidates])
 
         for case in self.cases:
             class_ids = set()
@@ -31,7 +30,9 @@ class MMRefExtractor(BaseExtractor):
                     continue
                 class_ids.add(relation.classId)
             all_arguments[case] = [
-                idx for idx, c in enumerate(candidates) if c.class_id.item() in list(class_ids)
+                idx
+                for idx, c in enumerate(candidates)
+                if c.class_id.item() in list(class_ids)
             ]
 
         return all_arguments
