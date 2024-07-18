@@ -69,7 +69,9 @@ class MMRefExample:
 
             # set a parameter; "is_target"
             objects = self.sid_to_objects[base_phrase.sentence.sid]
-            mmref_base_phrase.is_target = extractor.is_target(visual_phrase) and len(objects) > 0
+            mmref_base_phrase.is_target = (
+                extractor.is_target(visual_phrase) and len(objects) > 0
+            )
 
             # set parameters; "referent_candidates" and "rel2tags"
             if mmref_base_phrase.is_target:
@@ -78,7 +80,7 @@ class MMRefExample:
                     visual_phrase, candidates
                 )
                 mmref_base_phrase.referent_candidates = candidates
-                mmref_base_phrase.rel2tags= rel2tags
+                mmref_base_phrase.rel2tags = rel2tags
         return mmref_base_phrases
 
     @staticmethod
@@ -97,4 +99,8 @@ class MMRefExample:
                 )
         # sort object candidates by detector confidences
         ret = sorted(ret, key=lambda x: x.score.item(), reverse=True)
+
+        # FIXME: skip a candidate, ignore class_id is -1
+        IGNORE_CLASS_INDEX = -1
+        ret = [r for r in ret if r.class_id.item() != IGNORE_CLASS_INDEX]
         return ret
