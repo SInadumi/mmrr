@@ -26,8 +26,6 @@ from utils.dataset import (
     MMRefBasePhrase,
     MMRefInputFeatures,
     ObjectFeature,
-    TextualFeatures,
-    VisualFeatures,
 )
 from utils.sub_document import to_orig_doc_id
 from utils.util import IGNORE_INDEX
@@ -352,10 +350,95 @@ class MMRefDataset(BaseDataset):
         )
         return example
 
-    # TODO:
-    def _convert_example_to_feature(self, example: MMRefExample) -> MMRefInputFeatures:
-        """Loads a data file into a list of input features"""
-        pass
+    def _convert_example_to_feature(
+        self,
+        example: MMRefExample,
+    ) -> MMRefInputFeatures:
+        """Convert example to textual feature"""
+        assert example.encoding is not None, "encoding isn't set"
+        source_mask = [False] * self.max_seq_length
+        for global_index in example.analysis_target_morpheme_indices:
+            for token_index in range(*example.encoding.word_to_tokens(global_index)):
+                source_mask[token_index] = True
+
+        is_analysis_targets: list[list[int]] = []  # (task, src)
+        for task in self.tasks:
+            is_targets: list[int] = [IGNORE_INDEX] * self.max_seq_length
+            for phrase in example.phrases[task]:
+                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
+                    phrase.head_morpheme_global_index
+                )
+                for token_index in range(*token_index_span):
+                    is_targets[token_index] = int(phrase.is_target)
+            is_analysis_targets.append(is_targets)
+
+        merged_encoding: Encoding = Encoding.merge(
+            [example.encoding, self.special_encoding]
+        )
+
+        """Convert example to visual feature"""
+        vis_input_embeds: list[torch.Tensor] = []
+        vis_attention_mask: list[bool] = []
+        for candidate in example.all_candidates:
+            vis_input_embeds.append(candidate.feature)
+            vis_attention_mask.append(True if candidate.class_id != -1 else False)
+        vis_input_embeds = torch.stack(vis_input_embeds)  # -> torch.Tensor
+
+        scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
+        candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
+        for task in self.tasks:
+            for rel in self.task_to_rels[task]:
+                scores, candidates = self._convert_annotation_to_feature(
+                    example.phrases[task], rel, example.encoding
+                )
+                scores_set.append(scores)
+                candidates_set.append(candidates)
+
+        return MMRefInputFeatures(
+            example_id=example.example_id,
+            input_ids=merged_encoding.ids,
+            attention_mask=merged_encoding.attention_mask,
+            token_type_ids=merged_encoding.type_ids,
+            source_mask=source_mask,
+            source_label=is_analysis_targets,
+            vis_input_embeds=vis_input_embeds,
+            vis_attention_mask=vis_attention_mask,
+            target_mask=candidates_set,
+            target_label=scores_set,
+        )
+
+    def _convert_annotation_to_feature(
+        self,
+        phrases: list[MMRefBasePhrase],
+        rel_type: str,
+        encoding: Encoding,
+    ) -> tuple[list[list[float]], list[list[bool]]]:
+        scores_set: list[list[float]] = [
+            [0.0] * self.vis_max_seq_length for _ in range(self.max_seq_length)
+        ]  # (src, tgt)
+        candidates_set: list[list[bool]] = [
+            [False] * self.vis_max_seq_length for _ in range(self.max_seq_length)
+        ]  # (src, tgt)
+
+        for phrase in phrases:
+            scores: list[float] = [0.0] * self.vis_max_seq_length
+            token_level_candidates: list[bool] = [False] * self.vis_max_seq_length
+            # phrase.rel2tags が None の場合は推論時，もしくは学習対象外の物体候補．
+            # その場合は scores が全てゼロになるため loss が計算されない．
+            if phrase.rel2tags is not None:
+                # 学習・解析対象物体
+                for cid in phrase.rel2tags[rel_type]:
+                    scores[cid] = 1.0
+                    token_level_candidates[cid] = True
+
+            token_index_span = encoding.word_to_tokens(
+                phrase.head_morpheme_global_index
+            )
+            # use the head subword as the representative of the source word
+            scores_set[token_index_span[0]] = scores
+            candidates_set[token_index_span[0]] = token_level_candidates
+
+        return scores_set, candidates_set
 
     def __len__(self) -> int:
         return len(self.examples)
