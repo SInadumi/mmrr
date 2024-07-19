@@ -78,5 +78,8 @@ class MTDataModule(pl.LightningDataModule):
         batch: dict[str, torch.Tensor] = {}
         for field in fields(first):
             feats = [getattr(f, field.name) for f in features]
-            batch[field.name] = torch.as_tensor(feats)
+            if type(feats[0]) == torch.Tensor:  # vis_input_embeds
+                batch[field.name] = torch.stack(feats)
+            else:
+                batch[field.name] = torch.as_tensor(feats)
         return batch
