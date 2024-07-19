@@ -70,8 +70,7 @@ class MMRefInputFeatures:
     token_type_ids: list[int]
     source_mask: list[bool]  # loss を計算する対象の基本句かどうか
     source_label: list[list[int]]  # 解析対象基本句かどうか
-    vis_input_embeds: torch.Tensor
-    vis_attention_mask: list[bool]
+    input_embeds: torch.Tensor
     target_mask: list[
         list[list[bool]]
     ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）

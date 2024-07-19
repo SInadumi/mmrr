@@ -377,12 +377,10 @@ class MMRefDataset(BaseDataset):
         )
 
         """Convert example to visual feature"""
-        vis_input_embeds: list[torch.Tensor] = []
-        vis_attention_mask: list[bool] = []
+        input_embeds: list[torch.Tensor] = []
         for candidate in example.all_candidates:
-            vis_input_embeds.append(candidate.feature)
-            vis_attention_mask.append(True if candidate.class_id != -1 else False)
-        vis_input_embeds = torch.stack(vis_input_embeds)  # -> torch.Tensor
+            input_embeds.append(candidate.feature)
+        vis_input_embeds = torch.stack(input_embeds)  # -> torch.Tensor
 
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
         candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
@@ -401,8 +399,7 @@ class MMRefDataset(BaseDataset):
             token_type_ids=merged_encoding.type_ids,
             source_mask=source_mask,
             source_label=is_analysis_targets,
-            vis_input_embeds=vis_input_embeds,
-            vis_attention_mask=vis_attention_mask,
+            input_embeds=vis_input_embeds,
             target_mask=candidates_set,
             target_label=scores_set,
         )
