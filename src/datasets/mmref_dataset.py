@@ -256,8 +256,8 @@ class MMRefDataset(BaseDataset):
         for idx, phrase in enumerate(phrases):
             if phrase.rel2tags is not None:
                 sidx = candidate_sidx[idx]
-                for rel, tags in phrase.rel2tags.items():
-                    phrase.rel2tags[rel] = [tag + sidx for tag in tags]
+                for rel, cids in phrase.rel2tags.items():
+                    phrase.rel2tags[rel] = [cid + sidx for cid in cids]
         return all_candidates, phrases
 
     def _truncate_candidates(
@@ -272,7 +272,7 @@ class MMRefDataset(BaseDataset):
         for phrase in phrases:
             if phrase.rel2tags is not None:
                 pos_cand_indices |= set(
-                    [tag for tags in phrase.rel2tags.values() for tag in tags]
+                    [cid for cids in phrase.rel2tags.values() for cid in cids]
                 )
         neg_cand_indices = set(range(len(all_candidates))) - set(pos_cand_indices)
 
@@ -294,8 +294,8 @@ class MMRefDataset(BaseDataset):
         }  # prev idx to new idx
         for phrase in phrases:
             if phrase.rel2tags is not None:
-                for rel, tags in phrase.rel2tags.items():
-                    phrase.rel2tags[rel] = [pos_mapper[tag] for tag in tags]
+                for rel, cids in phrase.rel2tags.items():
+                    phrase.rel2tags[rel] = [pos_mapper[cid] for cid in cids]
 
         return all_candidates, phrases
 
