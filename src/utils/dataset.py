@@ -58,31 +58,21 @@ class MMRefBasePhrase:
 
 
 @dataclass(frozen=True)
-class TextualFeatures:
+class MMRefInputFeatures:
+    """A dataclass which represents a language encoder and interaction layer input
+
+    The attributes of this class correspond to arguments of forward method of each encoder
+    """
+
+    example_id: int
     input_ids: list[int]
     attention_mask: list[bool]
     token_type_ids: list[int]
     source_mask: list[bool]  # loss を計算する対象の基本句かどうか
     source_label: list[list[int]]  # 解析対象基本句かどうか
-
-
-@dataclass(frozen=True)
-class VisualFeatures:
-    input_embeds: list[torch.Tensor]
-    attention_mask: list[bool]
+    vis_input_embeds: torch.Tensor
+    vis_attention_mask: list[bool]
     target_mask: list[
         list[list[bool]]
     ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）
     target_label: list[list[list[float]]]  # source と関係を持つかどうか
-
-
-@dataclass(frozen=True)
-class MMRefInputFeatures:
-    """A dataclass which represents a language encoder and interaction layer input
-
-    TODO: The attributes of this class correspond to arguments of forward method of each encoder
-    """
-
-    example_id: int
-    textual: TextualFeatures
-    visual: VisualFeatures
