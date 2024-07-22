@@ -3,7 +3,7 @@ defaults:
   - callbacks: [early_stopping, model_checkpoint, model_summary, progress_bar]
   - datamodule: mmref_all
   - logger: null
-  - model: null
+  - model: mmref_baseline
   - module: mmref
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup
