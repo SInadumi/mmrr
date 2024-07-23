@@ -5,8 +5,6 @@ from pathlib import Path
 
 from rhoknp import Document, RegexSenter
 
-exclude_vis_ids = ["20220302-56130295-0"]
-
 
 class ImageTextAugmenter:
     def __init__(self, dataset_dir: Path) -> None:
@@ -33,27 +31,37 @@ class ImageTextAugmenter:
                 self.dataset_dir / "textual_annotations" / f"{scenario_id}.knp"
             ).read_text()
         )
+        dataset_info: dict = json.load(
+            open(self.dataset_dir / "recording" / scenario_id / "info.json", "r", encoding="utf-8")
+        )
 
-        sentences = []
+        # collect sids corresponding to utterances
+        sid_mapper: list[int] = [
+            u_info["sids"] for u_info in dataset_info["utterances"]
+        ]
+        assert len(sid_mapper) == len(annotation["utterances"])
 
         # split utterances field
-        for utterance in annotation["utterances"]:
-            doc_sents = self.senter.apply_to_document(utterance["text"])
+        sentences = [] # [{"sid": xx, "phrases": xx}, ...]
+        for idx, utterance in enumerate(annotation["utterances"]):
+            sids = sid_mapper[idx]
             sentences.extend(
                 [
-                    {"text": s.text, "phrases": utterance["phrases"]}
-                    for s in doc_sents.sentences
+                    {"sid": sid, "phrases": utterance["phrases"]}
+                    for sid in sids
                 ]
             )
         assert len(sentences) == len(document.sentences)
 
-        # format "ret" phrase entries by base_phrases
+        # format visual phrases by base_phrases
         for sentence in document.sentences:
             s_idx = self.to_idx_from_sid(sentence.sid)  # a index of sid
-            sentences[s_idx]
             _s = sentences[s_idx]
-            _s["sid"] = sentence.sid
+            _s["text"] = sentence.text
+
+            ret_vis_phrase = _s["phrases"]
             if len(sentence.base_phrases) != len(_s["phrases"]):
+                # update visual phrase annotation
                 doc_phrase = [b.text for b in sentence.base_phrases]
                 vis_phrase = [u["text"] for u in _s["phrases"]]
                 st_idx = vis_phrase.index(doc_phrase[0])
@@ -123,11 +131,6 @@ def main():
     augmenter = ImageTextAugmenter(Path(args.INPUT))
     for source in visual_paths:
         vis_id = source.stem
-        if vis_id in exclude_vis_ids:
-            # FIXME: 20220302-56130295-0.knp の文分割におけるアノテーションミス
-            # cf.) https://github.com/riken-grp/J-CRe3/blob/ca6f5e86a4939f60158ea2999ffab6bea6924527/textual_annotations/20220302-56130295-0.knp#L161-L198
-            # "あそうそう。おもちゃを ..." が区切られていない
-            continue
         image_text_annotation = json.load(open(source, "r", encoding="utf-8"))
         image_text_annotation = augmenter.split_utterances_to_sentences(
             image_text_annotation
