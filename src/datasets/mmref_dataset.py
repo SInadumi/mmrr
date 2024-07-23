@@ -51,7 +51,6 @@ class MMRefDataset(BaseDataset):
         special_tokens: ListConfig,
         training: bool,
         flip_reader_writer: bool,
-        image_input_width: int = 0,  # NOTE: 入力対象となる発話区間を "image_input_width" フレーム分拡張
     ) -> None:
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
@@ -76,7 +75,6 @@ class MMRefDataset(BaseDataset):
         self.flip_reader_writer: bool = flip_reader_writer
         self.vis_max_seq_length = vis_max_seq_length
         self.vis_emb_size = vis_emb_size
-        self.image_input_width = image_input_width
         self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
 
         exophora_referent_types: list[ExophoraReferentType] = [
@@ -329,12 +327,8 @@ class MMRefDataset(BaseDataset):
             for utterance in dataset_info.utterances:
                 if len(utterance.image_ids) == 0:
                     continue
-                # info.jsonに記載の発話区間 + (and -) "image_input_width" フレーム
-                sidx = max(0, int(utterance.image_ids[0]) - 1 - self.image_input_width)
-                eidx = min(
-                    len(obj_features) - 1,
-                    int(utterance.image_ids[-1]) + self.image_input_width,
-                )
+                sidx = int(utterance.image_ids[0]) - 1
+                eidx = int(utterance.image_ids[-1]) - 1
                 assert eidx >= sidx
                 sid_to_objects.update(
                     {sid: obj_features[sidx:eidx] for sid in utterance.sids}

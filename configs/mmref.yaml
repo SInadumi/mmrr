@@ -20,7 +20,6 @@ flip_reader_writer: ${frw}
 checkpoint: "" # path to trained checkpoint
 document_split_stride: 2
 analysis_target_threshold: 0.3
-image_input_width: 0
 
 # experimental settings
 cases: ["ガ", "ヲ", "ニ"]
