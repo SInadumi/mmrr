@@ -327,8 +327,7 @@ class MMRefDataset(BaseDataset):
             for utterance in dataset_info.utterances:
                 if len(utterance.image_ids) == 0:
                     continue
-                sidx = int(utterance.image_ids[0]) - 1
-                eidx = int(utterance.image_ids[-1]) - 1
+                sidx, eidx = utterance.image_indices_span
                 assert eidx >= sidx
                 sid_to_objects.update(
                     {sid: obj_features[sidx:eidx] for sid in utterance.sids}

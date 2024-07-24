@@ -23,6 +23,10 @@ class UtteranceInfo(CamelCaseDataClassJsonMixin):
     speaker: str
     image_ids: list[str]
 
+    @property
+    def image_indices_span(self) -> tuple[int, int]:
+        # zero origin
+        return (int(self.image_ids[0]) - 1, int(self.image_ids[-1]) - 1)
 
 @dataclass
 class DatasetInfo(CamelCaseDataClassJsonMixin):
