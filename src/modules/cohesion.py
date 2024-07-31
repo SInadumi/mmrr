@@ -1,7 +1,7 @@
 from functools import reduce
 from pathlib import Path
 from statistics import mean
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import hydra
 import torch
@@ -14,12 +14,13 @@ from metrics import CohesionMetric
 from modules.base import BaseModule
 from modules.model.loss import (
     ContrastiveLoss,
+    SupConLoss,
     binary_cross_entropy_with_logits,
     cross_entropy_loss,
 )
 from utils.util import IGNORE_INDEX
 
-LossType = ContrastiveLoss
+LossType = Union[ContrastiveLoss, SupConLoss]
 
 
 class CohesionModule(BaseModule[CohesionMetric]):
@@ -42,6 +43,8 @@ class CohesionModule(BaseModule[CohesionMetric]):
         for name in self.ml_loss_weights.keys():
             if name == "contrastive_alignment_loss":
                 self.ml_loss[name] = ContrastiveLoss(dist_func_name="cosine")
+            elif name == "supervised_contrastive_loss":
+                self.ml_loss[name] = SupConLoss()
             else:
                 NotImplementedError
 

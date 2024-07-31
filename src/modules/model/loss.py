@@ -23,6 +23,11 @@ def calc_4d_cost_cosine_matrix(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor
     return 1 - torch.matmul(x, y)
 
 
+def calc_4d_dot_product(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    return torch.matmul(x, y.permute(0, 1, 3, 2))
+
+
+# soft-cross entropy loss
 def cross_entropy_loss(
     output: torch.Tensor,  # (b, rel, seq, seq)
     target: torch.Tensor,  # (b, rel, seq, seq)
@@ -77,3 +82,71 @@ class ContrastiveLoss:
         pos_loss = dist_pos[dist_pos != 0.0].mean()
         neg_loss = dist_neg[dist_neg != 0.0].mean()
         return pos_loss + neg_loss
+
+
+class SupConLoss:
+    def __init__(self):
+        self.temperature: float = 0.1
+        self.dist_func = calc_4d_cost_cosine_matrix
+
+    def compute_loss(
+        self,
+        h_src: torch.Tensor,  # (b, seq, rel, hid)
+        t_src: torch.Tensor,  # (b, seq, rel, hid)
+        mask: torch.Tensor,  # (b, rel, seq, seq)
+    ):
+        # https://github.com/VICO-UoE/CIN-SSL/blob/main/models/losses.py
+        # https://github.com/KevinMusgrave/pytorch-metric-learning/blob/master/src/pytorch_metric_learning/losses/supcon_loss.py
+        dist_matrix = self.dist_func(
+            h_src.permute(0, 2, 1, 3), t_src.permute(0, 2, 1, 3)
+        )  # (b, seq, rel, hid) -> (b, rel, seq, seq)
+
+        # -> (b, rel, seq * seq)
+        # cf.) https://github.com/HobbitLong/SupContrast/blob/master/losses.py
+        dist_matrix = dist_matrix.view(dist_matrix.shape[0], dist_matrix.shape[1], -1)
+        mask = mask.view(mask.shape[0], mask.shape[1], -1)
+
+        pos_mask = mask.eq(1).bool()
+        neg_mask = mask.eq(0).bool()
+
+        dist_matrix = dist_matrix / self.temperature
+        mat_max, _ = dist_matrix.max(dim=1, keepdim=True)
+        dist_matrix = dist_matrix - mat_max.detach()
+
+        denominator = self._logsumexp(
+            dist_matrix, keep_mask=(pos_mask + neg_mask).bool(), add_one=False, dim=1
+        )
+        log_prob = dist_matrix - denominator
+        mean_log_prob_pos = (pos_mask * log_prob).sum(dim=1) / (
+            pos_mask.sum(dim=1) + self._small_val(dist_matrix.dtype)
+        )
+        return (-mean_log_prob_pos[mean_log_prob_pos != 0]).mean()  # avg non-zero
+
+    @staticmethod
+    def _small_val(dtype: torch.dtype) -> float:
+        return torch.finfo(dtype).tiny
+
+    @staticmethod
+    def _neg_inf(dtype: torch.dtype) -> float:
+        return torch.finfo(dtype).min
+
+    def _logsumexp(
+        self,
+        x: torch.Tensor,
+        keep_mask: torch.Tensor = None,
+        add_one: bool = True,
+        dim: int = 1,
+    ) -> torch.Tensor:
+        # https://github.com/KevinMusgrave/pytorch-metric-learning/blob/master/src/pytorch_metric_learning/utils/loss_and_miner_utils.py
+        if keep_mask is not None:
+            x = x.masked_fill(~keep_mask, self._neg_inf(x.dtype))
+        if add_one:
+            zeros = torch.zeros(
+                x.size(dim - 1), dtype=x.dtype, device=x.device
+            ).unsqueeze(dim)
+            x = torch.cat([x, zeros], dim=dim)
+
+        output = torch.logsumexp(x, dim=dim, keepdim=True)
+        if keep_mask is not None:
+            output = output.masked_fill(~torch.any(keep_mask, dim=dim, keepdim=True), 0)
+        return output
