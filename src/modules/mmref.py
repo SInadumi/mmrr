@@ -33,7 +33,7 @@ class MMRefModule(BaseModule[MMRefMetric]):
         relation_logits, source_mask_logits, h_src, h_tgt = self.model(**batch)
         return {
             "relation_logits": relation_logits.masked_fill(
-                ~batch["target_mask"], -1024.0
+                ~batch["vis_attention_mask"].unsqueeze(1).unsqueeze(2), -1024.0
             ),
             "source_mask_logits": source_mask_logits,
             "h_src": h_src,
@@ -44,17 +44,17 @@ class MMRefModule(BaseModule[MMRefMetric]):
         ret: dict[str, torch.Tensor] = self(batch)
         losses: dict[str, torch.Tensor] = {}
 
-        txt_source_mask: torch.Tensor = batch["source_mask"]  # (b, seq1)
-        relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, seq1, seq2)
+        txt_source_mask: torch.Tensor = batch["source_mask"]  # (b, t_seq)
+        relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, t_seq, v_seq)
 
         losses["relation_loss"] = cross_entropy_loss(
             ret["relation_logits"], batch["target_label"], relation_mask
         )
 
-        source_label: torch.Tensor = batch["source_label"]  # (b, task, seq1)
-        analysis_target_mask = source_label.ne(IGNORE_INDEX) & txt_source_mask.unsqueeze(
-            1
-        )  # (b, task, seq1)
+        source_label: torch.Tensor = batch["source_label"]  # (b, task, t_seq)
+        analysis_target_mask = source_label.ne(
+            IGNORE_INDEX
+        ) & txt_source_mask.unsqueeze(1)  # (b, task, t_seq)
         source_label = torch.where(
             analysis_target_mask, source_label, torch.zeros_like(source_label)
         )

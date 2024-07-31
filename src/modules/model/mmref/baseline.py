@@ -53,7 +53,7 @@ class BaselineModel(nn.Module):
         input_ids: torch.Tensor,  # (b, t_seq)
         attention_mask: torch.Tensor,  # (b, t_seq)
         token_type_ids: torch.Tensor,  # (b, t_seq)
-        input_embeds: torch.Tensor,  # (b, v_seq)
+        vis_embeds: torch.Tensor,  # (b, v_seq)
         **_,
     ) -> tuple[
         torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
@@ -64,12 +64,12 @@ class BaselineModel(nn.Module):
             token_type_ids=token_type_ids,
         ).last_hidden_state  # (b, t_seq, hid)
         batch_size, txt_sequence_len, hidden_size = encoder_last_hidden_state.size()
-        _, vis_sequence_len, _ = input_embeds.size()
+        _, vis_sequence_len, _ = vis_embeds.size()
 
         h_src = self.l_source(
             self.dropout(encoder_last_hidden_state)
         )  # (b, t_seq, rel*hid)
-        h_tgt = self.l_target(self.dropout(input_embeds))  # (b, v_seq, rel*hid)
+        h_tgt = self.l_target(self.dropout(vis_embeds))  # (b, v_seq, rel*hid)
         h_src = h_src.view(
             batch_size, txt_sequence_len, self.num_relation_types, hidden_size
         )  # (b, t_seq, rel, hid)
