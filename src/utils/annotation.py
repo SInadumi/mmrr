@@ -64,7 +64,7 @@ class ImageAnnotation(CamelCaseDataClassJsonMixin):
 
 
 @dataclass(frozen=True)
-class UtteranceAnnotation(CamelCaseDataClassJsonMixin):
+class SentenceAnnotation(CamelCaseDataClassJsonMixin):
     sid: str
     text: str
     phrases: list[PhraseAnnotation]
@@ -74,4 +74,4 @@ class UtteranceAnnotation(CamelCaseDataClassJsonMixin):
 class ImageTextAnnotation(CamelCaseDataClassJsonMixin):
     scenarioId: str
     images: list[ImageAnnotation]
-    utterances: list[UtteranceAnnotation]
+    utterances: list[SentenceAnnotation]
