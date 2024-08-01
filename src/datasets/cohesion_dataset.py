@@ -26,7 +26,7 @@ from datamodule.example import KyotoExample
 from utils.annotation import DatasetInfo
 from utils.dataset import CohesionBasePhrase, CohesionInputFeatures
 from utils.sub_document import to_orig_doc_id
-from utils.util import IGNORE_INDEX, sigmoid, softmax
+from utils.util import IGNORE_INDEX, softmax
 
 from .base_dataset import BaseDataset
 
@@ -273,33 +273,6 @@ class CohesionDataset(BaseDataset):
             assert len(phrase_level_logits) == len(phrases) + len(self.special_to_index)
             phrase_level_scores_matrix.append(softmax(np.array(phrase_level_logits)))
         return np.array(phrase_level_scores_matrix)
-
-    def dump_source_mask_prediction(
-        self,
-        token_level_source_mask_logits: np.ndarray,  # (task, seq)
-        example: KyotoExample,
-    ) -> np.ndarray:  # (phrase, task)
-        """1 example 中に存在する基本句それぞれに対してシステム予測のリストを返す．"""
-        assert example.encoding is not None, "encoding isn't set"
-        phrase_task_scores: list[list[float]] = []
-        token_level_source_mask_scores = sigmoid(token_level_source_mask_logits)
-        assert len(token_level_source_mask_scores) == len(self.tasks)
-        for task, token_level_scores in zip(
-            self.tasks, token_level_source_mask_scores.tolist()
-        ):
-            phrase_level_scores: list[float] = []
-            for phrase in example.phrases[task]:
-                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
-                    phrase.head_morpheme_global_index
-                )
-                sliced_token_level_scores: list[float] = token_level_scores[
-                    slice(*token_index_span)
-                ]
-                phrase_level_scores.append(
-                    sum(sliced_token_level_scores) / len(sliced_token_level_scores)
-                )
-            phrase_task_scores.append(phrase_level_scores)
-        return np.array(phrase_task_scores).transpose()
 
     def _convert_example_to_feature(
         self, example: KyotoExample

@@ -1,15 +1,17 @@
-import logging
 from pathlib import Path
 from typing import Union
 
+import numpy as np
 import torch
 from rhoknp import Document, Sentence
 from rhoknp.utils.reader import chunk_by_document
 from transformers import PreTrainedTokenizerBase
 
+from datamodule.example import KyotoExample, MMRefExample
 from utils.sub_document import SequenceSplitter, SpanCandidate, to_sub_doc_id
+from utils.util import sigmoid
 
-logger = logging.getLogger(__name__)
+ExampleType = Union[KyotoExample, MMRefExample]
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -103,3 +105,33 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def _get_tokenized_len(self, source: Union[Document, Sentence]) -> int:
         return len(self.tokenizer.tokenize(" ".join(m.text for m in source.morphemes)))
+
+    def dump_relation_prediction(self):
+        raise NotImplementedError
+
+    def dump_source_mask_prediction(
+        self,
+        token_level_source_mask_logits: np.ndarray,  # (task, seq)
+        example: ExampleType,
+    ) -> np.ndarray:  # (phrase, task)
+        """1 example 中に存在する基本句それぞれに対してシステム予測のリストを返す．"""
+        assert example.encoding is not None, "encoding isn't set"
+        phrase_task_scores: list[list[float]] = []
+        token_level_source_mask_scores = sigmoid(token_level_source_mask_logits)
+        assert len(token_level_source_mask_scores) == len(self.tasks)
+        for task, token_level_scores in zip(
+            self.tasks, token_level_source_mask_scores.tolist()
+        ):
+            phrase_level_scores: list[float] = []
+            for phrase in example.phrases[task]:
+                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
+                    phrase.head_morpheme_global_index
+                )
+                sliced_token_level_scores: list[float] = token_level_scores[
+                    slice(*token_index_span)
+                ]
+                phrase_level_scores.append(
+                    sum(sliced_token_level_scores) / len(sliced_token_level_scores)
+                )
+            phrase_task_scores.append(phrase_level_scores)
+        return np.array(phrase_task_scores).transpose()

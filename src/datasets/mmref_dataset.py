@@ -7,6 +7,7 @@ import random
 from pathlib import Path
 from typing import Union
 
+import numpy as np
 import torch
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import ListConfig
@@ -20,7 +21,7 @@ from transformers.file_utils import PaddingStrategy
 from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
-from datamodule.example.mmref import MMRefExample
+from datamodule.example import MMRefExample
 from utils.annotation import DatasetInfo, ImageTextAnnotation, PhraseAnnotation
 from utils.dataset import (
     MMRefBasePhrase,
@@ -28,7 +29,7 @@ from utils.dataset import (
     ObjectFeature,
 )
 from utils.sub_document import to_orig_doc_id
-from utils.util import IGNORE_INDEX
+from utils.util import IGNORE_INDEX, sigmoid
 
 from .base_dataset import BaseDataset
 
@@ -342,6 +343,51 @@ class MMRefDataset(BaseDataset):
             sid_to_objects=sid_to_objects,
         )
         return example
+
+    def dump_relation_prediction(
+        self,
+        relation_logits: np.ndarray,
+        example: MMRefExample,
+    ) -> np.ndarray:
+        """1 example 中に存在する基本句それぞれに対してシステム予測のリストを返す．"""
+        predictions: list[np.ndarray] = []
+        task_and_rels = [
+            (task, rel) for task in self.tasks for rel in self.task_to_rels[task]
+        ]
+        assert len(relation_logits) == len(task_and_rels) == len(self.rel_types)
+        for (task, _), logits in zip(task_and_rels, relation_logits):
+            predictions.append(
+                self._token_to_candidate_level(
+                    logits,
+                    example.phrases[task],
+                    example.all_candidates,
+                    example.encoding,
+                )
+            )
+        return np.array(predictions).transpose(1, 0, 2)  # (phrase, rel, candidate)
+
+    def _token_to_candidate_level(
+        self,
+        token_level_logits_matrix: np.ndarray,  # (t_seq, v_seq)
+        phrases: list[MMRefBasePhrase],
+        candidates: list[ObjectFeature],
+        encoding: Encoding,
+    ) -> np.ndarray:  # (phrase, candidate)
+        phrase_level_scores_matrix: list[np.ndarray] = []
+        for phrase in phrases:
+            token_index_span: tuple[int, int] = encoding.word_to_tokens(
+                phrase.head_morpheme_global_index
+            )
+            # Use the head subword as the representative of the source word.
+            # Cast to built-in list because list operation is faster than numpy array operation.
+            token_level_logits: list[float] = token_level_logits_matrix[
+                token_index_span[0]
+            ].tolist()  # (t_seq)
+            candidate_level_logits: list[float] = []
+            for idx in range(len(candidates)):
+                candidate_level_logits.append(token_level_logits[idx])
+            phrase_level_scores_matrix.append(sigmoid(np.array(candidate_level_logits)))
+        return np.array(phrase_level_scores_matrix)
 
     def _convert_example_to_feature(
         self,
