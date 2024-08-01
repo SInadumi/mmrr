@@ -1,11 +1,9 @@
 from functools import reduce
-from pathlib import Path
 from statistics import mean
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import hydra
 import torch
-from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import DictConfig
 from torch import nn
 from typing_extensions import override
@@ -97,14 +95,6 @@ class CohesionModule(BaseModule[CohesionMetric]):
         return losses["loss"]
 
     @override
-    def validation_step(
-        self, batch: dict, batch_idx: int, dataloader_idx: int = 0
-    ) -> None:
-        prediction = self.predict_step(batch, batch_idx, dataloader_idx=dataloader_idx)
-        metric = self.valid_corpus2metric[self.valid_corpora[dataloader_idx]]
-        metric.update(prediction)
-
-    @override
     def on_validation_epoch_end(self) -> None:
         metrics_log: dict[str, dict[str, float]] = {}
         for corpus, metric in self.valid_corpus2metric.items():
@@ -143,25 +133,6 @@ class CohesionModule(BaseModule[CohesionMetric]):
                 if key in metrics_log[corpus] and corpus != "fuman"
             )
             self.log(f"valid_wo_fuman/{key}", mean_score)
-
-    @rank_zero_only
-    def on_train_end(self) -> None:
-        best_model_path: str = self.trainer.checkpoint_callback.best_model_path  # type: ignore
-        if not best_model_path:
-            return
-        save_dir = Path(self.hparams.exp_dir) / self.hparams.run_id  # type: ignore
-        best_path = save_dir / "best.ckpt"
-        if best_path.exists():
-            best_path.unlink()
-        actual_best_path = Path(best_model_path)
-        assert actual_best_path.parent.resolve() == best_path.parent.resolve()
-        best_path.resolve().symlink_to(actual_best_path.name)
-
-    @override
-    def test_step(self, batch, batch_idx: int, dataloader_idx: int = 0) -> None:
-        prediction = self.predict_step(batch, batch_idx, dataloader_idx=dataloader_idx)
-        metric = self.test_corpus2metric[self.test_corpora[dataloader_idx]]
-        metric.update(prediction)
 
     @override
     def on_test_epoch_end(self) -> None:
@@ -202,14 +173,3 @@ class CohesionModule(BaseModule[CohesionMetric]):
                 if key in metrics_log[corpus] and corpus != "fuman"
             )
             self.log(f"test_wo_fuman/{key}", mean_score)
-
-    @override
-    def predict_step(
-        self, batch: dict[str, torch.Tensor], batch_idx: int, dataloader_idx: int = 0
-    ) -> dict[str, Any]:
-        output: dict[str, torch.Tensor] = self(batch)
-        return {
-            "example_ids": batch["example_id"],
-            "dataloader_idx": dataloader_idx,
-            **output,
-        }
