@@ -1,23 +1,17 @@
-from typing import Optional
-
 from rhoknp import BasePhrase, Document
-from tokenizers import Encoding
 
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from utils.annotation import PhraseAnnotation
 from utils.dataset import MMRefBasePhrase, ObjectFeature
-from utils.sub_document import extract_target_sentences
+
+from .base import BaseExample
 
 
-class MMRefExample:
+class MMRefExample(BaseExample):
     def __init__(self) -> None:
-        self.example_id: int = -1
-        self.doc_id: str = ""
         self.phrases: dict[Task, list[MMRefBasePhrase]] = {}
         self.sid_to_objects: dict[str, list] = {}
-        self.analysis_target_morpheme_indices: list[int] = []
-        self.encoding: Optional[Encoding] = None
         self.all_candidates: list[ObjectFeature] = None
 
     def load(
@@ -28,9 +22,8 @@ class MMRefExample:
         task_to_extractor: dict[Task, BaseExtractor],
         sid_to_objects: dict[str, list],
     ):
-        self.doc_id = document.doc_id
+        self.set_doc_params(document)
         self.sid_to_objects = sid_to_objects
-
         for task in tasks:
             extractor: BaseExtractor = task_to_extractor[task]
             self.phrases[task] = self._wrap_base_phrases(
@@ -38,12 +31,6 @@ class MMRefExample:
                 visual_phrases,
                 extractor,
             )
-        analysis_target_morpheme_indices = []
-        for sentence in extract_target_sentences(document):
-            analysis_target_morpheme_indices += [
-                m.global_index for m in sentence.morphemes
-            ]
-        self.analysis_target_morpheme_indices = analysis_target_morpheme_indices
 
     def _wrap_base_phrases(
         self,
@@ -68,13 +55,13 @@ class MMRefExample:
             visual_phrase: PhraseAnnotation = visual_phrases[idx]
             mmref_base_phrase: MMRefBasePhrase = mmref_base_phrases[idx]
 
-            # set a parameter; "is_target"
+            # set a parameter: "is_target"
             objects = self.sid_to_objects[base_phrase.sentence.sid]
             mmref_base_phrase.is_target = (
                 extractor.is_target(visual_phrase) and len(objects) > 0
             )
 
-            # set parameters; "referent_candidates" and "rel2tags"
+            # set parameters: "referent_candidates" and "rel2tags"
             if mmref_base_phrase.is_target:
                 candidates: list[ObjectFeature] = self._get_object_candidates(objects)
                 rel2tags: dict[str, list[int]] = extractor.extract_rels(

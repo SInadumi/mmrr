@@ -1,6 +1,5 @@
 import copy
-import logging
-from typing import Optional, Union
+from typing import Union
 
 from rhoknp import BasePhrase, Document
 from rhoknp.cohesion import (
@@ -9,7 +8,6 @@ from rhoknp.cohesion import (
     ExophoraArgument,
     ExophoraReferent,
 )
-from tokenizers import Encoding
 
 from cohesion_tools.extractors import (
     BridgingExtractor,
@@ -19,19 +17,15 @@ from cohesion_tools.extractors import (
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from utils.dataset import CohesionBasePhrase
-from utils.sub_document import extract_target_sentences
 
-logger = logging.getLogger(__file__)
+from .base import BaseExample
 
 
-class KyotoExample:
+class KyotoExample(BaseExample):
     def __init__(self) -> None:
-        self.example_id: int = -1
-        self.doc_id: str = ""
+        super().__init__()
         self.phrases: dict[Task, list[CohesionBasePhrase]] = {}
         self.sid_to_type_id: dict[str, int] = {}
-        self.analysis_target_morpheme_indices: list[int] = []
-        self.encoding: Optional[Encoding] = None
 
     def load(
         self,
@@ -42,7 +36,7 @@ class KyotoExample:
         sid_to_type_id: dict[str, int],
         flip_writer_reader_according_to_type_id: bool,
     ):
-        self.doc_id = document.doc_id
+        self.set_doc_params(document)
         self.sid_to_type_id = sid_to_type_id
         for task in tasks:
             extractor: BaseExtractor = task_to_extractor[task]
@@ -52,13 +46,6 @@ class KyotoExample:
                 task_to_rels[task],
                 flip_writer_reader_according_to_type_id,
             )
-
-        analysis_target_morpheme_indices = []
-        for sentence in extract_target_sentences(document):
-            analysis_target_morpheme_indices += [
-                m.global_index for m in sentence.morphemes
-            ]
-        self.analysis_target_morpheme_indices = analysis_target_morpheme_indices
 
     def _wrap_base_phrases(
         self,
