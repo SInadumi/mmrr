@@ -11,7 +11,6 @@ from torch import nn
 from typing_extensions import override
 
 from metrics import CohesionMetric
-from modules.base import BaseModule
 from modules.model.loss import (
     ContrastiveLoss,
     SupConLoss,
@@ -19,6 +18,8 @@ from modules.model.loss import (
     cross_entropy_loss,
 )
 from utils.util import IGNORE_INDEX
+
+from .base import BaseModule
 
 LossType = Union[ContrastiveLoss, SupConLoss]
 
