@@ -1,36 +1,36 @@
 from dataclasses import dataclass
 
+from cohesion_tools.task import Task
 from utils.annotation import ImageInfo
 from utils.util import CamelCaseDataClassJsonMixin, Rectangle
 
 
 @dataclass(eq=True)
-class BoundingBox(CamelCaseDataClassJsonMixin):
-    image_id: str
+class BoundingBoxPrediction(CamelCaseDataClassJsonMixin):
+    class_id: int
     rect: Rectangle
     confidence: float
-
-    def __hash__(self) -> int:
-        return hash((self.image_id, self.rect))
 
 
 @dataclass(frozen=True, eq=True)
 class RelationPrediction(CamelCaseDataClassJsonMixin):
     type: str  # ガ, ヲ, ニ, ノ, =, etc...
-    image_id: str
-    bounding_box: BoundingBox
-
-    @property
-    def image_idx(self) -> int:
-        return int(self.image_id) - 1  # zero origin
+    bounding_box: list[BoundingBoxPrediction]
 
 
 @dataclass
 class PhrasePrediction(CamelCaseDataClassJsonMixin):
     sid: str
-    index: int
+    task: Task
     text: str
     relations: list[RelationPrediction]
+
+
+@dataclass
+class SentencePrediction(CamelCaseDataClassJsonMixin):
+    text: str
+    sid: str
+    phrases: list[PhrasePrediction]
 
 
 @dataclass
