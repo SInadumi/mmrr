@@ -74,7 +74,9 @@ class MMRefDataset(BaseDataset):
             for i, token in enumerate(self.special_tokens)
         }
         self.flip_reader_writer: bool = flip_reader_writer
-        self.vis_max_seq_length = vis_max_seq_length
+        self.vis_max_seq_length = (
+            vis_max_seq_length - 1
+        )  # -1: for adding "no object" feature
         self.vis_emb_size = vis_emb_size
         self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
 
@@ -113,6 +115,13 @@ class MMRefDataset(BaseDataset):
                     continue
                 base_phrases_to_vis.extend(utterance.phrases)
             self.doc_id2vis.update({document.doc_id: base_phrases_to_vis})
+
+        self.no_object_feature: ObjectFeature = ObjectFeature(
+            class_id=torch.Tensor([0.0]),
+            score=torch.Tensor([0.0]),
+            bbox=torch.zeros(4),
+            feature=torch.ones(self.vis_emb_size),
+        )
 
         self.examples: list[MMRefExample] = self._load_examples(
             self.documents, str(data_path)
@@ -223,6 +232,10 @@ class MMRefDataset(BaseDataset):
                 )
             else:
                 all_candidates = self._pad_candidates(all_candidates)
+
+            # add "no object" feature to the last element of list
+            all_candidates.append(self.no_object_feature)
+
             example.all_candidates = all_candidates
 
             encoding: Encoding = self.tokenizer(
