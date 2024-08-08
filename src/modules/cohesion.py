@@ -41,21 +41,20 @@ class CohesionModule(BaseModule[CohesionMetric]):
     def setup(self, stage: Optional[str] = None) -> None:
         for name in self.ml_loss_weights.keys():
             if name == "contrastive_alignment_loss":
-                self.ml_loss[name] = ContrastiveLoss(dist_func_name="cosine")
+                self.ml_loss[name] = ContrastiveLoss()
             elif name == "supervised_contrastive_loss":
                 self.ml_loss[name] = SupConLoss()
             else:
                 NotImplementedError
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, source_mask_logits, h_src, h_tgt = self.model(**batch)
+        relation_logits, source_mask_logits, dist_matrix = self.model(**batch)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["target_mask"], -1024.0
             ),
             "source_mask_logits": source_mask_logits,
-            "h_src": h_src,
-            "h_tgt": h_tgt,
+            "dist_matrix": dist_matrix,
         }
 
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -88,7 +87,10 @@ class CohesionModule(BaseModule[CohesionMetric]):
         # add metric learning losses
         for name, _loss in self.ml_loss.items():
             _weight = self.ml_loss_weights[name]
-            losses[name] = _loss.compute_loss(ret["h_src"], ret["h_tgt"], relation_mask)
+            losses[name] = _loss.compute_loss(
+                ret["dist_matrix"],
+                target_mask,
+            )
             losses["loss"] += losses[name] * _weight
 
         self.log_dict({f"train/{key}": value for key, value in losses.items()})

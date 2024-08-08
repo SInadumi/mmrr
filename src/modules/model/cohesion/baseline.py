@@ -3,6 +3,8 @@ from omegaconf import ListConfig
 from torch import nn
 from transformers import AutoModel, PreTrainedModel
 
+from modules.model.dist import calc_4d_cosine_matrix
+
 
 class BaselineModel(nn.Module):
     """Naive Baseline Model"""
@@ -82,8 +84,11 @@ class BaselineModel(nn.Module):
         relation_logits = self.out(h).squeeze(-1).permute(0, 3, 1, 2).contiguous()
 
         source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
+        dist_matrix = calc_4d_cosine_matrix(
+            h_src.permute(0, 2, 1, 3), h_tgt.permute(0, 2, 1, 3)
+        )  # (b, seq, rel, hid) -> (b, rel, seq, seq)
 
-        return relation_logits, source_mask_logits, h_src, h_tgt
+        return relation_logits, source_mask_logits, dist_matrix
 
 
 class TokenBinaryClassificationHead(nn.Module):
