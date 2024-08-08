@@ -10,11 +10,11 @@ from utils.dataset import ObjectFeature
 class MMRefExtractor(BaseExtractor):
     def __init__(
         self,
-        cases: list[str],
+        rels: list[str],
         exophora_referent_types: list[ExophoraReferentType],
     ) -> None:
         super().__init__(exophora_referent_types)
-        self.cases: list[str] = cases
+        self.rels: list[str] = rels
 
     def extract_rels(
         self,
@@ -23,13 +23,14 @@ class MMRefExtractor(BaseExtractor):
     ) -> dict[str, list[int]]:
         all_arguments: dict[str, list[int]] = {}
 
-        for case in self.cases:
+        # TODO: Make a distinction between ≒ or not
+        for rel_type in self.rels:
             class_ids = set()
             for relation in predicate.relations:
-                if case != relation.type:
+                if rel_type != relation.type:
                     continue
                 class_ids.add(relation.classId)
-            all_arguments[case] = [
+            all_arguments[rel_type] = [
                 idx
                 for idx, c in enumerate(candidates)
                 if c.class_id.item() in list(class_ids)
@@ -38,11 +39,9 @@ class MMRefExtractor(BaseExtractor):
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:
-        return self.is_pas_target(visual_phrase.relations)
-
-    def is_pas_target(self, relations: list[dict]):
-        for rel in relations:
-            if rel.type in self.cases:
+        for rel in visual_phrase.relations:
+            # TODO: Make a distinction between ≒ or not
+            if rel.type in self.rels:
                 return True
         return False
 
