@@ -3,15 +3,12 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-from rhoknp import Document, RegexSenter
+from rhoknp import Document
 
 
 class ImageTextAugmenter:
     def __init__(self, dataset_dir: Path) -> None:
         self.dataset_dir = dataset_dir
-
-        self.senter = RegexSenter()
-
         _id2cat = json.load(open("./data/categories.json", "r", encoding="utf-8"))
         self.cat2id = {v: i for i, v in enumerate(_id2cat)}
 
@@ -21,10 +18,7 @@ class ImageTextAugmenter:
         return int(sid.split("-")[-1])
 
     def split_utterances_to_sentences(self, annotation: dict) -> dict:
-        """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理
-
-        cf.) https://rhoknp.readthedocs.io/en/stable/_modules/rhoknp/processors/senter.html
-        """
+        """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理"""
         scenario_id = annotation["scenarioId"]
         document = Document.from_knp(
             (
@@ -32,7 +26,11 @@ class ImageTextAugmenter:
             ).read_text()
         )
         dataset_info: dict = json.load(
-            open(self.dataset_dir / "recording" / scenario_id / "info.json", "r", encoding="utf-8")
+            open(
+                self.dataset_dir / "recording" / scenario_id / "info.json",
+                "r",
+                encoding="utf-8",
+            )
         )
 
         # collect sids corresponding to utterances
@@ -42,14 +40,11 @@ class ImageTextAugmenter:
         assert len(sid_mapper) == len(annotation["utterances"])
 
         # split utterances field
-        sentences = [] # [{"sid": xx, "phrases": xx}, ...]
+        sentences = []  # [{"sid": xx, "phrases": xx}, ...]
         for idx, utterance in enumerate(annotation["utterances"]):
             sids = sid_mapper[idx]
             sentences.extend(
-                [
-                    {"sid": sid, "phrases": utterance["phrases"]}
-                    for sid in sids
-                ]
+                [{"sid": sid, "phrases": utterance["phrases"]} for sid in sids]
             )
         assert len(sentences) == len(document.sentences)
 
@@ -58,8 +53,6 @@ class ImageTextAugmenter:
             s_idx = self.to_idx_from_sid(sentence.sid)  # a index of sid
             _s = sentences[s_idx]
             _s["text"] = sentence.text
-
-            ret_vis_phrase = _s["phrases"]
             if len(sentence.base_phrases) != len(_s["phrases"]):
                 # update visual phrase annotation
                 doc_phrase = [b.text for b in sentence.base_phrases]
@@ -67,7 +60,6 @@ class ImageTextAugmenter:
                 st_idx = vis_phrase.index(doc_phrase[0])
                 end_idx = st_idx + len(doc_phrase)
                 _s["phrases"] = _s["phrases"][st_idx:end_idx]
-
         annotation["utterances"] = sentences
 
         return annotation
