@@ -57,9 +57,7 @@ class MMRefExample(BaseExample):
 
             # set a parameter: "is_target"
             objects = self.sid_to_objects[base_phrase.sentence.sid]
-            mmref_base_phrase.is_target = (
-                extractor.is_target(visual_phrase) and len(objects) > 0
-            )
+            mmref_base_phrase.is_target = extractor.is_target(visual_phrase)
 
             # set parameters: "referent_candidates" and "rel2tags"
             if mmref_base_phrase.is_target:
