@@ -10,7 +10,7 @@ from cohesion_tools.task import Task
 from datamodule.example import MMRefExample
 from datasets.mmref_dataset import MMRefDataset
 from utils.annotation import PhraseAnnotation, SentenceAnnotation
-from utils.prediction import PhrasePrediction, SentencePrediction
+from utils.prediction import SentencePrediction
 from writer.mmref import SentenceJsonWriter
 
 from .base import BaseModuleMetric
@@ -167,7 +167,7 @@ class MMRefMetric(BaseModuleMetric):
     @staticmethod
     def _compute_mmref_metrics(
         dataset: MMRefDataset,
-        predicted_annotations: list[PhrasePrediction],
-        gold_annotations: list[PhrasePrediction],
+        predicted_annotations: list[SentencePrediction],
+        gold_annotations: list[SentenceAnnotation],
     ) -> dict[str, float]:
         return {}

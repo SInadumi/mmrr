@@ -37,7 +37,7 @@ class ContrastiveLoss:
         self,
         dist_matrix: torch.Tensor,  # (b, rel, seq, seq)
         target: torch.Tensor,  # (b, rel, seq, seq)
-    ) -> torch.Tensor:
+    ) -> torch.Tensor:  # ()
         dist_pos = torch.abs(self.margin_pos - dist_matrix).masked_fill(
             target == 0, 0.0
         )
@@ -57,7 +57,7 @@ class SupConLoss:
         self,
         dist_matrix: torch.Tensor,  # (b, rel, seq, seq)
         target: torch.Tensor,  # (b, rel, seq, seq)
-    ):
+    ) -> torch.Tensor:  # ()
         # cf.) https://github.com/HobbitLong/SupContrast/blob/master/losses.py
         dist_matrix = dist_matrix.view(dist_matrix.shape[0], dist_matrix.shape[1], -1)
         # -> (b, rel, seq * seq)

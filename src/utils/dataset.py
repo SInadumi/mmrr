@@ -59,10 +59,7 @@ class MMRefBasePhrase:
 
 @dataclass(frozen=True)
 class MMRefInputFeatures:
-    """A dataclass which represents a language encoder and interaction layer input
-
-    The attributes of this class correspond to arguments of forward method of each encoder
-    """
+    """A dataclass which represents a language encoder and interaction layer input"""
 
     example_id: int
     input_ids: list[int]
@@ -72,7 +69,5 @@ class MMRefInputFeatures:
     source_label: list[list[int]]  # 解析対象基本句かどうか
     vis_embeds: torch.Tensor
     vis_attention_mask: list[bool]
-    target_mask: list[
-        list[list[bool]]
-    ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）
-    target_label: list[list[list[float]]]  # source と関係を持つかどうか
+    target_mask: list[list[list[bool]]]
+    target_label: list[list[list[float]]]

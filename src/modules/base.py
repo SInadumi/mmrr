@@ -33,7 +33,7 @@ class BaseModule(pl.LightningModule, Generic[MetricType]):
                 corpus: deepcopy(metric) for corpus in test_corpora
             }
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> dict[str, Any]:
         # Split weights in two groups, one with weight decay and the other not.
         no_decay = ("bias", "LayerNorm.weight")
         optimizer_grouped_parameters = [

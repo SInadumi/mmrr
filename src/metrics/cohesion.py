@@ -173,7 +173,7 @@ class CohesionMetric(BaseModuleMetric):
         dataset: CohesionDataset,
         predicted_documents: list[Document],
         gold_documents: list[Document],
-    ):
+    ) -> dict[str, float]:
         metrics: dict[str, float] = {}
         evaluator = CohesionEvaluator(
             tasks=dataset.tasks,
