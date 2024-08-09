@@ -22,12 +22,11 @@ class MMRefExtractor(BaseExtractor):
         candidates: list[ObjectFeature],
     ) -> dict[str, list[int]]:
         all_arguments: dict[str, list[int]] = {}
-
-        # TODO: Make a distinction between ≒ or not
         for rel_type in self.rels:
+            _rel_types = self.get_rel_types([rel_type], include_nonidentical=False)
             class_ids = set()
             for relation in predicate.relations:
-                if rel_type != relation.type:
+                if relation.type not in _rel_types:
                     continue
                 class_ids.add(relation.classId)
             all_arguments[rel_type] = [
@@ -35,16 +34,22 @@ class MMRefExtractor(BaseExtractor):
                 for idx, c in enumerate(candidates)
                 if c.class_id.item() in list(class_ids)
             ]
-
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:
+        rel_types = self.get_rel_types(self.rels, include_nonidentical=False)
         for rel in visual_phrase.relations:
-            # TODO: Make a distinction between ≒ or not
-            if rel.type in self.rels:
+            if rel.type in rel_types:
                 return True
         return False
 
     @staticmethod
     def is_candidate(unit: T, predicate: T) -> bool:
         raise NotImplementedError
+
+    @staticmethod
+    def get_rel_types(rels: list[str], include_nonidentical: bool = False):
+        if include_nonidentical is True:
+            nonidentical_rels = [r + "≒" for r in rels]
+            return rels + nonidentical_rels
+        return rels
