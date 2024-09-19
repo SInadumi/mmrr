@@ -1,5 +1,11 @@
 from dataclasses import dataclass
 
+RECALL_TOP_KS = (1, 5, 10)
+CASES: list[str] = (
+    "ガ ヲ ニ ト デ カラ ヨリ ヘ マデ ガ２ ヲ２ ニ２ ト２ デ２ カラ２ ヨリ２ ヘ２ マデ２".split()
+)
+RELATION_TYPES: list[str] = CASES + "ノ ノ？ 修飾 トイウ =".split()
+
 
 @dataclass
 class F1Metric:
@@ -40,3 +46,47 @@ class F1Metric:
         if (self.tp_fp + self.tp_fn) == 0:
             return 0.0
         return (2 * self.tp) / (self.tp_fp + self.tp_fn)
+
+@dataclass
+class RecallTopkMetric:
+    """A data class to calculate and represent Recall@1, Recall@5, Recall@10"""
+    tp_fn: int = 0
+    tp_top_1: int = 0
+    tp_top_5: int = 0
+    tp_top_10: int = 0
+
+    def __add__(self, other: "RecallMetric") -> "RecallMetric":
+        return RecallMetric(
+            self.tp_fn + other.tp_fn,
+            self.tp_top_1 + other.tp_top_1,
+            self.tp_top_5 + other.tp_top_5,
+            self.tp_top_10 + other.tp_top_10,
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return (
+            (self.tp_fn == other.tp_fn)
+            and (self.tp_top_1 == other.tp_top_1)
+            and (self.tp_top_5 == other.tp_top_5)
+            and (self.tp_top_10 == other.tp_top_10)
+        )
+
+    @property
+    def recall_at_1(self) -> float:
+        if self.tp_fn == 0:
+            return 0.0
+        return self.tp_top_1 / self.tp_fn
+
+    @property
+    def recall_at_5(self) -> float:
+        if self.tp_fn == 0:
+            return 0.0
+        return self.tp_top_5 / self.tp_fn
+
+    @property
+    def recall_at_10(self) -> float:
+        if self.tp_fn == 0:
+            return 0.0
+        return self.tp_top_10 / self.tp_fn
