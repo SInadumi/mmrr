@@ -24,10 +24,9 @@ class MMRefMetric(BaseModuleMetric):
         "source_mask_logits",
     )
 
-    def __init__(self, analysis_target_threshold: float = None, topk: int = 30) -> None:
+    def __init__(self, analysis_target_threshold: float = None) -> None:
         super().__init__()
         self.analysis_target_threshold = analysis_target_threshold
-        self.topk = topk
         self.dataset: Optional[MMRefDataset] = None
         self.example_ids: torch.Tensor  # (N)
         self.relation_logits: torch.Tensor  # (N, rel, t_seq, v_seq)
@@ -84,10 +83,10 @@ class MMRefMetric(BaseModuleMetric):
             relation_prediction: np.ndarray = self.dataset.dump_relation_prediction(
                 relation_logits.cpu().numpy(), gold_example
             )
-            # (phrase, rel, topk)
+            # (phrase, rel, candidate)
             candidate_selection_prediction: np.ndarray = np.argsort(
                 -relation_prediction, axis=2
-            )[:, :, : self.topk]  # descending order
+            )  # descending order
             # (phrase, task)
             source_mask_prediction: np.ndarray = (
                 self.dataset.dump_source_mask_prediction(
