@@ -2,7 +2,7 @@ from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
-from cohesion_tools.extractors.base import BaseExtractor, T
+from .base import BaseExtractor, T
 from utils.annotation import PhraseAnnotation
 from utils.dataset import ObjectFeature
 

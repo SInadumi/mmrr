@@ -12,7 +12,7 @@ from rhoknp.cohesion import (
     Predicate,
 )
 
-from cohesion_tools.evaluators.utils import F1Metric
+from .utils import F1Metric
 
 
 class PASAnalysisEvaluator:

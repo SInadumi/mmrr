@@ -3,7 +3,7 @@ from typing import List, Union
 from rhoknp import BasePhrase
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
 
-from cohesion_tools.extractors.base import BaseExtractor, T
+from .base import BaseExtractor, T
 
 
 class CoreferenceExtractor(BaseExtractor):

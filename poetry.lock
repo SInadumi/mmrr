@@ -319,23 +319,6 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
-name = "cohesion-tools"
-version = "0.7.3"
-description = ""
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "cohesion_tools-0.7.3-py3-none-any.whl", hash = "sha256:4a9bdd7cc2aae8c1b7c215d675aaf7bc1e48cbce9c68908888f1db8bcb6fc468"},
-    {file = "cohesion_tools-0.7.3.tar.gz", hash = "sha256:6bccf516cf27828a8be4d0fc86055bb20cbd6f123cc5f006f069d77d4b724160"},
-]
-
-[package.dependencies]
-rhoknp = ">=1.5.1"
-
-[package.extras]
-eval = ["pandas (>=2.0,<3.0)", "pandas (>=2.0.3,<2.1.0)"]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -3630,4 +3613,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "199de0d540323381386c200669146161b0fc4a856a4611e312b13f1256f8892f"
+content-hash = "462e05b9f750b8d6856772154de19bbf03add4f4b8b02636e3b51375450e7b57"

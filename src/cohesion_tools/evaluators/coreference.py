@@ -5,7 +5,7 @@ import pandas as pd
 from rhoknp import BasePhrase, Document
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
 
-from cohesion_tools.evaluators.utils import F1Metric
+from .utils import F1Metric
 
 
 class CoreferenceResolutionEvaluator:

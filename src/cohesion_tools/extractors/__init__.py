@@ -1,7 +1,7 @@
-from cohesion_tools.extractors.bridging import BridgingExtractor
-from cohesion_tools.extractors.coreference import CoreferenceExtractor
-from cohesion_tools.extractors.mmref import MMRefExtractor
-from cohesion_tools.extractors.pas import PasExtractor
+from .bridging import BridgingExtractor
+from .coreference import CoreferenceExtractor
+from .mmref import MMRefExtractor
+from .pas import PasExtractor
 
 __all__ = [
     "BridgingExtractor",
