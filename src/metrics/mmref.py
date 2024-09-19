@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from rhoknp import Document
 
-from cohesion_tools.evaluators.utils import F1Metric
+from cohesion_tools.evaluators.mmref import MMRefEvaluator, MMRefScore
+from cohesion_tools.evaluators.utils import F1Metric, RECALL_TOP_KS
 from cohesion_tools.task import Task
 from datamodule.example import MMRefExample
 from datasets.mmref_dataset import MMRefDataset
@@ -169,4 +170,29 @@ class MMRefMetric(BaseModuleMetric):
         predicted_annotations: list[SentencePrediction],
         gold_annotations: list[SentenceAnnotation],
     ) -> dict[str, float]:
-        return {}
+        metrics: dict[str, float] = {}
+        evaluator = MMRefEvaluator(
+            tasks=dataset.tasks,
+            pas_cases=self.cases
+        )
+        score: MMRefScore = evaluator.run(
+            gold_annotations=gold_annotations, predicted_annotations=predicted_annotations
+        )
+
+        for task_str, analysis_type_to_metric in score.to_dict().items():
+            for analysis_type, metric in analysis_type_to_metric.items():
+                key = task_str
+                if analysis_type != "all":
+                    key += f"_{analysis_type}"
+                metrics[key + "_tp_fn"] = metric.tp_fn
+                for recall_top_k in RECALL_TOP_KS:
+                    _func_name =f"recall_at_{recall_top_k}"
+                    metrics[key + f"_recall@{recall_top_k}"] = metric.eval(_func_name)
+        for recall_top_k in RECALL_TOP_KS:
+            _metric_name = f"recall@{recall_top_k}"
+            metrics[f"mmref_{_metric_name}"] = mean(
+                metrics[key]
+                for key in (f"vis_pas_{_metric_name}", f"vis_coref_{_metric_name}")
+                if key in metrics
+            )
+        return metrics
