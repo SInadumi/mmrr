@@ -37,12 +37,15 @@ class VisCoreferenceResolutionEvaluator:
             ]
             if len(_gold_coref_relations) == 0:
                 continue
-            assert len(predicted_mention.relations) == 1
-            assert predicted_mention.relations[0].type == self.rel
 
-            candidates: list[BoundingBoxPrediction] = predicted_mention.relations[
-                0
-            ].bounding_box
+            # NOTE: `is_target==False` ならば `len(candidates)==0`
+            candidates: list[BoundingBoxPrediction] = []
+            if len(predicted_mention.relations) == 1:
+                assert predicted_mention.relations[0].type == self.rel
+                candidates = predicted_mention.relations[0].bounding_box
+            elif len(predicted_mention.relations) > 1:
+                raise ValueError
+
             key = (f"{idx}:{predicted_mention.text}", self.rel)
 
             # Compute recall
@@ -51,8 +54,15 @@ class VisCoreferenceResolutionEvaluator:
                 local_comp_result[key] = f"{self.rel}:{_metric_name}"
                 metrics.loc[self.rel, _metric_name].tp_fn += 1
                 for rel in _gold_coref_relations:
+
+                    _topk = recall_top_k
+                    if len(candidates) == 0:
+                        break
+                    elif len(candidates) < recall_top_k:
+                        _topk = len(candidates)
+
                     if rel.classId in set(
-                        int(c.class_id) for c in candidates[:recall_top_k]
+                        int(c.class_id) for c in candidates[:_topk]
                     ):
                         metrics.loc[self.rel, _metric_name].tp += 1
                         break

@@ -37,16 +37,17 @@ class VisPASAnalysisEvaluator:
         for idx, (predicted_mention, gold_mention) in enumerate(
             zip(predicted_phrases, gold_phrases)
         ):
+            # NOTE: `is_target==False` ならば candidatesは空集合
+            candidates: dict[str, list[BoundingBoxPrediction]] = {}
             for rel_pred in predicted_mention.relations:
-                pas_case = rel_pred.type
-                assert pas_case in self.cases
+                candidates[rel_pred.type] = rel_pred.bounding_box
+
+            for pas_case in self.cases:
                 _gold_case_relations = [
                     rel for rel in gold_mention.relations if rel.type == pas_case
                 ]
                 if len(_gold_case_relations) == 0:
                     continue
-
-                candidates: list[BoundingBoxPrediction] = rel_pred.bounding_box
                 key = (f"{idx}:{predicted_mention.text}", pas_case)
 
                 # Compute recall
@@ -55,8 +56,15 @@ class VisPASAnalysisEvaluator:
                     local_comp_result[key] = f"{pas_case}:{_metric_name}"
                     metrics.loc[pas_case, _metric_name].tp_fn += 1
                     for rel in _gold_case_relations:
+
+                        _topk = recall_top_k
+                        if not (pas_case in candidates) or len(candidates[pas_case]) == 0:
+                            break
+                        elif len(candidates[pas_case]) < recall_top_k:
+                            _topk = len(candidates[pas_case])
+
                         if rel.classId in set(
-                            int(c.class_id) for c in candidates[:recall_top_k]
+                            int(c.class_id) for c in candidates[pas_case][:_topk]
                         ):
                             metrics.loc[pas_case, _metric_name].tp += 1
                             break

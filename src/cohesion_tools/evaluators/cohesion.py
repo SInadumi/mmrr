@@ -11,11 +11,11 @@ from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
+from ..task import Task
 from .bridging import BridgingReferenceResolutionEvaluator
 from .coreference import CoreferenceResolutionEvaluator
 from .pas import PASAnalysisEvaluator
 from .utils import F1Metric
-from ..task import Task
 
 
 class CohesionEvaluator:

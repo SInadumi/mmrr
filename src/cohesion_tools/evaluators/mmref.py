@@ -1,23 +1,27 @@
+import io
 from dataclasses import dataclass
 from functools import reduce
 from operator import add
-from typing import Collection, Optional, Sequence, Union
+from pathlib import Path
+from typing import Collection, Optional, Sequence, TextIO, Union
 
 import pandas as pd
 
 from utils.annotation import SentenceAnnotation
 from utils.prediction import SentencePrediction
 
-from .utils import CASES, F1Metric
+from ..task import Task
+from .utils import F1Metric
 from .vis_coreference import VisCoreferenceResolutionEvaluator
 from .vis_pas import VisPASAnalysisEvaluator
-from .task import Task
+
 
 class MMRefEvaluator:
     """A data class to evaluate multi-modal reference resolution
+
     Args:
-        tasks: 評価の対象とするタスク
-        pas_cases: 評価対象の格
+    tasks: 評価の対象とするタスク
+    pas_cases: 評価対象の格
     """
 
     def __init__(
@@ -26,9 +30,8 @@ class MMRefEvaluator:
         pas_cases: Collection[str],
     ) -> None:
         self.tasks: list[Task] = list(map(Task, tasks))
-        self.pas_cases: list[str] = list(rels)
-        cases: list[str] = [rel for rel in self.rels if rel in CASES]
-        self.pas_evaluator = VisPASAnalysisEvaluator(cases)
+        self.pas_cases: list[str] = list(pas_cases)
+        self.pas_evaluator = VisPASAnalysisEvaluator(pas_cases)
         self.coreference_evaluator = VisCoreferenceResolutionEvaluator()
 
     def run(
@@ -50,18 +53,35 @@ class MMRefEvaluator:
         predicted_annotation: SentencePrediction,
         gold_annotation: SentenceAnnotation,
     ) -> "MMRefScore":
-        assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
+        if Task.VIS_PAS_ANALYSIS in self.tasks:
+            _pred_annot_phrases = [
+                phrase
+                for phrase in predicted_annotation.phrases
+                if phrase.task is Task.VIS_PAS_ANALYSIS
+            ]
+            assert len(_pred_annot_phrases) == len(gold_annotation.phrases)
+            pas_metrics = self.pas_evaluator.run(
+                sid=gold_annotation.sid,
+                predicted_phrases=_pred_annot_phrases,
+                gold_phrases=gold_annotation.phrases,
+            )
+        else:
+            pas_metrics = None
 
-        pas_metrics = (
-            self.pas_evaluator.run(predicted_annotation, gold_annotation)
-            if Task.VIS_PAS_ANALYSIS in self.tasks
-            else None
-        )
-        coreference_metrics = (
-            self.coreference_evaluator.run(predicted_annotation, gold_annotation)
-            if Task.VIS_COREFERENCE_RESOLUTION in self.tasks
-            else None
-        )
+        if Task.VIS_COREFERENCE_RESOLUTION in self.tasks:
+            _pred_annot_phrases = [
+                phrase
+                for phrase in predicted_annotation.phrases
+                if phrase.task is Task.VIS_COREFERENCE_RESOLUTION
+            ]
+            assert len(_pred_annot_phrases) == len(gold_annotation.phrases)
+            coreference_metrics = self.coreference_evaluator.run(
+                sid=gold_annotation.sid,
+                predicted_phrases=_pred_annot_phrases,
+                gold_phrases=gold_annotation.phrases,
+            )
+        else:
+            coreference_metrics = None
 
         return MMRefScore(pas_metrics, coreference_metrics)
 
@@ -77,10 +97,12 @@ class MMRefScore:
         df_all = pd.DataFrame(index=["vis_pas"])
         if self.pas_metrics is not None:
             df_pas: pd.DataFrame = self.pas_metrics.copy()
+            df_all = pd.concat([df_pas, df_all])
             df_all.loc["vis_pas"] = df_pas.sum(axis=0)
         if self.coreference_metrics is not None:
             df_coref = self.coreference_metrics.copy()
-            df_all["vis_coref"] = df_coref
+            df_all = pd.concat([df_all, df_coref])
+            df_all.loc["vis_coref"] = df_coref.sum(axis=0)
 
         return {
             k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)}
@@ -93,19 +115,44 @@ class MMRefScore:
         Args:
             destination (Union[str, Path, TextIO]): 書き出す先
         """
+        lines = []
+        for rel_type, analysis_type_to_metric in self.to_dict().items():
+            lines.append(rel_type)
+            for analysis_type, metric in analysis_type_to_metric.items():
+                lines.append(f"  {analysis_type}")
+                lines.append(
+                    f"    recall   : {metric.recall:.4f} ({metric.tp}/{metric.tp_fn})"
+                )
+        text = "\n".join(lines) + "\n"
 
-        # TODO: WIP
-        pass
+        if isinstance(destination, (Path, str)):
+            Path(destination).write_text(text)
+        elif isinstance(destination, io.TextIOBase):
+            destination.write(text)
 
-    def export_txt(self, destination: Union[str, Path, TextIO], sep: str = ",") -> None:
+    def export_csv(self, destination: Union[str, Path, TextIO], sep: str = ",") -> None:
         """Export the evaluation results in a csv format.
 
         Args:
             destination: 書き出す先
             sep: 区切り文字 (default: ',')
         """
-        # TODO: WIP
-        pass
+        result_dict = self.to_dict()
+        text = "task" + sep
+        columns: list[str] = list(result_dict["pas"].keys())
+        text += sep.join(columns) + "\n"
+        for task, measures in result_dict.items():
+            text += task + sep
+            text += sep.join(
+                f"{measures[column].f1:.6}" if column in measures else ""
+                for column in columns
+            )
+            text += "\n"
+
+        if isinstance(destination, (Path, str)):
+            Path(destination).write_text(text)
+        elif isinstance(destination, io.TextIOBase):
+            destination.write(text)
 
     def __add__(self, other: "MMRefScore") -> "MMRefScore":
         if self.pas_metrics is not None:
