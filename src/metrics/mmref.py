@@ -6,7 +6,7 @@ import torch
 from rhoknp import Document
 
 from cohesion_tools.evaluators.mmref import MMRefEvaluator, MMRefScore
-from cohesion_tools.evaluators.utils import F1Metric, RECALL_TOP_KS
+from cohesion_tools.evaluators.utils import RECALL_TOP_KS, F1Metric
 from cohesion_tools.task import Task
 from datamodule.example import MMRefExample
 from datasets.mmref_dataset import MMRefDataset
@@ -171,12 +171,10 @@ class MMRefMetric(BaseModuleMetric):
         gold_annotations: list[SentenceAnnotation],
     ) -> dict[str, float]:
         metrics: dict[str, float] = {}
-        evaluator = MMRefEvaluator(
-            tasks=dataset.tasks,
-            pas_cases=self.cases
-        )
+        evaluator = MMRefEvaluator(tasks=dataset.tasks, pas_cases=dataset.cases)
         score: MMRefScore = evaluator.run(
-            gold_annotations=gold_annotations, predicted_annotations=predicted_annotations
+            gold_annotations=gold_annotations,
+            predicted_annotations=predicted_annotations,
         )
 
         for task_str, analysis_type_to_metric in score.to_dict().items():
@@ -184,10 +182,10 @@ class MMRefMetric(BaseModuleMetric):
                 key = task_str
                 if analysis_type != "all":
                     key += f"_{analysis_type}"
-                metrics[key + "_tp_fn"] = metric.tp_fn
-                for recall_top_k in RECALL_TOP_KS:
-                    _func_name =f"recall_at_{recall_top_k}"
-                    metrics[key + f"_recall@{recall_top_k}"] = metric.eval(_func_name)
+                metrics[key + "_tp_fn"] = (
+                    metric.tp_fn
+                )  # FIXME: This is redundant variable.
+                metrics[key] = metric.recall
         for recall_top_k in RECALL_TOP_KS:
             _metric_name = f"recall@{recall_top_k}"
             metrics[f"mmref_{_metric_name}"] = mean(
