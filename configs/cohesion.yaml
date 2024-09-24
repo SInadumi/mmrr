@@ -1,8 +1,8 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping, model_checkpoint, model_summary, lr_monitor]
+  - callbacks: [early_stopping_cohesion, model_checkpoint, model_summary, lr_monitor]
   - datamodule: cohesion_all
-  - logger: wandb
+  - logger: cohesion
   - model: cohesion_baseline
   - module: cohesion
   - optimizer: adamw

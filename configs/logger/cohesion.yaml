@@ -1,7 +1,7 @@
 _target_: pytorch_lightning.loggers.WandbLogger
 name: ${config_name}_${name}
 save_dir: ${save_dir}
-project: ${oc.env:WANDB_PROJECT,cl_mmref}
+project: ${project_name}
 log_model: false
 group: ${config_name}_${name}
 tags:

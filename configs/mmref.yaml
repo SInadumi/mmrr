@@ -2,7 +2,7 @@ defaults:
   - base.yaml
   - callbacks: [early_stopping_mmref, model_checkpoint, model_summary, lr_monitor]
   - datamodule: mmref_all
-  - logger: wandb
+  - logger: mmref
   - model: mmref_baseline
   - module: mmref
   - optimizer: adamw
