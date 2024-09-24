@@ -1,6 +1,6 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping, model_checkpoint, model_summary, progress_bar]
+  - callbacks: [early_stopping_mmref, model_checkpoint, model_summary, progress_bar]
   - datamodule: mmref_all
   - logger: null
   - model: mmref_baseline

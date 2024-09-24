@@ -1,9 +1,9 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping, model_checkpoint, model_summary, lr_monitor]
+  - callbacks: [early_stopping_mmref, model_checkpoint, model_summary, lr_monitor]
   - datamodule: mmref_all
   - logger: wandb
-  - model: null
+  - model: mmref_baseline
   - module: mmref
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup
@@ -11,7 +11,7 @@ defaults:
   - _self_
 
 dataset_path: ./data
-max_seq_length: 256
+max_seq_length: 64
 vis_max_seq_length: 256
 vis_emb_size: 1024
 model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
