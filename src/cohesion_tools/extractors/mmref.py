@@ -2,9 +2,10 @@ from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
-from .base import BaseExtractor, T
 from utils.annotation import PhraseAnnotation
 from utils.dataset import ObjectFeature
+
+from .base import BaseExtractor, T
 
 
 class MMRefExtractor(BaseExtractor):
@@ -48,8 +49,9 @@ class MMRefExtractor(BaseExtractor):
         raise NotImplementedError
 
     @staticmethod
-    def get_rel_types(rels: list[str], include_nonidentical: bool = False):
+    def get_rel_types(rels: list[str], include_nonidentical: bool = False) -> list[str]:
         if include_nonidentical is True:
+            # NOTE: 総称名詞を解析に含める
             nonidentical_rels = [r + "≒" for r in rels]
             return rels + nonidentical_rels
         return rels

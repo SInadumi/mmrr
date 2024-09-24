@@ -58,7 +58,7 @@ class VisPASAnalysisEvaluator:
                     for rel in _gold_case_relations:
 
                         _topk = recall_top_k
-                        if not (pas_case in candidates) or len(candidates[pas_case]) == 0:
+                        if pas_case not in candidates or len(candidates[pas_case]) == 0:
                             break
                         elif len(candidates[pas_case]) < recall_top_k:
                             _topk = len(candidates[pas_case])
