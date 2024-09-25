@@ -3,7 +3,7 @@ from rhoknp.cohesion import (
 )
 
 from utils.annotation import PhraseAnnotation
-from utils.dataset import ObjectFeature
+from utils.prediction import ObjectFeature
 
 from .base import BaseExtractor, T
 

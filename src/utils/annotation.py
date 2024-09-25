@@ -1,3 +1,5 @@
+from typing import Optional
+
 # https://docs.pydantic.dev/latest/
 from pydantic.dataclasses import (
     dataclass,
@@ -28,6 +30,7 @@ class UtteranceInfo(CamelCaseDataClassJsonMixin):
         # zero origin
         return (int(self.image_ids[0]) - 1, int(self.image_ids[-1]) - 1)
 
+
 @dataclass
 class DatasetInfo(CamelCaseDataClassJsonMixin):
     scenario_id: str
@@ -49,6 +52,7 @@ class Phrase2ObjectRelation(CamelCaseDataClassJsonMixin):
     type: str  # ガ, ヲ, ニ, ノ, =, etc...
     instanceId: str
     classId: int
+    boundingBox: Optional[list[BoundingBox]] = None  # 発話区間に含まれる bboxes
 
 
 @dataclass(frozen=True)

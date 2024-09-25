@@ -22,12 +22,16 @@ from cohesion_tools.extractors import MMRefExtractor
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from datamodule.example import MMRefExample
-from utils.annotation import DatasetInfo, ImageTextAnnotation, PhraseAnnotation
+from utils.annotation import (
+    DatasetInfo,
+    ImageTextAnnotation,
+    PhraseAnnotation,
+)
 from utils.dataset import (
     MMRefBasePhrase,
     MMRefInputFeatures,
-    ObjectFeature,
 )
+from utils.prediction import ObjectFeature
 from utils.sub_document import to_orig_doc_id
 from utils.util import IGNORE_INDEX, sigmoid
 
@@ -102,6 +106,7 @@ class MMRefDataset(BaseDataset):
 
         # visual annotations tailored for documents
         self.doc_id2vis: dict[str, list[PhraseAnnotation]] = {}
+        self.doc_id2img: dict[str, list[ImageTextAnnotation]] = {}
         for document in self.documents:
             # sub_doc_id -> orig_doc_id
             orig_doc_id = to_orig_doc_id(document.doc_id)
@@ -113,7 +118,9 @@ class MMRefDataset(BaseDataset):
                     continue
                 base_phrases_to_vis.extend(utterance.phrases)
             self.doc_id2vis.update({document.doc_id: base_phrases_to_vis})
-
+            self.doc_id2img.update(
+                {document.doc_id: visual_annotation[orig_doc_id].images}
+            )
         self.examples: list[MMRefExample] = self._load_examples(
             self.documents, str(data_path)
         )
@@ -305,12 +312,7 @@ class MMRefDataset(BaseDataset):
     ) -> MMRefBasePhrase:
         emb_size: torch.Size = self.vis_emb_size
         max_seq_length: int = self.vis_max_seq_length
-        pad_mask: ObjectFeature = ObjectFeature(
-            class_id=torch.Tensor([-1.0]),
-            score=torch.Tensor([0.0]),
-            bbox=torch.zeros(4),
-            feature=torch.zeros(emb_size),
-        )
+        pad_mask: ObjectFeature = ObjectFeature(feature=torch.zeros(emb_size))
         all_candidates += [pad_mask] * (max_seq_length - len(all_candidates))
         return all_candidates
 

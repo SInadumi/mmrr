@@ -3,6 +3,8 @@ from typing import Optional
 
 import torch
 
+from .prediction import ObjectFeature
+
 
 @dataclass
 class CohesionBasePhrase:
@@ -35,15 +37,6 @@ class CohesionInputFeatures:
     ]  # source と関係を持つ候補かどうか（後ろと共参照はしないなど）
     source_label: list[list[int]]  # 解析対象基本句かどうか
     target_label: list[list[list[float]]]  # source と関係を持つかどうか
-
-
-@dataclass(frozen=True)
-class ObjectFeature:
-    class_id: torch.Tensor
-    score: torch.Tensor
-    bbox: torch.Tensor
-    feature: torch.Tensor
-
 
 @dataclass
 class MMRefBasePhrase:

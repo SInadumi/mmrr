@@ -6,9 +6,9 @@ from cohesion_tools.task import Task
 from datamodule.example import MMRefExample
 from datasets.mmref_dataset import MMRefDataset
 from utils.annotation import PhraseAnnotation, SentenceAnnotation
-from utils.dataset import ObjectFeature
 from utils.prediction import (
     BoundingBoxPrediction,
+    ObjectFeature,
     PhrasePrediction,
     RelationPrediction,
     SentencePrediction,
@@ -116,6 +116,7 @@ class SentenceJsonWriter:
                             bbox = pred.bbox.tolist()
                             bbox_predictions.append(
                                 BoundingBoxPrediction(
+                                    image_id=pred.image_id,
                                     class_id=pred.class_id.item(),
                                     rect=Rectangle(
                                         x1=bbox[0], y1=bbox[1], x2=bbox[2], y2=bbox[3]

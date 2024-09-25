@@ -3,7 +3,8 @@ from rhoknp import BasePhrase, Document
 from cohesion_tools.extractors.base import BaseExtractor
 from cohesion_tools.task import Task
 from utils.annotation import PhraseAnnotation
-from utils.dataset import MMRefBasePhrase, ObjectFeature
+from utils.dataset import MMRefBasePhrase
+from utils.prediction import ObjectFeature
 
 from .base import BaseExample
 
@@ -77,6 +78,7 @@ class MMRefExample(BaseExample):
             for idx, class_id in enumerate(objs["classes"]):
                 ret.append(
                     ObjectFeature(
+                        image_id=objs["image_id"],
                         class_id=class_id,
                         score=objs["scores"][idx],
                         bbox=objs["boxes"][idx],

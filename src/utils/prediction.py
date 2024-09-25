@@ -1,12 +1,26 @@
 from dataclasses import dataclass
 
+import torch
+
 from cohesion_tools.task import Task
 from utils.annotation import ImageInfo
 from utils.util import CamelCaseDataClassJsonMixin, Rectangle
 
+DEFAULT_VIS_EMB_SIZE = 1024
+
+
+@dataclass(frozen=True)
+class ObjectFeature:
+    image_id: int = -1
+    class_id: torch.Tensor = torch.Tensor([-1.0])
+    score: torch.Tensor = torch.Tensor([0.0])
+    bbox: torch.Tensor = torch.zeros(4)
+    feature: torch.Tensor = torch.zeros(DEFAULT_VIS_EMB_SIZE)
+
 
 @dataclass(eq=True)
 class BoundingBoxPrediction(CamelCaseDataClassJsonMixin):
+    image_id: int
     class_id: int
     rect: Rectangle
     confidence: float
