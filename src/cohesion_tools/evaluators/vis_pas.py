@@ -2,10 +2,10 @@ from typing import Collection
 
 import pandas as pd
 
-from utils.annotation import PhraseAnnotation
+from utils.annotation import BoundingBox, PhraseAnnotation
 from utils.prediction import BoundingBoxPrediction, PhrasePrediction
 
-from .utils import RECALL_TOP_KS, F1Metric
+from .utils import IOU_THRESHOLD, RECALL_TOP_KS, F1Metric, box_iou
 
 
 class VisPASAnalysisEvaluator:
@@ -16,7 +16,7 @@ class VisPASAnalysisEvaluator:
         cases: Collection[str],
     ) -> None:
         self.comp_result: dict[tuple, str] = {}
-        # NOTE: 現在の実装では非総称名詞は評価の対象外 (e.g. "ガ≒", "ヲ≒", "ニ≒", ...)
+        # NOTE: 現在の実装では総称名詞は評価の対象外 (e.g. "ガ≒", "ヲ≒", "ニ≒", ...)
         self.cases: list[str] = list(cases)
         self.analysis: dict[int, str] = {k: f"recall@{k}" for k in RECALL_TOP_KS}
 
@@ -51,22 +51,29 @@ class VisPASAnalysisEvaluator:
                 key = (f"{idx}:{predicted_mention.text}", pas_case)
 
                 # Compute recall
-                # 正解が複数ある場合、そのうち一つが当てられていればそれを正解に採用
                 for recall_top_k, _metric_name in self.analysis.items():
                     local_comp_result[key] = f"{pas_case}:{_metric_name}"
-                    metrics.loc[pas_case, _metric_name].tp_fn += 1
                     for rel in _gold_case_relations:
-
                         _topk = recall_top_k
-                        if pas_case not in candidates or len(candidates[pas_case]) == 0:
+                        if pas_case not in candidates:
                             break
                         elif len(candidates[pas_case]) < recall_top_k:
                             _topk = len(candidates[pas_case])
 
-                        if rel.classId in set(
-                            int(c.class_id) for c in candidates[pas_case][:_topk]
-                        ):
-                            metrics.loc[pas_case, _metric_name].tp += 1
-                            break
+                        if rel.boundingBox is None:
+                            # NOTE: Skip an out of span instance
+                            continue
+                        metrics.loc[pas_case, _metric_name].tp_fn += len(rel.boundingBox)
+                        metrics.loc[pas_case, _metric_name].tp += self._eval_group_iou(rel.boundingBox, candidates[pas_case][:_topk])
+
         self.comp_result.update({(sid, *k): v for k, v in local_comp_result.items()})
         return metrics
+
+    @staticmethod
+    def _eval_group_iou(gold_bboxes: list[BoundingBox], candidates: list[BoundingBoxPrediction]) -> int:
+        cnt = 0
+        for gold_bbox in gold_bboxes:
+            group_iou = [idx for idx, c in enumerate(candidates) if box_iou(gold_bbox.rect, c.rect) > IOU_THRESHOLD]
+            if len(group_iou) > 0:
+                cnt += 1
+        return cnt

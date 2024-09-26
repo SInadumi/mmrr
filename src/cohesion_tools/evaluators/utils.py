@@ -1,10 +1,20 @@
 from dataclasses import dataclass
 
+from utils.annotation import Rectangle
+
 RECALL_TOP_KS = (1, 5, 10)
+IOU_THRESHOLD = 0.5
 CASES: list[str] = (
     "ガ ヲ ニ ト デ カラ ヨリ ヘ マデ ガ２ ヲ２ ニ２ ト２ デ２ カラ２ ヨリ２ ヘ２ マデ２".split()
 )
 RELATION_TYPES: list[str] = CASES + "ノ ノ？ 修飾 トイウ =".split()
+
+
+def box_iou(box1: Rectangle, box2: Rectangle) -> float:
+    if box1.area == 0 or box2.area == 0:
+        return 0
+    intersect: int = (box1 & box2).area
+    return intersect / (box1.area + box2.area - intersect)
 
 
 @dataclass
