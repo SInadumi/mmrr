@@ -115,10 +115,7 @@ class ImageTextAugmenter:
                 encoding="utf-8",
             )
         )
-        if len(dataset_info["utterances"]) != len(annotation["utterances"]):
-            print(len(dataset_info["utterances"]))
-            print("=============================================")
-            print(len(annotation["utterances"]))
+
         assert len(dataset_info["utterances"]) == len(annotation["utterances"])
         a_utterances = annotation["utterances"]
         d_utterances = dataset_info["utterances"]
@@ -179,7 +176,7 @@ def main():
     parser.add_argument("OUTPUT", type=str, help="path to output dir")
     parser.add_argument("--id", type=str, help="path to id")
     parser.add_argument(
-        "--image-span", type=str, default="prev-next", help="phrase-grounding range"
+        "--image-span", type=str, default="current", help="phrase-grounding range"
     )
 
     args = parser.parse_args()
