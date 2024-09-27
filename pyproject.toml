@@ -46,12 +46,15 @@ module = "pandas-stubs.*"
 ignore_errors = true
 
 [tool.poetry]
-name = "cl-mmref"
+name = "cl_mmref"
 version = "0.1.0"
 description = "Region-Phrase Contrastive Learning for Multimodal Reference Resolution"
 authors = ["SInadumi <inazumi19@icloud.com>"]
 readme = "README.md"
-package-mode=false
+package-mode=true
+packages = [
+    { include = "cl_mmref", from = "src" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
