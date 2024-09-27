@@ -1,3 +1,4 @@
+# Copyright (c) 2020, Nobuhiro Ueda
 import re
 
 # ---------- word module|word feature tagging ----------

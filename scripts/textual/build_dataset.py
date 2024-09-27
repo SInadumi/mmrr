@@ -1,3 +1,4 @@
+# Copyright (c) 2020, Nobuhiro Ueda
 import logging
 import multiprocessing as mp
 import textwrap

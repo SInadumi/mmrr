@@ -1,0 +1,232 @@
+# Copyright (c) 2024, Nobuhiro Ueda
+import argparse
+import shutil
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+from flickr30k_entities import Annotation, Sentence
+from rhoknp import KNP, Jumanpp
+from rhoknp import Sentence as KNPSentence
+from src.utils.annotation import (
+    BoundingBox,
+    DatasetInfo,
+    ImageAnnotation,
+    ImageInfo,
+    ImageTextAnnotation,
+    Phrase2ObjectRelation,
+    PhraseAnnotation,
+    Rectangle,
+    SentenceAnnotation,
+    UtteranceInfo,
+)
+from tqdm import tqdm
+
+jumanpp = Jumanpp()
+knp = KNP(options=["-tab", "-dpnd-fast"])
+# kwja = KWJA(options=["--tasks", "word", "--model-size", "large", "--input-format", "jumanpp"])
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--flickr-id-file", type=Path, help="Path to Flickr30k ID file."
+    )
+    parser.add_argument(
+        "--flickr-image-dir", type=str, help="Path to flickr image directory."
+    )
+    parser.add_argument(
+        "--flickr-annotations-dir",
+        type=str,
+        help="Path to flickr Annotations directory.",
+    )
+    parser.add_argument(
+        "--flickr-sentences-dir", type=str, help="Path to flickr Sentences directory."
+    )
+    parser.add_argument("--output-dir", "-o", type=str, help="Path to output dir")
+    args = parser.parse_args()
+
+    flickr_ids = args.flickr_id_file.read_text().splitlines()
+    flickr_image_dir = Path(args.flickr_image_dir)
+    flickr_annotations_dir = Path(args.flickr_annotations_dir)
+    flickr_sentences_dir = Path(args.flickr_sentences_dir)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(exist_ok=True)
+    dataset_dir = output_dir / "info"
+    dataset_dir.mkdir(exist_ok=True)
+    knp_dir = output_dir / "knp"
+    knp_dir.mkdir(exist_ok=True)
+    annotation_dir = output_dir / "image_text_annotation"
+    annotation_dir.mkdir(exist_ok=True)
+    id_dir = output_dir / "id"
+    id_dir.mkdir(exist_ok=True)
+
+    scenario_ids: list[str] = []
+    for flickr_image_id in tqdm(flickr_ids):
+        flickr_annotation_file = flickr_annotations_dir / f"{flickr_image_id}.xml"
+        flickr_sentences_file = flickr_sentences_dir / f"{flickr_image_id}.txt"
+        flickr_annotation = Annotation.from_xml(
+            ET.parse(flickr_annotation_file).getroot()
+        )
+        flickr_sentences = []
+        for flickr_sentence in flickr_sentences_file.read_text().splitlines():
+            sentence = Sentence.from_string(flickr_sentence)
+            assert flickr_sentence == sentence.to_string()
+            flickr_sentences.append(sentence)
+        scenario_ids += convert_flickr(
+            f"{int(flickr_image_id):010d}",
+            flickr_annotation,
+            flickr_sentences,
+            flickr_image_dir,
+            dataset_dir,
+            annotation_dir,
+            knp_dir,
+        )
+    id_dir.joinpath(args.flickr_id_file.name).write_text("\n".join(scenario_ids) + "\n")
+
+
+def convert_flickr(
+    flickr_image_id: str,
+    flickr_annotation: Annotation,
+    flickr_sentences: list[Sentence],
+    flickr_image_dir: Path,
+    dataset_dir: Path,
+    annotation_dir: Path,
+    knp_dir: Path,
+) -> list[str]:
+    scenario_ids: list[str] = []
+    instance_id_to_class_name = {}
+    for flickr_sentence in flickr_sentences:
+        for phrase in flickr_sentence.phrases:
+            instance_id_to_class_name[str(phrase.phrase_id)] = phrase.phrase_type
+    instance_id_to_bounding_box = {
+        obj.name: (
+            BoundingBox(
+                imageId=flickr_image_id,
+                instanceId=obj.name,
+                rect=Rectangle(
+                    x1=obj.bndbox.xmin,
+                    y1=obj.bndbox.ymin,
+                    x2=obj.bndbox.xmax,
+                    y2=obj.bndbox.ymax,
+                ),
+                className=instance_id_to_class_name.get(
+                    obj.name, ""
+                ),  # Some objects are not referred in the sentence
+            )
+            if obj.bndbox is not None
+            else None
+        )
+        for obj in flickr_annotation.objects
+    }
+
+    for idx, flickr_sentence in enumerate(flickr_sentences):
+        scenario_id = f"{flickr_image_id}{idx:02d}"
+        image_dir: Path = dataset_dir / scenario_id / "images"
+        image_dir.mkdir(parents=True, exist_ok=True)
+        dataset_info = DatasetInfo(
+            scenario_id=scenario_id,
+            utterances=[
+                UtteranceInfo(
+                    text=flickr_sentence.text,
+                    sids=[f"{flickr_image_id}{idx:02d}-00"],
+                    start=0,
+                    end=1,
+                    duration=1,
+                    speaker="",
+                    image_ids=[flickr_image_id],
+                )
+            ],
+            images=[
+                ImageInfo(
+                    id=flickr_image_id,
+                    path=f"images/{flickr_image_id}.jpg",
+                    time=0,
+                )
+            ],
+        )
+        dataset_dir.joinpath(scenario_id, "info.json").write_text(
+            dataset_info.to_json(ensure_ascii=False, indent=2)
+        )
+
+        morphemes = []
+        phrase_to_morpheme_global_indices = {}
+        cursor = 0
+        for phrase in flickr_sentence.phrases:
+            chunk = flickr_sentence.text[cursor : phrase.span[0]]
+            if chunk:
+                morphemes += jumanpp.apply_to_sentence(chunk).morphemes
+            sent = jumanpp.apply_to_sentence(phrase.text)
+            phrase_to_morpheme_global_indices[phrase] = list(
+                range(len(morphemes), len(morphemes) + len(sent.morphemes))
+            )
+            morphemes += sent.morphemes
+            cursor = phrase.span[1]
+        if flickr_sentence.text[cursor:]:
+            morphemes += jumanpp.apply_to_sentence(
+                flickr_sentence.text[cursor:]
+            ).morphemes
+        knp_sentence = KNPSentence()
+        knp_sentence.morphemes = morphemes
+        knp_sentence.sent_id = f"{scenario_id}-00"
+        knp_sentence.doc_id = scenario_id
+        # knp_sentence = kwja.apply_to_document(Document.from_sentences([knp_sentence]))
+        knp_sentence = knp.apply_to_sentence(knp_sentence)
+        for morpheme in knp_sentence.morphemes:
+            morpheme.semantics.clear()
+            morpheme.semantics.nil = True
+            morpheme.features.clear()
+        for knp_phrase in knp_sentence.phrases:
+            knp_phrase.features.clear()
+        knp_dir.joinpath(f"{scenario_id}.knp").write_text(knp_sentence.to_knp())
+
+        instance_ids: list[str] = []
+        for phrase in flickr_sentence.phrases:
+            instance_id = str(phrase.phrase_id)
+            if instance_id not in instance_ids:
+                instance_ids.append(instance_id)
+        phrases: list[PhraseAnnotation] = [
+            PhraseAnnotation(text=base_phrase.text, relations=[])
+            for base_phrase in knp_sentence.base_phrases
+        ]
+        # タグを構成する形態素を含む基本句のうち最も後ろにある基本句をタグとして採用
+        for (
+            phrase,
+            morpheme_global_indices,
+        ) in phrase_to_morpheme_global_indices.items():
+            last_morpheme = knp_sentence.morphemes[morpheme_global_indices[-1]]
+            phrase_annotation = phrases[last_morpheme.base_phrase.global_index]
+            phrase_annotation.relations.append(
+                Phrase2ObjectRelation(type="=", instanceId=str(phrase.phrase_id))
+            )
+        image_text_annotation = ImageTextAnnotation(
+            scenarioId=scenario_id,
+            utterances=[
+                SentenceAnnotation(
+                    sid=scenario_id, text=flickr_sentence.text, phrases=phrases
+                )
+            ],
+            images=[
+                ImageAnnotation(
+                    imageId=flickr_image_id,
+                    boundingBoxes=[
+                        instance_id_to_bounding_box[instance_id]  # type: ignore
+                        for instance_id in instance_ids
+                        if instance_id_to_bounding_box.get(instance_id) is not None
+                    ],
+                )
+            ],
+        )
+        annotation_dir.joinpath(f"{scenario_id}.json").write_text(
+            image_text_annotation.to_json(ensure_ascii=False, indent=2)
+        )
+        shutil.copy(
+            flickr_image_dir / flickr_annotation.filename,
+            image_dir / f"{flickr_image_id}.jpg",
+        )
+        scenario_ids.append(scenario_id)
+
+    return scenario_ids
+
+
+if __name__ == "__main__":
+    main()
