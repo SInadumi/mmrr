@@ -86,9 +86,4 @@ class MMRefExample(BaseExample):
                     )
                 )
         # sort object candidates by detector confidences
-        ret = sorted(ret, key=lambda x: x.score.item(), reverse=True)
-
-        # FIXME: skip a candidate, ignore class_id is -1
-        IGNORE_CLASS_INDEX = -1
-        ret = [r for r in ret if r.class_id.item() != IGNORE_CLASS_INDEX]
-        return ret
+        return sorted(ret, key=lambda x: x.score.item(), reverse=True)

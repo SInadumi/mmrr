@@ -1,7 +1,6 @@
 import json
 import logging
 import math
-import shutil
 from argparse import ArgumentParser
 from collections import defaultdict
 from pathlib import Path
@@ -33,6 +32,33 @@ class ImageTextAugmenter:
         # '<did>-1-<idx>' -> idx
         return int(sid.split("-")[-1])
 
+    @staticmethod
+    def remove_unseen_objects(annotation: ImageTextAnnotation) -> ImageTextAnnotation:
+        for image in annotation.images:
+            # "region"は学習・評価の対象外
+            image.boundingBoxes = [
+                bbox for bbox in image.boundingBoxes if bbox.className != "region"
+            ]
+        for utterance in annotation.utterances:
+            for phrase in utterance.phrases:
+                _relation = []
+                for relation in phrase.relations:
+                    # unseen object を除外
+                    if relation.boundingBoxes is None:
+                        continue
+                    # "region"は学習・評価の対象外
+                    relation.boundingBoxes = [
+                        bbox
+                        for bbox in relation.boundingBoxes
+                        if bbox.className != "region"
+                    ]
+                    if len(relation.boundingBoxes) > 1:
+                        _relation.append(relation)
+
+                phrase.relations = _relation
+
+        return annotation
+
     def split_utterances_to_sentences(
         self, annotation: ImageTextAnnotation
     ) -> ImageTextAnnotation:
@@ -56,7 +82,10 @@ class ImageTextAugmenter:
         for idx, utterance in enumerate(annotation.utterances):
             sids = sid_mapper[idx]
             sentences.extend(
-                [SentenceAnnotation(text="", phrases=utterance.phrases, sid=sid) for sid in sids]
+                [
+                    SentenceAnnotation(text="", phrases=utterance.phrases, sid=sid)
+                    for sid in sids
+                ]
             )
         assert len(sentences) == len(document.sentences)
 
@@ -77,7 +106,6 @@ class ImageTextAugmenter:
         return annotation
 
     def add_class_id(self, annotation: ImageTextAnnotation) -> ImageTextAnnotation:
-        scenario_id = annotation.scenarioId
         iid2cid = {}
 
         # add object class id to bounding box annotations
@@ -93,12 +121,7 @@ class ImageTextAugmenter:
             for phrase in utterance.phrases:
                 for relation in phrase.relations:
                     iid = relation.instanceId
-                    #  HACK: visual/*.json の "images"中にclassNameが存在しないinstanceIdを回避する例外処理
-                    try:
-                        relation.classId = iid2cid[iid]
-                    except Exception as e:
-                        relation.classId = -1  # HACK: dummy category ID
-                        logger.warning(f"{scenario_id}: {e.__class__.__name__}: {e}")
+                    relation.classId = iid2cid[iid]
         return annotation
 
     def add_bboxes_to_phrase_annotations(
@@ -155,14 +178,14 @@ class ImageTextAugmenter:
                     continue
                 for rel in phrase.relations:
                     if rel.instanceId in instance_id_to_bboxes:
-                        rel.boundingBox = instance_id_to_bboxes[rel.instanceId]
+                        rel.boundingBoxes = instance_id_to_bboxes[rel.instanceId]
                     else:
                         ignore_cnt += 1
                         logger.info(
                             f"{rel.instanceId} (in {scenario_id}:{iid}) is ignored."
                         )
         logger.info(f"{scenario_id}:{ignore_cnt} instances is ignored.")
-        return annotation
+        return self.remove_unseen_objects(annotation)
 
 
 def main():
@@ -177,7 +200,7 @@ def main():
     args = parser.parse_args()
 
     visual_dir = Path(args.INPUT) / "visual_annotations"
-    object_dir = Path(args.INPUT) / "region_features" / "regionclip_pretrained-cc_rn50"
+    # object_dir = Path(args.INPUT) / "region_features" / "regionclip_pretrained-cc_rn50"
     output_root = Path(args.OUTPUT)
 
     vis_id2split = {}
@@ -189,12 +212,12 @@ def main():
         for vis_id in id_file.read_text().splitlines():
             vis_id2split[vis_id] = split
 
-    # split object features
-    object_paths = object_dir.glob("*.pth")
-    for source in object_paths:
-        obj_id = source.stem
-        target = output_root / vis_id2split[obj_id] / f"{obj_id}.pth"
-        shutil.copy(source, target)
+    # # split object features
+    # object_paths = object_dir.glob("*.pth")
+    # for source in object_paths:
+    #     obj_id = source.stem
+    #     target = output_root / vis_id2split[obj_id] / f"{obj_id}.pth"
+    #     shutil.copy(source, target)
 
     # split visual annotations
     visual_paths = visual_dir.glob("*.json")
@@ -211,9 +234,7 @@ def main():
         )
         image_text_annotation = augmenter.add_class_id(image_text_annotation)
         target = output_root / vis_id2split[vis_id] / f"{vis_id}.json"
-        target.write_text(
-            image_text_annotation.to_json(ensure_ascii=False, indent=2)
-        )
+        target.write_text(image_text_annotation.to_json(ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
