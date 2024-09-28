@@ -7,6 +7,8 @@ from pydantic.dataclasses import (
 
 from .util import CamelCaseDataClassJsonMixin, Rectangle
 
+IGNORE_CLASS_ID = -1
+
 
 @dataclass
 class ImageInfo(CamelCaseDataClassJsonMixin):
@@ -44,15 +46,15 @@ class BoundingBox(CamelCaseDataClassJsonMixin):
     instanceId: str
     rect: Rectangle
     className: str
-    classId: int = -1
+    classId: int = IGNORE_CLASS_ID
 
 
 @dataclass
 class Phrase2ObjectRelation(CamelCaseDataClassJsonMixin):
     type: str  # ガ, ヲ, ニ, ノ, =, etc...
     instanceId: str
-    classId: int = -1
-    boundingBox: Optional[list[BoundingBox]] = None  # 発話区間に含まれる bboxes
+    classId: int = IGNORE_CLASS_ID
+    boundingBoxes: Optional[list[BoundingBox]] = None  # 発話区間に含まれる bboxes
 
 
 @dataclass
@@ -72,6 +74,7 @@ class SentenceAnnotation(CamelCaseDataClassJsonMixin):
     text: str
     phrases: list[PhraseAnnotation]
     sid: Optional[str] = None
+
 
 @dataclass
 class ImageTextAnnotation(CamelCaseDataClassJsonMixin):

@@ -58,20 +58,28 @@ class VisCoreferenceResolutionEvaluator:
                     elif len(candidates) < recall_top_k:
                         _topk = len(candidates)
 
-                    if rel.boundingBox is None:
+                    if rel.boundingBoxes is None:
                         # NOTE: Skip an out of span instance
                         continue
-                    metrics.loc[self.rel, _metric_name].tp_fn += len(rel.boundingBox)
-                    metrics.loc[self.rel, _metric_name].tp += self._eval_group_iou(rel.boundingBox, candidates[:_topk])
+                    metrics.loc[self.rel, _metric_name].tp_fn += len(rel.boundingBoxes)
+                    metrics.loc[self.rel, _metric_name].tp += self._eval_group_iou(
+                        rel.boundingBoxes, candidates[:_topk]
+                    )
 
         self.comp_result.update({(sid, *k): v for k, v in local_comp_result.items()})
         return metrics
 
     @staticmethod
-    def _eval_group_iou(gold_bboxes: list[BoundingBox], candidates: list[BoundingBoxPrediction]) -> int:
+    def _eval_group_iou(
+        gold_bboxes: list[BoundingBox], candidates: list[BoundingBoxPrediction]
+    ) -> int:
         cnt = 0
         for gold_bbox in gold_bboxes:
-            group_iou = [idx for idx, c in enumerate(candidates) if box_iou(gold_bbox.rect, c.rect) > IOU_THRESHOLD]
+            group_iou = [
+                idx
+                for idx, c in enumerate(candidates)
+                if box_iou(gold_bbox.rect, c.rect) > IOU_THRESHOLD
+            ]
             if len(group_iou) > 0:
                 cnt += 1
         return cnt
