@@ -125,8 +125,8 @@ class ImageTextAugmenter:
         return annotation
 
     def add_bboxes_to_phrase_annotations(
-        self, annotation: dict, image_span: SPAN_TYPE
-    ) -> dict:
+        self, annotation: ImageTextAnnotation, image_span: SPAN_TYPE
+    ) -> ImageTextAnnotation:
         scenario_id = annotation.scenarioId
         image_id_to_annotation = {image.imageId: image for image in annotation.images}
 

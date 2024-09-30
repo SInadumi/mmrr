@@ -71,14 +71,16 @@ def main() -> None:
         flickr_sentences = flickr_sentences_file.read_text().splitlines()
         flickr_document = Document.from_string(flickr_image_id, flickr_sentences)
         assert flickr_sentences == flickr_document.to_string()
-        scenario_ids += convert_flickr(
-            f"{int(flickr_image_id):010d}",
-            flickr_annotation,
-            flickr_document,
-            flickr_image_dir,
-            dataset_dir,
-            annotation_dir,
-            knp_dir,
+        scenario_ids.append(
+            convert_flickr(
+                f"{int(flickr_image_id):010d}",
+                flickr_annotation,
+                flickr_document,
+                flickr_image_dir,
+                dataset_dir,
+                annotation_dir,
+                knp_dir,
+            )
         )
     id_dir.joinpath(args.flickr_id_file.name).write_text("\n".join(scenario_ids) + "\n")
 
