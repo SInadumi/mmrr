@@ -147,3 +147,23 @@ class Sentence:
                 )
         assert "EN" not in sentence
         return cls(sentence.strip(), phrases)
+
+
+@dataclass(frozen=True)
+class Document:
+    flickr_image_id: int
+    sentences: list[Sentence]
+
+    def to_string(self) -> list[str]:
+        output_sentences = []
+        for sentence in self.sentences:
+            output_sentences.append(sentence.to_string())
+        return output_sentences
+
+    @classmethod
+    def from_string(cls, image_id: int, flickr_sentences: list[str]) -> "Document":
+        _sentences = []
+        for flickr_sentence in flickr_sentences:
+            sentence = Sentence.from_string(flickr_sentence)
+            _sentences.append(sentence)
+        return cls(image_id, _sentences)
