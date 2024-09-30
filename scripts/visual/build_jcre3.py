@@ -200,7 +200,6 @@ def main():
     args = parser.parse_args()
 
     visual_dir = Path(args.INPUT) / "visual_annotations"
-    # object_dir = Path(args.INPUT) / "region_features" / "regionclip_pretrained-cc_rn50"
     output_root = Path(args.OUTPUT)
 
     vis_id2split = {}
@@ -212,20 +211,12 @@ def main():
         for vis_id in id_file.read_text().splitlines():
             vis_id2split[vis_id] = split
 
-    # # split object features
-    # object_paths = object_dir.glob("*.pth")
-    # for source in object_paths:
-    #     obj_id = source.stem
-    #     target = output_root / vis_id2split[obj_id] / f"{obj_id}.pth"
-    #     shutil.copy(source, target)
-
     # split visual annotations
     visual_paths = visual_dir.glob("*.json")
     augmenter = ImageTextAugmenter(Path(args.INPUT))
     for source in visual_paths:
         vis_id = source.stem
         image_text_annotation = ImageTextAnnotation.from_json(Path(source).read_text())
-        json.load(open(source, "r", encoding="utf-8"))
         image_text_annotation = augmenter.add_bboxes_to_phrase_annotations(
             image_text_annotation, args.image_span
         )
