@@ -54,9 +54,9 @@ def main() -> None:
     output_dir.mkdir(exist_ok=True)
     dataset_dir = output_dir / "recording"
     dataset_dir.mkdir(exist_ok=True)
-    knp_dir = output_dir / "knp"
+    knp_dir = output_dir / "textual_annotations"
     knp_dir.mkdir(exist_ok=True)
-    annotation_dir = output_dir / "image_text_annotation"
+    annotation_dir = output_dir / "visual_annotations"
     annotation_dir.mkdir(exist_ok=True)
     id_dir = output_dir / "id"
     id_dir.mkdir(exist_ok=True)
@@ -82,7 +82,7 @@ def main() -> None:
                 knp_dir,
             )
         )
-    id_dir.joinpath(args.flickr_id_file.name).write_text("\n".join(scenario_ids) + "\n")
+    id_dir.joinpath(f"{args.flickr_id_file.stem}.id").write_text("\n".join(scenario_ids) + "\n")
 
 
 def convert_flickr(
