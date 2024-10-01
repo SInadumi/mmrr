@@ -52,7 +52,7 @@ class ImageTextAugmenter:
                         for bbox in relation.boundingBoxes
                         if bbox.className != "region"
                     ]
-                    if len(relation.boundingBoxes) > 1:
+                    if len(relation.boundingBoxes) > 0:
                         _relation.append(relation)
 
                 phrase.relations = _relation
@@ -184,7 +184,7 @@ class ImageTextAugmenter:
                         logger.info(
                             f"{rel.instanceId} (in {scenario_id}:{iid}) is ignored."
                         )
-        logger.info(f"{scenario_id}:{ignore_cnt} instances is ignored.")
+        logger.info(f"{scenario_id}:{ignore_cnt} instances are ignored.")
         return self.remove_unseen_objects(annotation)
 
 
@@ -192,6 +192,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("INPUT", type=str, help="path to input visual annotation dir")
     parser.add_argument("OUTPUT", type=str, help="path to output dir")
+    parser.add_argument("--proc-dataset", type=str, choices=["jcre3", "f30k-ent-jp"])
     parser.add_argument("--id", type=str, help="path to id")
     parser.add_argument(
         "--image-span", type=str, default="current", help="phrase-grounding range"
@@ -204,9 +205,9 @@ def main():
 
     vis_id2split = {}
     for id_file in Path(args.id).glob("*.id"):
-        if id_file.stem not in {"train", "dev", "valid", "test"}:
+        if id_file.stem not in {"train", "valid", "val", "test"}:
             continue
-        split = "valid" if id_file.stem == "dev" else id_file.stem
+        split = "valid" if id_file.stem == "val" else id_file.stem
         output_root.joinpath(split).mkdir(parents=True, exist_ok=True)
         for vis_id in id_file.read_text().splitlines():
             vis_id2split[vis_id] = split
@@ -220,10 +221,11 @@ def main():
         image_text_annotation = augmenter.add_bboxes_to_phrase_annotations(
             image_text_annotation, args.image_span
         )
-        image_text_annotation = augmenter.split_utterances_to_sentences(
-            image_text_annotation
-        )
-        image_text_annotation = augmenter.add_class_id(image_text_annotation)
+        if args.proc_dataset == "jcre3":
+            image_text_annotation = augmenter.split_utterances_to_sentences(
+                image_text_annotation
+            )
+            image_text_annotation = augmenter.add_class_id(image_text_annotation)
         target = output_root / vis_id2split[vis_id] / f"{vis_id}.json"
         target.write_text(image_text_annotation.to_json(ensure_ascii=False, indent=2))
 

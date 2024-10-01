@@ -28,8 +28,9 @@ fi
 mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{f30k_ent_jp,jcre3}
 
 echo "Processing J-CRe3 ..."
-poetry run python ./scripts/visual/build_jcre3.py "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
-    --id "${DATASET_ROOT}/J-CRe3/id"
+poetry run python ./scripts/visual/build_dataset.py \
+    "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
+    --proc-dataset jcre3 --id "${DATASET_ROOT}/J-CRe3/id"
 
 for split in "train" "val" "test"
 do
@@ -42,6 +43,8 @@ do
         --output-dir "${OUT_DIR}/f30k_ent_jp"
 done
 
-# echo "Processing Flickr30k-Ent-Ja ..."
-# poetry run python ./scripts/visual/build_flickr30k_entities.py \
-#     "${DATASET_ROOT}/Flickr30kEnt-JP" "${OUT_DIR}/f30k_ent_jp"
+echo "Processing Flickr30k-Ent-Ja ..."
+poetry run python ./scripts/visual/build_dataset.py \
+    "${OUT_DIR}/f30k_ent_jp" "${OUT_DIR}/f30k_ent_jp" \
+    --proc-dataset f30k-ent-jp --id "${OUT_DIR}/f30k_ent_jp/id"
+
