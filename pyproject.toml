@@ -53,7 +53,7 @@ authors = ["SInadumi <inazumi19@icloud.com>"]
 readme = "README.md"
 package-mode=true
 packages = [
-    { include = "src" },
+    { include = "cl_mmref", from = "src" },
 ]
 
 [tool.poetry.dependencies]

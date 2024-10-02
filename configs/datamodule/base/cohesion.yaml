@@ -1,4 +1,4 @@
-_target_: datasets.cohesion_dataset.CohesionDataset
+_target_: cl_mmref.datasets.cohesion_dataset.CohesionDataset
 dataset_path: ${dataset_path}
 tasks: ${tasks}
 cases: ${cases}

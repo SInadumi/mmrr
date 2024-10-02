@@ -1,5 +1,5 @@
 cls:
-  _target_: modules.mmref.MMRefModule
+  _target_: cl_mmref.modules.mmref.MMRefModule
 
 load_from_checkpoint:
   _target_: ${module.cls._target_}.load_from_checkpoint

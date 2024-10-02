@@ -1,4 +1,4 @@
-_target_: datasets.mmref_dataset.MMRefDataset
+_target_: cl_mmref.datasets.mmref_dataset.MMRefDataset
 dataset_path: ${dataset_path}
 tasks: ${tasks}
 cases: ${cases}

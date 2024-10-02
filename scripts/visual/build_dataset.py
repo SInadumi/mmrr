@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Literal
 
 from rhoknp import Document
-from src.utils.annotation import (
+
+from cl_mmref.utils.annotation import (
     DatasetInfo,
     ImageTextAnnotation,
     SentenceAnnotation,
