@@ -27,7 +27,7 @@ if [[ -z "${OUT_DIR}" ]]; then
   usage
 fi
 
-mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{kwdlc,fuman,wac,jcre3}
+mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{kwdlc,fuman,wac,jcre3,f30k_ent_jp}
 
 # echo "Processing KyotoCorpus ..."
 # poetry run python ./scripts/build_dataset.py "${DATASET_ROOT}"/KyotoCorpus/knp "${OUT_DIR}/kc" \　# cohesion analysisでは未指定
@@ -50,8 +50,12 @@ mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{kwdlc,fuman,wac,jcre3}
 #     --id "${DATASET_ROOT}/WikipediaAnnotatedCorpus/id" \
 #     -j "${JOBS}" --doc-id-format wac
 
-echo "Processing J-CRe3 ..."
-poetry run python ./scripts/textual/build_dataset.py "${DATASET_ROOT}/J-CRe3/textual_annotations" "${OUT_DIR}/jcre3" \
-    --id "${DATASET_ROOT}/J-CRe3/id" \
-    -j "${JOBS}"
+# echo "Processing J-CRe3 ..."
+# poetry run python ./scripts/textual/build_dataset.py "${DATASET_ROOT}/J-CRe3/textual_annotations" "${OUT_DIR}/jcre3" \
+#     --id "${DATASET_ROOT}/J-CRe3/id" \
+#     -j "${JOBS}"
 
+echo "Processing Flickr30k-Ent-Ja ..."
+poetry run python ./scripts/textual/build_dataset.py "${OUT_DIR}/f30k_ent_jp/textual_annotations" "${OUT_DIR}/f30k_ent_jp/" \
+    --id "${OUT_DIR}/f30k_ent_jp/id" \
+    -j "${JOBS}"
