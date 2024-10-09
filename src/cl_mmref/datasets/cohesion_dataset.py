@@ -128,7 +128,7 @@ class CohesionDataset(BaseDataset):
         cohesion_cache_dir: Path = Path(
             os.environ.get("CACHE_DIR", f'/tmp/{os.environ["USER"]}/cohesion_cache'),
         )
-        for document in tqdm(documents, desc="Loading examples"):
+        for document in tqdm(documents, desc="Loading examples", dynamic_ncols=True):
             # give enough options to identify examples
             hash_ = self._hash(
                 documents_path,

@@ -174,7 +174,7 @@ class MMRefDataset(BaseDataset):
         mmref_cache_dir: Path = Path(
             os.environ.get("CACHE_DIR", f'/tmp/{os.environ["USER"]}/mmref_cache')
         )
-        for document in tqdm(documents, desc="Loading examples"):
+        for document in tqdm(documents, desc="Loading examples", dynamic_ncols=True):
             hash_ = self._hash(
                 documents_path,
                 self.doc_id2vis,
