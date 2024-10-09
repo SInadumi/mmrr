@@ -165,5 +165,9 @@ class Document:
         _sentences = []
         for flickr_sentence in flickr_sentences:
             sentence = Sentence.from_string(flickr_sentence)
+            if sentence.text == "":
+                continue
+            if len(sentence.phrases) == 0:
+                continue
             _sentences.append(sentence)
         return cls(image_id, _sentences)

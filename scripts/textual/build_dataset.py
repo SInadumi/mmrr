@@ -280,7 +280,7 @@ def assign_features_and_save(
 
         # 素性付与
         try:
-            document = knp.apply_to_document(document, timeout=300)
+            document = knp.apply_to_document(document, timeout=3000)
         except Exception as e:
             logger.warning(f"{type(e).__name__}: {e}, {document.doc_id}")
             knp = KNP(options=["-tab", "-dpnd-fast", "-read-feature"])
@@ -311,6 +311,12 @@ def assign_features_and_save(
             document = PasExtractor.restore_pas_annotation(document)
 
         # 初めから付いていた素性およびKNPサポート外の活用・品詞の付与
+        try:
+            conjugation = unsupported_conjugations.get(morpheme.global_index)
+        except Exception as e:
+            logger.warning(f"{type(e).__name__}: {e}, {document.doc_id}")
+            Path(f"knp_error_{document.doc_id}.knp").write_text(document.to_knp())
+            continue
         for morpheme, features in zip(document.morphemes, morpheme_features):
             morpheme.features.update(features)
             if conjugation := unsupported_conjugations.get(morpheme.global_index):
@@ -520,9 +526,9 @@ def main():
     output_root = Path(args.OUTPUT)
     doc_id2split = {}
     for id_file in Path(args.id).glob("*.id"):
-        if id_file.stem not in {"train", "dev", "valid", "test"}:
+        if id_file.stem not in {"train", "dev", "val", "valid", "test"}:
             continue
-        split = "valid" if id_file.stem == "dev" else id_file.stem
+        split = "valid" if id_file.stem in ["dev", "val"] else id_file.stem
         output_root.joinpath(split).mkdir(parents=True, exist_ok=True)
         for doc_id in id_file.read_text().splitlines():
             doc_id2split[doc_id] = split

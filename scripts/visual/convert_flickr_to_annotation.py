@@ -8,7 +8,9 @@ from flickr30k_entities import Annotation, Document
 from rhoknp import KNP, Jumanpp
 from rhoknp import Document as KNPDocument
 from rhoknp import Sentence as KNPSentence
-from src.utils.annotation import (
+from tqdm import tqdm
+
+from cl_mmref.utils.annotation import (
     BoundingBox,
     DatasetInfo,
     ImageAnnotation,
@@ -20,7 +22,6 @@ from src.utils.annotation import (
     SentenceAnnotation,
     UtteranceInfo,
 )
-from tqdm import tqdm
 
 jumanpp = Jumanpp()
 knp = KNP(options=["-tab", "-dpnd-fast"])
@@ -70,7 +71,7 @@ def main() -> None:
         )
         flickr_sentences = flickr_sentences_file.read_text().splitlines()
         flickr_document = Document.from_string(flickr_image_id, flickr_sentences)
-        assert flickr_sentences == flickr_document.to_string()
+
         scenario_ids.append(
             convert_flickr(
                 f"{int(flickr_image_id):010d}",
@@ -82,7 +83,9 @@ def main() -> None:
                 knp_dir,
             )
         )
-    id_dir.joinpath(f"{args.flickr_id_file.stem}.id").write_text("\n".join(scenario_ids) + "\n")
+    id_dir.joinpath(f"{args.flickr_id_file.stem}.id").write_text(
+        "\n".join(scenario_ids) + "\n"
+    )
 
 
 def convert_flickr(
@@ -127,7 +130,7 @@ def convert_flickr(
         utterances.append(
             UtteranceInfo(
                 text=flickr_sentence.text,
-                sids=[f"{flickr_image_id}-{idx:02}"],
+                sids=[f"{scenario_id}-{idx:02}"],
                 start=0,
                 end=1,
                 duration=1,
@@ -161,7 +164,7 @@ def convert_flickr(
         for phrase in flickr_sentence.phrases:
             chunk = flickr_sentence.text[cursor : phrase.span[0]]
             if chunk:
-                morphemes += jumanpp.apply_to_sentence(chunk).morphemes
+                morphemes += jumanpp.apply_to_sentence(chunk, timeout=3000).morphemes
             sent = jumanpp.apply_to_sentence(phrase.text)
             phrase_to_morpheme_indices[phrase] = list(
                 range(
@@ -220,7 +223,11 @@ def convert_flickr(
                 Phrase2ObjectRelation(type="=", instanceId=str(phrase.phrase_id))
             )
         image_text_utterances.append(
-            SentenceAnnotation(sid=scenario_id, text=knp_sentence.text, phrases=phrases)
+            SentenceAnnotation(
+                sid=knp_sentence.sid,
+                text=knp_sentence.text,
+                phrases=phrases,
+            )
         )
 
     image_text_annotation = ImageTextAnnotation(
