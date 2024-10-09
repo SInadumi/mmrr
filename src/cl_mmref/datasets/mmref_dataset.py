@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import math
 import os
 import pickle
 import random
@@ -80,7 +81,7 @@ class MMRefDataset(BaseDataset):
         self.flip_reader_writer: bool = flip_reader_writer
         self.vis_max_seq_length = vis_max_seq_length
         self.vis_emb_size = vis_emb_size
-        self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
+        self.dataset_name = self.data_path.parts[-2]
 
         exophora_referent_types: list[ExophoraReferentType] = [
             er.type for er in self.exophora_referents
@@ -321,21 +322,21 @@ class MMRefDataset(BaseDataset):
         orig_doc_id: str = to_orig_doc_id(document.doc_id)
         sid_to_objects: dict[str, list] = {sent.sid: [] for sent in document.sentences}
 
-        if self.is_jcre3_dataset:
-            jcre3_dataset_dir = self.dataset_path / "jcre3" / "recording"
-            dataset_info = DatasetInfo.from_json(
-                (jcre3_dataset_dir / orig_doc_id / "info.json").read_text()
+        # Loading object candidates
+        info_dir = self.dataset_path / self.dataset_name / "recording"
+        dataset_info = DatasetInfo.from_json(
+            (info_dir / orig_doc_id / "info.json").read_text()
+        )
+        obj_features = self._load_object(self.data_path, orig_doc_id, ext="pth")
+        for utterance in dataset_info.utterances:
+            if len(utterance.image_ids) == 0:
+                continue
+            sidx = math.ceil(utterance.start / 1000)
+            eidx = math.ceil(utterance.end / 1000)
+            assert eidx >= sidx
+            sid_to_objects.update(
+                {sid: obj_features[sidx:eidx] for sid in utterance.sids}
             )
-            obj_features = self._load_object(self.data_path, orig_doc_id, ext="pth")
-
-            for utterance in dataset_info.utterances:
-                if len(utterance.image_ids) == 0:
-                    continue
-                sidx, eidx = utterance.image_indices_span
-                assert eidx >= sidx
-                sid_to_objects.update(
-                    {sid: obj_features[sidx:eidx] for sid in utterance.sids}
-                )
 
         example = MMRefExample()
         example.load(
