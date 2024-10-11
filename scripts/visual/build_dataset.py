@@ -143,10 +143,14 @@ class ImageTextAugmenter:
             end_idx = min(start_idx + num_utterances, len(dataset_info.utterances))
             assert start_idx <= end_idx
             utterances = [utt for utt in dataset_info.utterances[start_idx:end_idx]]
-
+            sids = [sid for utt in utterances for sid in utt.sids]
             iids = list(set(iid for utt in utterances for iid in utt.image_ids))
             for iid in iids:
-                _utterances = copy.deepcopy(annotation.utterances[start_idx:end_idx])
+                _utterances = [
+                    copy.deepcopy(sent)
+                    for sent in annotation.utterances
+                    if sent.sid in sids
+                ]
                 tot_bboxes = 0
                 for utterance in _utterances:
                     for phrase in utterance.phrases:
