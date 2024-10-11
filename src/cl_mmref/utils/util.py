@@ -136,3 +136,9 @@ class Rectangle(CamelCaseDataClassJsonMixin):
         return Rectangle.from_xyxy(
             xyxy[0], xyxy[1], max(xyxy[0], xyxy[2]), max(xyxy[1], xyxy[3])
         )
+
+def box_iou(box1: Rectangle, box2: Rectangle) -> float:
+    if box1.area == 0 or box2.area == 0:
+        return 0
+    intersect: int = (box1 & box2).area
+    return intersect / (box1.area + box2.area - intersect)
