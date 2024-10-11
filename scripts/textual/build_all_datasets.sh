@@ -59,3 +59,5 @@ echo "Processing Flickr30k-Ent-Ja ..."
 poetry run python ./scripts/textual/build_dataset.py "${OUT_DIR}/f30k_ent_jp/textual_annotations" "${OUT_DIR}/f30k_ent_jp/" \
     --id "${OUT_DIR}/f30k_ent_jp/id" \
     -j "${JOBS}"
+
+echo "done!"

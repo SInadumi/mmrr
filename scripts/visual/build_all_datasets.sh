@@ -27,24 +27,27 @@ fi
 
 mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{f30k_ent_jp,jcre3}
 
-echo "Processing J-CRe3 ..."
-poetry run python ./scripts/visual/build_dataset.py \
-    "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
-    --proc-dataset jcre3 --id "${DATASET_ROOT}/J-CRe3/id"
+# echo "Processing J-CRe3 ..."
+# poetry run python ./scripts/visual/build_dataset.py \
+#     "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
+#     --proc-dataset jcre3 --id "${DATASET_ROOT}/J-CRe3/id" \
+#     --num-utterances-per-sample 3 --num-overlapping-utterances 0
 
-for split in "train" "val" "test"
-do
-    echo "Converting Flickr30k-Ent-Ja ${split} Annotations ..."
-    poetry run python ./scripts/visual/convert_flickr_to_annotation.py \
-        --flickr-id-file "${DATASET_ROOT}/flickr30k_entities/${split}.txt" \
-        --flickr-image-dir "${DATASET_ROOT}/Flickr30kEnt-JP/flickr30k_images" \
-        --flickr-annotations-dir "${DATASET_ROOT}/flickr30k_entities/Annotations" \
-        --flickr-documents-dir "${DATASET_ROOT}/Flickr30kEnt-JP/Sentences_jp_v2" \
-        --output-dir "${OUT_DIR}/f30k_ent_jp"
-done
+# for split in "train" "val" "test"
+# do
+#     echo "Converting Flickr30k-Ent-Ja ${split} Annotations ..."
+#     poetry run python ./scripts/visual/convert_flickr_to_annotation.py \
+#         --flickr-id-file "${DATASET_ROOT}/flickr30k_entities/${split}.txt" \
+#         --flickr-image-dir "${DATASET_ROOT}/Flickr30kEnt-JP/flickr30k_images" \
+#         --flickr-annotations-dir "${DATASET_ROOT}/flickr30k_entities/Annotations" \
+#         --flickr-documents-dir "${DATASET_ROOT}/Flickr30kEnt-JP/Sentences_jp_v2" \
+#         --output-dir "${OUT_DIR}/f30k_ent_jp"
+# done
 
 echo "Processing Flickr30k-Ent-Ja ..."
 poetry run python ./scripts/visual/build_dataset.py \
     "${OUT_DIR}/f30k_ent_jp" "${OUT_DIR}/f30k_ent_jp" \
-    --proc-dataset f30k-ent-jp --id "${OUT_DIR}/f30k_ent_jp/id"
+    --dataset-name f30k_ent_jp --id "${OUT_DIR}/f30k_ent_jp/id" \
+    --num-utterances-per-sample 1 --num-overlapping-utterances 0
 
+echo "done!"
