@@ -41,23 +41,13 @@ def main():
 
     visual_paths = dataset_dir.glob("*.json")
     for source in visual_paths:
-        scenario_id = source.stem
-        if args.dataset_name == "jcre3":
-            image_id = scenario_id.split("-")[-1]
-            orig_scenario_id = "-".join(scenario_id.split("-")[:-1])
-        elif args.dataset_name == "f30k_ent_jp":
-            image_id = scenario_id.split("-")[-1]
-            orig_scenario_id = image_id
-        else:
-            raise ValueError(
-                f"[Scenario id: {scenario_id}] `dataset_name` has an invalid argument {args.dataset_name}"
-            )
-
         image_text_annotation = ImageTextAnnotation.from_json(Path(source).read_text())
         assert len(image_text_annotation.images) == 1
+        scenario_id = image_text_annotation.scenarioId
+        image_id = image_text_annotation.images[0].imageId
         gold_bboxes: list[BoundingBox] = image_text_annotation.images[0].boundingBoxes
         predict_bboxes: list[np.ndarray] = list(
-            object_fp[f"{orig_scenario_id}/{image_id}/boxes"]
+            object_fp[f"{scenario_id}/{image_id}/boxes"]
         )
         for gold_bbox in gold_bboxes:
             for idx, pred_bbox in enumerate(predict_bboxes):
@@ -66,12 +56,12 @@ def main():
                 )
                 try:
                     output_fp.create_dataset(
-                        f"{orig_scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}",
+                        f"{scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}",
                         data=box_iou(gold_bbox.rect, _pbb),
                     )
                 except Exception as e:
                     logger.warning(
-                        f"{type(e).__name__}: {e}, {orig_scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
+                        f"{type(e).__name__}: {e}, {scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
                     )
     object_fp.close()
     output_fp.close()
