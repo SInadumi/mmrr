@@ -80,6 +80,7 @@ rich = "^13.3"
 wandb = "^0.16.0"
 jaconv = "^0.3.4"
 typing-extensions = ">=4.4"
+h5py = "^3.12.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.4"
