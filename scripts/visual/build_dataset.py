@@ -1,10 +1,10 @@
+import copy
 import json
 import logging
 import math
 from argparse import ArgumentParser
 from collections import defaultdict
 from pathlib import Path
-from typing import Literal
 
 from rhoknp import Document
 
@@ -19,12 +19,9 @@ logger.setLevel(logging.WARNING)
 
 
 class ImageTextAugmenter:
-    SPAN_TYPE = Literal[
-        "past-current", "prev-current", "current", "prev-next", "current-next"
-    ]
-
-    def __init__(self, dataset_dir: Path) -> None:
+    def __init__(self, dataset_dir: Path, dataset_name: str) -> None:
         self.dataset_dir = dataset_dir
+        self.dataset_name = dataset_name
         _id2cat = json.load(open("./data/categories.json", "r", encoding="utf-8"))
         self.cat2id = {v: i for i, v in enumerate(_id2cat)}
 
@@ -75,7 +72,9 @@ class ImageTextAugmenter:
         )
 
         # collect sids corresponding to utterances
-        sid_mapper: list[int] = [u_info.sids for u_info in dataset_info.utterances]
+        sid_mapper: list[list[int]] = [
+            u_info.sids for u_info in dataset_info.utterances
+        ]
         assert len(sid_mapper) == len(annotation.utterances)
 
         # split utterances field
@@ -125,8 +124,67 @@ class ImageTextAugmenter:
                     relation.classId = iid2cid[iid]
         return annotation
 
+    def split_annotations_per_frame(
+        self,
+        annotation: ImageTextAnnotation,
+        num_utterances: int,
+        num_overlapping: int,
+    ) -> list[ImageTextAnnotation]:
+        ret = []
+        split_stride = num_utterances - num_overlapping
+        assert split_stride > 0
+
+        scenario_id = annotation.scenarioId
+        dataset_info = DatasetInfo.from_json(
+            (self.dataset_dir / "recording" / scenario_id / "info.json").read_text()
+        )
+
+        for start_idx in range(0, len(dataset_info.utterances), split_stride):
+            end_idx = min(start_idx + num_utterances, len(dataset_info.utterances))
+            assert start_idx <= end_idx
+            utterances = [utt for utt in dataset_info.utterances[start_idx:end_idx]]
+
+            iids = list(set(iid for utt in utterances for iid in utt.image_ids))
+            for iid in iids:
+                _utterances = copy.deepcopy(annotation.utterances[start_idx:end_idx])
+                tot_bboxes = 0
+                for utterance in _utterances:
+                    for phrase in utterance.phrases:
+                        for rel in phrase.relations:
+                            _bboxes = [
+                                bbox
+                                for bbox in rel.boundingBoxes
+                                if bbox.imageId == iid
+                            ]
+                            rel.boundingBoxes = _bboxes
+                            tot_bboxes += len(_bboxes)
+                if tot_bboxes == 0:
+                    continue
+
+                if self.dataset_name == "jcre3":
+                    ret.append(
+                        ImageTextAnnotation(
+                            scenarioId=scenario_id,
+                            images=[annotation.images[int(iid) - 1]],  # 0-origin
+                            utterances=_utterances,
+                        )
+                    )
+                elif self.dataset_name == "f30k_ent_jp":
+                    ret.append(
+                        ImageTextAnnotation(
+                            scenarioId=scenario_id,
+                            images=annotation.images,
+                            utterances=_utterances,
+                        )
+                    )
+                else:
+                    raise ValueError(
+                        f"`dataset_name` has an invalid argument {self.dataset_name}"
+                    )
+        return ret
+
     def add_bboxes_to_phrase_annotations(
-        self, annotation: ImageTextAnnotation, image_span: SPAN_TYPE
+        self, annotation: ImageTextAnnotation
     ) -> ImageTextAnnotation:
         scenario_id = annotation.scenarioId
         image_id_to_annotation = {image.imageId: image for image in annotation.images}
@@ -140,34 +198,11 @@ class ImageTextAugmenter:
         d_utterances = dataset_info.utterances
         all_image_ids = [image.id for image in dataset_info.images]
         ignore_cnt = 0
-        for idx, (a_utt, d_utt) in enumerate(zip(a_utterances, d_utterances)):
-            sidx = math.ceil(d_utt.start / 1000)
-            eidx = math.ceil(d_utt.end / 1000)
-
-            if idx >= 1:
-                prev_utterance = d_utterances[idx - 1]
-                prev_eidx = math.ceil(prev_utterance.end / 1000)
-            else:
-                prev_eidx = 0
-
-            if idx + 1 < len(d_utterances):
-                next_utterance = d_utterances[idx + 1]
-                next_sdix = math.ceil(next_utterance.start / 1000)
-            else:
-                next_sdix = len(d_utterances)
-
-            if image_span == "past-current":
-                image_ids = all_image_ids[:eidx]
-            elif image_span == "prev-current":
-                image_ids = all_image_ids[prev_eidx:eidx]
-            elif image_span == "current":
-                image_ids = all_image_ids[sidx:eidx]
-            elif image_span == "prev-next":
-                image_ids = all_image_ids[prev_eidx:next_sdix]
-            elif image_span == "current-next":
-                image_ids = all_image_ids[sidx:next_sdix]
-            else:
-                raise ValueError(f"Unknown image span: {image_span}")
+        for a_utt, d_utt in zip(a_utterances, d_utterances):
+            start_idx = math.ceil(d_utt.start / 1000)
+            end_idx = math.ceil(d_utt.end / 1000)
+            assert start_idx <= end_idx
+            image_ids = all_image_ids[start_idx:end_idx]
 
             instance_id_to_bboxes = defaultdict(lambda: [])
             for iid in image_ids:
@@ -193,10 +228,19 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("INPUT", type=str, help="path to input visual annotation dir")
     parser.add_argument("OUTPUT", type=str, help="path to output dir")
-    parser.add_argument("--proc-dataset", type=str, choices=["jcre3", "f30k-ent-jp"])
+    parser.add_argument("--dataset-name", type=str, choices=["jcre3", "f30k_ent_jp"])
     parser.add_argument("--id", type=str, help="path to id")
     parser.add_argument(
-        "--image-span", type=str, default="current", help="phrase-grounding range"
+        "--num-utterances-per-sample",
+        type=int,
+        default=3,
+        help="number of utterances per a sample",
+    )
+    parser.add_argument(
+        "--num-overlapping-utterances",
+        type=int,
+        default=0,
+        help="number of overlapping utterances",
     )
 
     args = parser.parse_args()
@@ -210,25 +254,39 @@ def main():
             continue
         split = "valid" if id_file.stem == "val" else id_file.stem
         output_root.joinpath(split).mkdir(parents=True, exist_ok=True)
-        for vis_id in id_file.read_text().splitlines():
-            vis_id2split[vis_id] = split
+        for scenario_id in id_file.read_text().splitlines():
+            vis_id2split[scenario_id] = split
 
     # split visual annotations
     visual_paths = visual_dir.glob("*.json")
-    augmenter = ImageTextAugmenter(Path(args.INPUT))
+    augmenter = ImageTextAugmenter(Path(args.INPUT), args.dataset_name)
     for source in visual_paths:
-        vis_id = source.stem
+        scenario_id = source.stem
         image_text_annotation = ImageTextAnnotation.from_json(Path(source).read_text())
         image_text_annotation = augmenter.add_bboxes_to_phrase_annotations(
-            image_text_annotation, args.image_span
+            image_text_annotation
         )
-        if args.proc_dataset == "jcre3":
+        if args.dataset_name == "jcre3":
             image_text_annotation = augmenter.split_utterances_to_sentences(
                 image_text_annotation
             )
             image_text_annotation = augmenter.add_class_id(image_text_annotation)
-        target = output_root / vis_id2split[vis_id] / f"{vis_id}.json"
-        target.write_text(image_text_annotation.to_json(ensure_ascii=False, indent=2))
+
+        annotations = augmenter.split_annotations_per_frame(
+            image_text_annotation,
+            args.num_utterances_per_sample,
+            args.num_overlapping_utterances,
+        )
+        for idx, annotation in enumerate(annotations):
+            assert len(annotation.images) == 1
+            iid = annotation.images[0].imageId
+            output_file_name = f"{scenario_id}-{iid}"
+            if args.dataset_name == "f30k_ent_jp":
+                output_file_name = f"{idx}-{iid}"
+            target = (
+                output_root / vis_id2split[scenario_id] / f"{output_file_name}.json"
+            )
+            target.write_text(annotation.to_json(ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
