@@ -1,8 +1,8 @@
 import pandas as pd
 
-from cl_mmref.utils import box_iou
 from cl_mmref.utils.annotation import BoundingBox, PhraseAnnotation
 from cl_mmref.utils.prediction import BoundingBoxPrediction, PhrasePrediction
+from cl_mmref.utils.util import box_iou
 
 from .utils import IOU_THRESHOLD, RECALL_TOP_KS, F1Metric
 
