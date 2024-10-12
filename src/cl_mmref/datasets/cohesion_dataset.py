@@ -25,7 +25,12 @@ from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import KyotoExample
 from cl_mmref.utils.annotation import DatasetInfo
 from cl_mmref.utils.dataset import CohesionBasePhrase, CohesionInputFeatures
-from cl_mmref.utils.sub_document import to_orig_doc_id
+from cl_mmref.utils.sub_document import (
+    SequenceSplitter,
+    SpanCandidate,
+    to_orig_doc_id,
+    to_sub_doc_id,
+)
 from cl_mmref.utils.util import IGNORE_INDEX, softmax
 
 from .base_dataset import BaseDataset
@@ -49,22 +54,21 @@ class CohesionDataset(BaseDataset):
         training: bool,
         flip_reader_writer: bool,
     ) -> None:
+        super().__init__(
+            tokenizer=tokenizer,
+            training=training,
+        )
+
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
         self.exophora_referents: list[ExophoraReferentType] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
         self.special_tokens: list[str] = list(special_tokens)
-        super().__init__(
-            self.data_path,
-            document_split_stride=document_split_stride,
-            tokenizer=tokenizer,
-            max_seq_length=max_seq_length,
-            training=training,
-        )
         self.tasks: list[Task] = [Task(task) for task in tasks]
         self.cases: list[str] = list(cases)
         self.bar_rels: list[str] = list(bar_rels)
+        self.max_seq_length = max_seq_length
         self.special_to_index: dict[str, int] = {
             token: max_seq_length - len(self.special_tokens) + i
             for i, token in enumerate(self.special_tokens)
@@ -93,6 +97,23 @@ class CohesionDataset(BaseDataset):
             Task.COREFERENCE_RESOLUTION: ["="],
         }
 
+        # load knp format documents
+        self.orig_documents: list[Document] = self.load_documents(self.data_path)
+        self.doc_id2document: dict[str, Document] = {}
+        for orig_document in self.orig_documents:
+            self.doc_id2document.update(
+                {
+                    document.doc_id: document
+                    for document in self._split_document(
+                        document=orig_document,
+                        max_token_length=max_seq_length
+                        - len(tokenizer.additional_special_tokens)
+                        - 2,  # -2: [CLS] and [SEP]
+                        stride=document_split_stride,
+                    )
+                }
+            )
+
         self.examples: list[KyotoExample] = self._load_examples(
             self.documents, str(data_path)
         )
@@ -105,6 +126,11 @@ class CohesionDataset(BaseDataset):
             add_special_tokens=False,
         ).encodings[0]
 
+    # getter for knp documents
+    @property
+    def documents(self) -> list[Document]:
+        return list(self.doc_id2document.values())
+
     @property
     def special_indices(self) -> list[int]:
         return list(self.special_to_index.values())
@@ -116,6 +142,30 @@ class CohesionDataset(BaseDataset):
     @property
     def rel_types(self) -> list[str]:
         return [rel_type for task in self.tasks for rel_type in self.task_to_rels[task]]
+
+    def _split_document(
+        self, document: Document, max_token_length: int, stride: int
+    ) -> list[Document]:
+        sentence_tokens = [
+            self._get_tokenized_len(sentence) for sentence in document.sentences
+        ]
+        if sum(sentence_tokens) <= max_token_length:
+            return [document]
+
+        splitter = SequenceSplitter(sentence_tokens, max_token_length, stride)
+        sub_documents: list[Document] = []
+        sub_idx = 0
+        for span in splitter.split_into_spans():
+            assert isinstance(span, SpanCandidate)
+            sentences = document.sentences[span.start : span.end]
+            sub_document = Document.from_sentences(sentences)
+            sub_doc_id = to_sub_doc_id(document.doc_id, sub_idx, stride=span.stride)
+            sub_document.doc_id = sub_doc_id
+            for sentence, sub_sentence in zip(sentences, sub_document.sentences):
+                sub_sentence.comment = sentence.comment
+            sub_documents.append(sub_document)
+            sub_idx += 1
+        return sub_documents
 
     def _load_examples(
         self, documents: list[Document], documents_path: str

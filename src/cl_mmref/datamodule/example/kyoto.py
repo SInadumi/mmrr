@@ -36,7 +36,8 @@ class KyotoExample(BaseExample):
         sid_to_type_id: dict[str, int],
         flip_writer_reader_according_to_type_id: bool,
     ):
-        self.set_doc_params(document)
+        self.doc_id: str = document.doc_id
+        self.set_knp_params(document.sentences)
         self.sid_to_type_id = sid_to_type_id
         for task in tasks:
             extractor: BaseExtractor = task_to_extractor[task]

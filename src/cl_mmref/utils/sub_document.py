@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Union
 
-from rhoknp import Document, Sentence
+from rhoknp import Sentence
 
 SUB_DOC_PAT: re.Pattern = re.compile(
     r"^(?P<did>[a-zA-Z\d\-_]+?)-s(?P<stride>\d+?)i(?P<idx>\d+?)$"
@@ -22,8 +22,8 @@ def to_orig_doc_id(doc_id: str) -> str:
         return match["did"]
 
 
-def extract_target_sentences(document: Document) -> list[Sentence]:
-    return [sentence for sentence in document.sentences if is_target_sentence(sentence)]
+def extract_target_sentences(sentences: list[Sentence]) -> list[Sentence]:
+    return [sentence for sentence in sentences if is_target_sentence(sentence)]
 
 
 def is_target_sentence(sentence: Sentence) -> bool:

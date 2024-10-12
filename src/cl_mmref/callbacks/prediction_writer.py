@@ -117,7 +117,7 @@ class CohesionWriter(BasePredictionWriter):
                     relation_prediction.tolist()
                 )
                 orig_doc_id = to_orig_doc_id(example.doc_id)
-                for sentence in extract_target_sentences(predicted_document):
+                for sentence in extract_target_sentences(predicted_document.sentences):
                     orig_did_to_sentences[orig_doc_id].append(sentence)
 
         for sentences in orig_did_to_sentences.values():

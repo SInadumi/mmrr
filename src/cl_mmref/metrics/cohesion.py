@@ -105,9 +105,9 @@ class CohesionMetric(BaseModuleMetric):
                 is_analysis_target.tolist(),
             )
             orig_doc_id = to_orig_doc_id(gold_example.doc_id)
-            for sentence in extract_target_sentences(predicted_document):
+            for sentence in extract_target_sentences(predicted_document.sentences):
                 orig_did_to_sentences[orig_doc_id].append(sentence)
-            for sentence in extract_target_sentences(gold_document):
+            for sentence in extract_target_sentences(gold_document.sentences):
                 orig_did_to_gold_sentences[orig_doc_id].append(sentence)
         return (
             [

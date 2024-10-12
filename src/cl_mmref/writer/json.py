@@ -89,7 +89,7 @@ class ProbabilityJsonWriter:
                 probability = [[[]] * len(self.rel_types)] * len(document.base_phrases)
 
             orig_doc_id = to_orig_doc_id(doc_id)
-            target_sentences = extract_target_sentences(document)
+            target_sentences = extract_target_sentences(document.sentences)
             num_target_base_phrases = sum(len(s.base_phrases) for s in target_sentences)
             did2orig_probability[orig_doc_id] += probability[-num_target_base_phrases:]
             num_accum_base_phrases = len(did2orig_probability[orig_doc_id])
