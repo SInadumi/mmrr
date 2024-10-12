@@ -19,35 +19,15 @@ def scenario_id_to_iid(scenario_id: str) -> str:
     return scenario_id.split("-")[-1]
 
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument(
-        "ROOT_DIR",
-        type=str,
-        help="path to input/output annotation dir (current project)",
-    )
-    parser.add_argument("--dataset-name", type=str, choices=["jcre3", "f30k_ent_jp"])
-    parser.add_argument(
-        "--object-file-name", type=str, help="name of a hdf5 input file"
-    )
-    parser.add_argument("--split", type=str, choices=["train", "valid", "test"])
-    args = parser.parse_args()
-
-    dataset_dir = Path(args.ROOT_DIR) / args.split
-    object_fp = h5py.File(Path(args.ROOT_DIR) / f"{args.object_file_name}.h5", mode="r")
-    output_fp = h5py.File(
-        Path(args.ROOT_DIR) / f"{args.object_file_name}_iou_mapper.h5", mode="w"
-    )
-
-    visual_paths = dataset_dir.glob("*.json")
-    for source in visual_paths:
+def calc_bbox_iou(paths: list[Path], input_fp: h5py.File, output_fp: h5py.File) -> None:
+    for source in paths:
         image_text_annotation = ImageTextAnnotation.from_json(Path(source).read_text())
         assert len(image_text_annotation.images) == 1
         scenario_id = image_text_annotation.scenarioId
         image_id = image_text_annotation.images[0].imageId
         gold_bboxes: list[BoundingBox] = image_text_annotation.images[0].boundingBoxes
         predict_bboxes: list[np.ndarray] = list(
-            object_fp[f"{scenario_id}/{image_id}/boxes"]
+            input_fp[f"{scenario_id}/{image_id}/boxes"]
         )
         for gold_bbox in gold_bboxes:
             for idx, pred_bbox in enumerate(predict_bboxes):
@@ -59,12 +39,40 @@ def main():
                         f"{scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}",
                         data=box_iou(gold_bbox.rect, _pbb),
                     )
-                except Exception as e:
+                except ValueError as e:
                     logger.warning(
-                        f"{type(e).__name__}: {e}, {scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
+                        f"{type(e).__name__}: {e}, Skipping {scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
                     )
-    object_fp.close()
-    output_fp.close()
+    return
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "ROOT_DIR",
+        type=str,
+        help="path to input/output annotation dir (current project)",
+    )
+    parser.add_argument("--dataset-name", type=str, choices=["jcre3", "f30k_ent_jp"])
+    parser.add_argument(
+        "--object-file-name", type=str, help="name of a hdf5 input file"
+    )
+    args = parser.parse_args()
+
+    dataset_dirs = [Path(args.ROOT_DIR) / split for split in ["train", "valid", "test"]]
+    visual_paths = [fp for _dir in dataset_dirs for fp in _dir.glob("*.json")]
+
+    input_fp = h5py.File(Path(args.ROOT_DIR) / f"{args.object_file_name}.h5", mode="r")
+    output_fp = h5py.File(
+        Path(args.ROOT_DIR) / f"{args.object_file_name}_iou_mapper.h5", mode="w"
+    )
+    try:
+        calc_bbox_iou(visual_paths, input_fp, output_fp)
+    except Exception as e:
+        logger.error(f"{type(e).__name__}: {e}")
+    finally:
+        input_fp.close()
+        output_fp.close()
 
 
 if __name__ == "__main__":
