@@ -30,19 +30,21 @@ def calc_bbox_iou(paths: list[Path], input_fp: h5py.File, output_fp: h5py.File) 
             input_fp[f"{scenario_id}/{image_id}/boxes"]
         )
         for gold_bbox in gold_bboxes:
+            iou_values = []
             for idx, pred_bbox in enumerate(predict_bboxes):
                 _pbb = Rectangle(
                     x1=pred_bbox[0], y1=pred_bbox[1], x2=pred_bbox[2], y2=pred_bbox[3]
                 )
-                try:
-                    output_fp.create_dataset(
-                        f"{scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}",
-                        data=box_iou(gold_bbox.rect, _pbb),
-                    )
-                except ValueError as e:
-                    logger.warning(
-                        f"{type(e).__name__}: {e}, Skipping {scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
-                    )
+                iou_values.append(box_iou(gold_bbox.rect, _pbb))
+            try:
+                output_fp.create_dataset(
+                    f"{scenario_id}/{image_id}/{gold_bbox.instanceId}",
+                    data=iou_values,
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"{type(e).__name__}: {e}, Skipping {scenario_id}/{image_id}/{gold_bbox.instanceId}/{idx}"
+                )
     return
 
 
