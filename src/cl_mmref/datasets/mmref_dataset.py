@@ -1,18 +1,20 @@
+import copy
 import hashlib
 import json
 import logging
-import math
 import os
 import pickle
 import random
+import sys
 from pathlib import Path
 from typing import Union
 
+import h5py
 import numpy as np
 import torch
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import ListConfig
-from rhoknp import Document
+from rhoknp import Document, Sentence
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
 from tokenizers import Encoding
 from tqdm import tqdm
@@ -24,17 +26,14 @@ from cl_mmref.cohesion_tools.extractors.base import BaseExtractor
 from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.utils.annotation import (
-    DatasetInfo,
     ImageTextAnnotation,
-    PhraseAnnotation,
 )
 from cl_mmref.utils.dataset import (
     MMRefBasePhrase,
     MMRefInputFeatures,
 )
 from cl_mmref.utils.prediction import ObjectFeature
-from cl_mmref.utils.sub_document import to_orig_doc_id
-from cl_mmref.utils.util import IGNORE_INDEX, sigmoid
+from cl_mmref.utils.util import IGNORE_INDEX, Rectangle, sigmoid
 
 from .base_dataset import BaseDataset
 
@@ -49,39 +48,37 @@ class MMRefDataset(BaseDataset):
         tasks: ListConfig,  # "vis-pas", "vis-coref"
         cases: ListConfig,  # target case frames
         max_seq_length: int,
-        vis_max_seq_length: int,
+        object_file_name: str,
         vis_emb_size: int,
-        document_split_stride: int,
         tokenizer: PreTrainedTokenizerBase,
         exophora_referents: ListConfig,
         special_tokens: ListConfig,
         training: bool,
-        flip_reader_writer: bool,
     ) -> None:
+        super().__init__(
+            tokenizer=tokenizer,
+            training=training,
+        )
+
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
         self.exophora_referents: list[ExophoraReferentType] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
         self.special_tokens: list[str] = list(special_tokens)
-
-        super().__init__(
-            data_path=self.data_path,
-            max_seq_length=max_seq_length,
-            document_split_stride=document_split_stride,
-            tokenizer=tokenizer,
-            training=training,
-        )
         self.tasks = [Task(task) for task in tasks]
         self.cases = cases
         self.special_to_index: dict[str, int] = {
             token: max_seq_length - len(self.special_tokens) + i
             for i, token in enumerate(self.special_tokens)
         }
-        self.flip_reader_writer: bool = flip_reader_writer
-        self.vis_max_seq_length = vis_max_seq_length
+        self.max_seq_length = max_seq_length
         self.vis_emb_size = vis_emb_size
         self.dataset_name = self.data_path.parts[-2]
+
+        assert len(self.tasks) > 0
+        assert self.max_seq_length > 0
+        assert self.vis_emb_size > 0
 
         exophora_referent_types: list[ExophoraReferentType] = [
             er.type for er in self.exophora_referents
@@ -101,30 +98,34 @@ class MMRefDataset(BaseDataset):
         }
 
         # load visual annotations
-        visual_annotation: list[ImageTextAnnotation] = self._load_visual_annotation(
-            self.data_path, "json"
+        image_text_annotations: list[ImageTextAnnotation] = (
+            self._load_visual_annotation(self.data_path, "json")
         )
+        documents: list[Document] = self.load_documents(self.data_path)
+        sid2sentence: dict[str, Sentence] = {}
+        for document in documents:
+            for sentence in document.sentences:
+                sid2sentence.update({sentence.sid: sentence})
 
-        # visual annotations tailored for documents
-        self.doc_id2vis: dict[str, list[PhraseAnnotation]] = {}
-        self.doc_id2img: dict[str, list[ImageTextAnnotation]] = {}
-        for document in self.documents:
-            # sub_doc_id -> orig_doc_id
-            orig_doc_id = to_orig_doc_id(document.doc_id)
-            doc_sentence_indices = [sentence.sid for sentence in document.sentences]
-            base_phrases_to_vis: list[PhraseAnnotation] = []
-            utterances = visual_annotation[orig_doc_id].utterances
-            for utterance in utterances:
-                if utterance.sid not in doc_sentence_indices:
-                    continue
-                base_phrases_to_vis.extend(utterance.phrases)
-            self.doc_id2vis.update({document.doc_id: base_phrases_to_vis})
-            self.doc_id2img.update(
-                {document.doc_id: visual_annotation[orig_doc_id].images}
-            )
-        self.examples: list[MMRefExample] = self._load_examples(
-            self.documents, str(data_path)
+        # load object features
+        self.object_file_name = object_file_name
+        self.objects = h5py.File(
+            self.dataset_path / self.dataset_name / f"{object_file_name}.h5", "r"
         )
+        self.iou_mapper = h5py.File(
+            self.dataset_path / self.dataset_name / f"{object_file_name}_iou_mapper.h5",
+            "r",
+        )
+        try:
+            self.examples: list[MMRefExample] = self._load_examples_per_frame(
+                image_text_annotations, sid2sentence
+            )
+        except Exception as e:
+            logger.error(f"{type(e).__name__}: {e}")
+            sys.exit(1)
+        finally:
+            self.objects.close()
+            self.iou_mapper.close()
 
         self.special_encoding: Encoding = self.tokenizer(
             self.special_tokens,
@@ -135,20 +136,35 @@ class MMRefDataset(BaseDataset):
         ).encodings[0]
 
     @staticmethod
-    def _load_visual_annotation(data_path: Path, ext: str = "json") -> dict[str, dict]:
-        visuals: dict[str, ImageTextAnnotation] = {}
+    def _load_visual_annotation(
+        data_path: Path, ext: str = "json"
+    ) -> list[ImageTextAnnotation]:
+        ret: list[ImageTextAnnotation] = []
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
             annot = json.load(open(path, "r", encoding="utf-8"))
             annot = ImageTextAnnotation(**annot)  # for faster loading
-            visuals.update({annot.scenarioId: annot})
-        return visuals
+            ret.append(annot)
+        return ret
 
-    @staticmethod
-    def _load_object(data_path: Path, file_id: str, ext: str = "pth") -> list[dict]:
-        assert data_path.is_dir()
-        path = data_path / (file_id + f".{ext}")
-        return torch.load(path)
+    def _load_objects(self, scenario_id: str, image_id: str) -> list[ObjectFeature]:
+        ret: list[ObjectFeature] = []
+        boxes = list(self.objects[f"{scenario_id}/{image_id}/boxes"])
+        classes = list(self.objects[f"{scenario_id}/{image_id}/classes"])
+        feats = list(self.objects[f"{scenario_id}/{image_id}/feats"])
+        scores = list(self.objects[f"{scenario_id}/{image_id}/scores"])
+        for idx in range(len(boxes)):
+            _bbox = list(boxes[idx])
+            ret.append(
+                ObjectFeature(
+                    image_id=image_id,
+                    rect=Rectangle(x1=_bbox[0], y1=_bbox[1], x2=_bbox[2], y2=_bbox[3]),
+                    class_id=int(classes[idx]),
+                    feature=torch.Tensor(feats[idx]),
+                    score=float(scores[idx]),
+                )
+            )
+        return ret
 
     @property
     def special_indices(self) -> list[int]:
@@ -162,8 +178,10 @@ class MMRefDataset(BaseDataset):
     def rel_types(self) -> list[str]:
         return [rel_type for task in self.tasks for rel_type in self.task_to_rels[task]]
 
-    def _load_examples(
-        self, documents: list[Document], documents_path: str
+    def _load_examples_per_frame(
+        self,
+        image_text_annotations: list[ImageTextAnnotation],
+        sid2sentence: dict[str, Sentence],
     ) -> list[MMRefExample]:
         """Loads examples from knp document and visual annotation"""
         examples = []
@@ -174,23 +192,59 @@ class MMRefDataset(BaseDataset):
         mmref_cache_dir: Path = Path(
             os.environ.get("CACHE_DIR", f'/tmp/{os.environ["USER"]}/mmref_cache')
         )
-        for document in tqdm(documents, desc="Loading examples", dynamic_ncols=True):
-            hash_ = self._hash(
-                documents_path,
-                self.doc_id2vis,
-                self.tasks,
-                self.task_to_extractor,
-                self.flip_reader_writer,
+        hash_ = self._hash(
+            self.data_path,
+            self.tasks,
+            self.task_to_extractor,
+            self.object_file_name,
+        )
+        for idx, annotation in enumerate(
+            tqdm(
+                image_text_annotations,
+                desc="Loading examples",
+                dynamic_ncols=True,
             )
-            example_cache_path = mmref_cache_dir / hash_ / f"{document.doc_id}.pkl"
+        ):
+            assert len(annotation.images) == 1, "single images/frames only"
+            image_id: str = annotation.images[0].imageId
+            scenario_id = annotation.scenarioId
+            knp_sentences: list[Sentence] = [
+                sid2sentence[utt.sid] for utt in annotation.utterances
+            ]
+            candidates: list[ObjectFeature] = self._load_objects(
+                scenario_id, image_id
+            )  # Loading object candidates
+            iou_mapper: dict[str, h5py.Group] = {
+                bbox.instanceId: self.iou_mapper[
+                    f"{scenario_id}/{image_id}/{bbox.instanceId}"
+                ]
+                for bbox in annotation.images[0].boundingBoxes
+            }
+            example_cache_path = mmref_cache_dir / hash_ / f"{scenario_id}-{idx}.pkl"
             if example_cache_path.exists() and load_cache:
                 with example_cache_path.open(mode="rb") as f:
                     try:
                         example = pickle.load(f)
                     except EOFError:
-                        example = self._load_example_from_document(document)
+                        example = MMRefExample()
+                        example = example.load(
+                            vis_sentences=annotation.utterances,
+                            knp_sentences=knp_sentences,
+                            tasks=self.tasks,
+                            task_to_extractor=self.task_to_extractor,
+                            candidates=candidates,
+                            iou_mapper=iou_mapper,
+                        )
             else:
-                example = self._load_example_from_document(document)
+                example = MMRefExample()
+                example.load(
+                    vis_sentences=annotation.utterances,
+                    knp_sentences=knp_sentences,
+                    tasks=self.tasks,
+                    task_to_extractor=self.task_to_extractor,
+                    candidates=candidates,
+                    iou_mapper=iou_mapper,
+                )
                 if save_cache:
                     self._save_cache(example, example_cache_path)
             examples.append(example)
@@ -216,23 +270,18 @@ class MMRefDataset(BaseDataset):
     def _post_process_examples(
         self, examples: list[MMRefExample]
     ) -> list[MMRefExample]:
-        idx = 0
         filtered = []
-        for example in examples:
-            phrases = next(iter(example.phrases.values()))
+        for idx, example in enumerate(examples):
+            phrases = example.phrases[self.tasks[0]]
 
-            # collect candidates
-            all_candidates, phrases = self._collect_candidates(phrases)
-
-            # truncate or pad candidates
-            if len(all_candidates) > self.vis_max_seq_length:
-                all_candidates, phrases = self._truncate_candidates(
-                    all_candidates, phrases
-                )
-            else:
-                all_candidates = self._pad_candidates(all_candidates)
-
-            example.all_candidates = all_candidates
+            candidates = copy.deepcopy(example.candidates)
+            # truncate candidates
+            if len(candidates) > self.max_seq_length:
+                candidates, phrases = self._truncate_candidates(candidates, phrases)
+            # pad candidates
+            if len(candidates) < self.max_seq_length:
+                candidates = self._pad_candidates(candidates)
+            example.candidates = candidates
 
             encoding: Encoding = self.tokenizer(
                 " ".join(
@@ -248,7 +297,6 @@ class MMRefDataset(BaseDataset):
             example.encoding = encoding
             example.example_id = idx
             filtered.append(example)
-            idx += 1
         return filtered
 
     @staticmethod
@@ -273,7 +321,7 @@ class MMRefDataset(BaseDataset):
         all_candidates: list[ObjectFeature],
         phrases: list[MMRefBasePhrase],
     ) -> tuple[list[ObjectFeature], list[MMRefBasePhrase]]:
-        max_seq_length: int = self.vis_max_seq_length
+        max_seq_length: int = self.max_seq_length
 
         # collect pos/neg candidate indices
         pos_cand_indices = set()
@@ -311,42 +359,10 @@ class MMRefDataset(BaseDataset):
         self,
         all_candidates: list[ObjectFeature],
     ) -> MMRefBasePhrase:
-        emb_size: torch.Size = self.vis_emb_size
-        max_seq_length: int = self.vis_max_seq_length
-        pad_mask: ObjectFeature = ObjectFeature(feature=torch.zeros(emb_size))
+        max_seq_length = self.max_seq_length
+        pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
         all_candidates += [pad_mask] * (max_seq_length - len(all_candidates))
         return all_candidates
-
-    def _load_example_from_document(self, document: Document) -> MMRefExample:
-        visual_phrases: dict = self.doc_id2vis[document.doc_id]
-        orig_doc_id: str = to_orig_doc_id(document.doc_id)
-        sid_to_objects: dict[str, list] = {sent.sid: [] for sent in document.sentences}
-
-        # Loading object candidates
-        info_dir = self.dataset_path / self.dataset_name / "recording"
-        dataset_info = DatasetInfo.from_json(
-            (info_dir / orig_doc_id / "info.json").read_text()
-        )
-        obj_features = self._load_object(self.data_path, orig_doc_id, ext="pth")
-        for utterance in dataset_info.utterances:
-            if len(utterance.image_ids) == 0:
-                continue
-            sidx = math.ceil(utterance.start / 1000)
-            eidx = math.ceil(utterance.end / 1000)
-            assert eidx >= sidx
-            sid_to_objects.update(
-                {sid: obj_features[sidx:eidx] for sid in utterance.sids}
-            )
-
-        example = MMRefExample()
-        example.load(
-            document=document,
-            visual_phrases=visual_phrases,
-            tasks=self.tasks,
-            task_to_extractor=self.task_to_extractor,
-            sid_to_objects=sid_to_objects,
-        )
-        return example
 
     def dump_relation_prediction(
         self,
@@ -422,7 +438,7 @@ class MMRefDataset(BaseDataset):
         """Convert example to visual feature"""
         vis_embeds: list[torch.Tensor] = []
         vis_attention_mask: list[bool] = []
-        for candidate in example.all_candidates:
+        for candidate in example.candidates:
             vis_embeds.append(candidate.feature)
             vis_attention_mask.append(True if candidate.class_id != -1 else False)
         vis_embeds = torch.stack(vis_embeds)  # -> torch.Tensor
@@ -457,15 +473,15 @@ class MMRefDataset(BaseDataset):
         encoding: Encoding,
     ) -> tuple[list[list[float]], list[list[bool]]]:
         scores_set: list[list[float]] = [
-            [0.0] * self.vis_max_seq_length for _ in range(self.max_seq_length)
+            [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
         ]  # (src, tgt)
         candidates_set: list[list[bool]] = [
-            [False] * self.vis_max_seq_length for _ in range(self.max_seq_length)
+            [False] * self.max_seq_length for _ in range(self.max_seq_length)
         ]  # (src, tgt)
 
         for phrase in phrases:
-            scores: list[float] = [0.0] * self.vis_max_seq_length
-            token_level_candidates: list[bool] = [False] * self.vis_max_seq_length
+            scores: list[float] = [0.0] * self.max_seq_length
+            token_level_candidates: list[bool] = [False] * self.max_seq_length
             # phrase.rel2tags が None の場合は推論時，もしくは学習対象外の物体候補．
             # その場合は scores が全てゼロになるため loss が計算されない．
             if phrase.rel2tags is not None:

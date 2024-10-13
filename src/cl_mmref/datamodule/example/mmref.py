@@ -1,8 +1,9 @@
-from rhoknp import BasePhrase, Document
+import h5py
+from rhoknp import BasePhrase, Sentence
 
 from cl_mmref.cohesion_tools.extractors.base import BaseExtractor
 from cl_mmref.cohesion_tools.task import Task
-from cl_mmref.utils.annotation import PhraseAnnotation
+from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
 from cl_mmref.utils.dataset import MMRefBasePhrase
 from cl_mmref.utils.prediction import ObjectFeature
 
@@ -13,24 +14,30 @@ class MMRefExample(BaseExample):
     def __init__(self) -> None:
         self.phrases: dict[Task, list[MMRefBasePhrase]] = {}
         self.sid_to_objects: dict[str, list] = {}
-        self.all_candidates: list[ObjectFeature] = None
+        self.candidates: list[ObjectFeature] = None
 
     def load(
         self,
-        document: Document,
-        visual_phrases: dict[list],
+        knp_sentences: list[Sentence],
+        vis_sentences: list[SentenceAnnotation],
         tasks: list[Task],
         task_to_extractor: dict[Task, BaseExtractor],
-        sid_to_objects: dict[str, list],
+        candidates: list[ObjectFeature],
+        iou_mapper: dict[str, h5py.Group],
     ):
-        self.set_doc_params(document)
-        self.sid_to_objects = sid_to_objects
+        self.set_knp_params(knp_sentences)
+        base_phrases: list[BasePhrase] = [
+            phrase for sentence in knp_sentences for phrase in sentence.base_phrases
+        ]
+        vis_phrases: list[PhraseAnnotation] = [
+            phrase for sentence in vis_sentences for phrase in sentence.phrases
+        ]
+        self.candidates = candidates
+        assert len(base_phrases) == len(vis_phrases)
         for task in tasks:
             extractor: BaseExtractor = task_to_extractor[task]
             self.phrases[task] = self._wrap_base_phrases(
-                document.base_phrases,
-                visual_phrases,
-                extractor,
+                base_phrases, vis_phrases, extractor, iou_mapper
             )
 
     def _wrap_base_phrases(
@@ -38,6 +45,7 @@ class MMRefExample(BaseExample):
         base_phrases: list[BasePhrase],
         visual_phrases: list[PhraseAnnotation],
         extractor: BaseExtractor,
+        iou_mapper: dict[str, h5py.Group],
     ) -> list[MMRefBasePhrase]:
         mmref_base_phrases = [
             MMRefBasePhrase(
@@ -45,45 +53,21 @@ class MMRefExample(BaseExample):
                 [morpheme.global_index for morpheme in base_phrase.morphemes],
                 [morpheme.text for morpheme in base_phrase.morphemes],
                 is_target=False,
-                referent_candidates=[],
             )
             for base_phrase in base_phrases
         ]
 
-        assert len(base_phrases) == len(mmref_base_phrases) == len(visual_phrases)
         for idx in range(len(base_phrases)):
-            base_phrase: BasePhrase = base_phrases[idx]
             visual_phrase: PhraseAnnotation = visual_phrases[idx]
             mmref_base_phrase: MMRefBasePhrase = mmref_base_phrases[idx]
 
-            # set a parameter: "is_target"
-            objects = self.sid_to_objects[base_phrase.sentence.sid]
+            # set a parameter: `is_target`
             mmref_base_phrase.is_target = extractor.is_target(visual_phrase)
-
-            # set parameters: "referent_candidates" and "rel2tags"
+            # set parameters: `referent_candidates` and `rel2tags`
             if mmref_base_phrase.is_target:
-                candidates: list[ObjectFeature] = self._get_object_candidates(objects)
                 rel2tags: dict[str, list[int]] = extractor.extract_rels(
-                    visual_phrase, candidates
+                    visual_phrase, self.candidates, iou_mapper
                 )
-                mmref_base_phrase.referent_candidates = candidates
                 mmref_base_phrase.rel2tags = rel2tags
-        return mmref_base_phrases
 
-    @staticmethod
-    def _get_object_candidates(objects: list[dict]) -> list[ObjectFeature]:
-        """Get object candidates for parsing"""
-        ret: list[ObjectFeature] = []
-        for objs in objects:
-            for idx, class_id in enumerate(objs["classes"]):
-                ret.append(
-                    ObjectFeature(
-                        image_id=objs["image_id"],
-                        class_id=class_id,
-                        score=objs["scores"][idx],
-                        bbox=objs["boxes"][idx],
-                        feature=objs["feats"][idx],
-                    )
-                )
-        # sort object candidates by detector confidences
-        return sorted(ret, key=lambda x: x.score.item(), reverse=True)
+        return mmref_base_phrases

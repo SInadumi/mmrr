@@ -1,7 +1,9 @@
+import h5py
 from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
+from cl_mmref.cohesion_tools.constants import IOU_THRESHOLD
 from cl_mmref.utils.annotation import PhraseAnnotation
 from cl_mmref.utils.prediction import ObjectFeature
 
@@ -21,20 +23,24 @@ class MMRefExtractor(BaseExtractor):
         self,
         predicate: PhraseAnnotation,
         candidates: list[ObjectFeature],
+        iou_mapper: dict[str, h5py.Group],
     ) -> dict[str, list[int]]:
         all_arguments: dict[str, list[int]] = {}
         for rel_type in self.rels:
+            all_arguments[rel_type] = []
             _rel_types = self.get_rel_types([rel_type], include_nonidentical=False)
-            class_ids = set()
             for relation in predicate.relations:
                 if relation.type not in _rel_types:
                     continue
-                class_ids.add(relation.classId)
-            all_arguments[rel_type] = [
-                idx
-                for idx, c in enumerate(candidates)
-                if c.class_id.item() in list(class_ids)
-            ]
+                if len(relation.boundingBoxes) == 0:
+                    continue
+                assert len(candidates) == len(iou_mapper[f"{relation.instanceId}"])
+                all_arguments[rel_type] = [
+                    idx
+                    for idx, iou in enumerate(iou_mapper[f"{relation.instanceId}"])
+                    if iou > IOU_THRESHOLD
+                ]
+
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:
