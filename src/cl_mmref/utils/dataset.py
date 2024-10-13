@@ -3,8 +3,6 @@ from typing import Optional
 
 import torch
 
-from .prediction import ObjectFeature
-
 
 @dataclass
 class CohesionBasePhrase:
@@ -38,6 +36,7 @@ class CohesionInputFeatures:
     source_label: list[list[int]]  # 解析対象基本句かどうか
     target_label: list[list[list[float]]]  # source と関係を持つかどうか
 
+
 @dataclass
 class MMRefBasePhrase:
     """A wrapper class of BasePhrase for multi-modal reference resolution"""
@@ -46,7 +45,6 @@ class MMRefBasePhrase:
     morpheme_global_indices: list[int]  # indices of phrase span
     morphemes: list[str]  # phrase span
     is_target: bool  # a flag of phrase span an analysis target
-    referent_candidates: list["ObjectFeature"]
     rel2tags: Optional[dict[str, list[int]]] = None
 
 
