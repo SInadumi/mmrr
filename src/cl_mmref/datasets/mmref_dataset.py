@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import pickle
-import random
 import sys
 from pathlib import Path
 from typing import Union
@@ -275,9 +274,7 @@ class MMRefDataset(BaseDataset):
             phrases = example.phrases[self.tasks[0]]
 
             candidates = copy.deepcopy(example.candidates)
-            # truncate candidates
-            if len(candidates) > self.max_seq_length:
-                candidates, phrases = self._truncate_candidates(candidates, phrases)
+            assert len(candidates) <= self.max_seq_length, "too many objects"
             # pad candidates
             if len(candidates) < self.max_seq_length:
                 candidates = self._pad_candidates(candidates)
@@ -298,62 +295,6 @@ class MMRefDataset(BaseDataset):
             example.example_id = idx
             filtered.append(example)
         return filtered
-
-    @staticmethod
-    def _collect_candidates(
-        phrases: list[MMRefBasePhrase],
-    ) -> tuple[list[ObjectFeature], list[MMRefBasePhrase]]:
-        all_candidates: list[ObjectFeature] = []
-        candidate_sidx: list[int] = [0]
-        for idx, phrase in enumerate(phrases):
-            all_candidates.extend(phrase.referent_candidates)
-            candidate_sidx.append(candidate_sidx[idx] + len(phrase.referent_candidates))
-
-        for idx, phrase in enumerate(phrases):
-            if phrase.rel2tags is not None:
-                sidx = candidate_sidx[idx]
-                for rel, cids in phrase.rel2tags.items():
-                    phrase.rel2tags[rel] = [cid + sidx for cid in cids]
-        return all_candidates, phrases
-
-    def _truncate_candidates(
-        self,
-        all_candidates: list[ObjectFeature],
-        phrases: list[MMRefBasePhrase],
-    ) -> tuple[list[ObjectFeature], list[MMRefBasePhrase]]:
-        max_seq_length: int = self.max_seq_length
-
-        # collect pos/neg candidate indices
-        pos_cand_indices = set()
-        for phrase in phrases:
-            if phrase.rel2tags is not None:
-                pos_cand_indices |= set(
-                    [cid for cids in phrase.rel2tags.values() for cid in cids]
-                )
-        neg_cand_indices = set(range(len(all_candidates))) - set(pos_cand_indices)
-
-        # truncate negative candidates
-        assert max_seq_length - len(pos_cand_indices) > 0
-        pos_cand_indices = list(pos_cand_indices)
-        neg_cand_indices = list(neg_cand_indices)
-        neg_cand_indices = random.sample(
-            neg_cand_indices, max_seq_length - len(pos_cand_indices)
-        )
-        all_cand_indices = sorted(pos_cand_indices + neg_cand_indices)
-        all_candidates = [all_candidates[idx] for idx in all_cand_indices]
-
-        # reallocate rel2tag values
-        pos_mapper: dict[int, int] = {
-            pidx: nidx
-            for nidx, pidx in enumerate(all_cand_indices)
-            if pidx in pos_cand_indices
-        }  # prev idx to new idx
-        for phrase in phrases:
-            if phrase.rel2tags is not None:
-                for rel, cids in phrase.rel2tags.items():
-                    phrase.rel2tags[rel] = [pos_mapper[cid] for cid in cids]
-
-        return all_candidates, phrases
 
     def _pad_candidates(
         self,
