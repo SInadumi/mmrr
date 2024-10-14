@@ -201,9 +201,7 @@ def convert_flickr(
             if instance_id not in instance_ids:
                 instance_ids.append(instance_id)
 
-    knp_document = KNPDocument()
-    knp_document.doc_id = scenario_id
-    knp_document.sentences = knp_sentences
+    knp_document = KNPDocument.from_sentences(knp_sentences)
     knp_dir.joinpath(f"{scenario_id}.knp").write_text(knp_document.to_knp())
 
     image_text_utterances: list[SentenceAnnotation] = []
