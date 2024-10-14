@@ -266,7 +266,8 @@ def main():
     augmenter = ImageTextAugmenter(Path(args.INPUT), args.dataset_name)
     for source in visual_paths:
         scenario_id = source.stem
-        image_text_annotation = ImageTextAnnotation.from_json(Path(source).read_text())
+        raw_annot = json.load(open(source, "r", encoding="utf-8")) # for faster loading
+        image_text_annotation = ImageTextAnnotation(**raw_annot)
         image_text_annotation = augmenter.add_bboxes_to_phrase_annotations(
             image_text_annotation
         )

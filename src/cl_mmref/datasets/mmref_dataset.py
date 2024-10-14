@@ -145,9 +145,8 @@ class MMRefDataset(BaseDataset):
         ret: list[ImageTextAnnotation] = []
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
-            annot = json.load(open(path, "r", encoding="utf-8"))
-            annot = ImageTextAnnotation(**annot)  # for faster loading
-            ret.append(annot)
+            raw_annot = json.load(open(path, "r", encoding="utf-8")) # for faster loading
+            ret.append(ImageTextAnnotation(**raw_annot))
         return ret
 
     def _load_objects(self, scenario_id: str, image_id: str) -> list[ObjectFeature]:
