@@ -3,14 +3,15 @@ from typing import Optional
 
 import numpy as np
 import torch
-from rhoknp import Document
+from rhoknp import Sentence
 
+from cl_mmref.cohesion_tools.constants import RECALL_TOP_KS
 from cl_mmref.cohesion_tools.evaluators.mmref import MMRefEvaluator, MMRefScore
-from cl_mmref.cohesion_tools.evaluators.utils import RECALL_TOP_KS, F1Metric
+from cl_mmref.cohesion_tools.evaluators.utils import F1Metric
 from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.datasets.mmref_dataset import MMRefDataset
-from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
+from cl_mmref.utils.annotation import SentenceAnnotation
 from cl_mmref.utils.prediction import SentencePrediction
 from cl_mmref.writer.mmref import SentenceJsonWriter
 
@@ -75,9 +76,9 @@ class MMRefMetric(BaseModuleMetric):
             self.example_ids, self.relation_logits, self.source_mask_logits
         ):
             gold_example: MMRefExample = self.dataset.examples[example_id.item()]
-            gold_document: Document = self.dataset.doc_id2document[gold_example.doc_id]
-            gold_annotation: list[PhraseAnnotation] = self.dataset.doc_id2vis[
-                gold_example.doc_id
+            gold_sentences: list[SentenceAnnotation] = [
+                self.dataset.sid2vis_sentence[sid]
+                for sid in gold_example.sentence_indices
             ]
 
             # (phrase, rel, candidate)
@@ -102,17 +103,12 @@ class MMRefMetric(BaseModuleMetric):
             sentence_predictions.extend(
                 json_writer.write_sentence_predictions(
                     gold_example,
-                    gold_document,
+                    gold_sentences,
                     candidate_selection_prediction.tolist(),
                     is_analysis_target.tolist(),
                 )
             )
-            sentence_annotations.extend(
-                json_writer.write_sentence_annotations(
-                    gold_document,
-                    gold_annotation,
-                )
-            )
+            sentence_annotations.extend(gold_sentences)
 
         return sentence_predictions, sentence_annotations
 
@@ -182,9 +178,9 @@ class MMRefMetric(BaseModuleMetric):
                 key = task_str
                 if analysis_type != "all":
                     key += f"_{analysis_type}"
-                metrics[key + "_tp_fn"] = (
-                    metric.tp_fn
-                )  # FIXME: This is redundant variable.
+                # metrics[key + "_tp_fn"] = (
+                #     metric.tp_fn
+                # )  # FIXME: This is redundant variable.
                 metrics[key] = metric.recall
         for recall_top_k in RECALL_TOP_KS:
             _metric_name = f"recall@{recall_top_k}"

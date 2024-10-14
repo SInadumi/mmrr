@@ -1,6 +1,4 @@
-from collections import defaultdict
-
-from rhoknp import Document
+from rhoknp import Sentence
 
 from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import MMRefExample
@@ -13,7 +11,6 @@ from cl_mmref.utils.prediction import (
     RelationPrediction,
     SentencePrediction,
 )
-from cl_mmref.utils.sub_document import extract_target_sentences
 from cl_mmref.utils.util import Rectangle
 
 
@@ -23,52 +20,35 @@ class SentenceJsonWriter:
         self.tasks: list[Task] = dataset.tasks
         self.task_to_rels: dict[Task, list[str]] = dataset.task_to_rels
 
-    def write_sentence_annotations(
-        self, document: Document, phrase_annotations: list[PhraseAnnotation]
-    ) -> list[SentenceAnnotation]:
-        sid_to_phrases: dict[str, list[PhraseAnnotation]] = defaultdict(list)
-        assert len(document.base_phrases) == len(phrase_annotations)
-        for base_phrase, phrase_annotation in zip(
-            document.base_phrases, phrase_annotations
-        ):
-            sid_to_phrases[base_phrase.sentence.sid].append(phrase_annotation)
-
-        sentence_annotations: list[SentenceAnnotation] = []
-        for sentence in extract_target_sentences(document):
-            sentence_annotations.append(
-                SentenceAnnotation(
-                    sid=sentence.sid,
-                    text=sentence.text,
-                    phrases=sid_to_phrases[sentence.sid],
-                )
-            )
-
-        return sentence_annotations
-
     def write_sentence_predictions(
         self,
         example: MMRefExample,
-        document: Document,
+        sentences: list[SentenceAnnotation],
         candidate_selection_prediction: list[
             list[list[int]]
         ],  # (phrase, rel, candidate)
         is_analysis_target: list[list[bool]],  # (phrase, task)
     ) -> list[SentencePrediction]:
-        assert (
-            len(document.base_phrases)
-            == len(candidate_selection_prediction)
-            == len(is_analysis_target)
-        )
+        assert len(candidate_selection_prediction) == len(is_analysis_target)
         phrase_predictions: list[PhrasePrediction] = self.write_phrase_predictions(
-            example, document, candidate_selection_prediction, is_analysis_target
+            example,
+            [
+                sentence.sid
+                for sentence in sentences
+                for _ in range(len(sentence.phrases))
+            ],
+            [phrase for sentence in sentences for phrase in sentence.phrases],
+            candidate_selection_prediction,
+            is_analysis_target,
         )
         sentence_predictions: list[SentencePrediction] = []
-        for sentence in extract_target_sentences(document):
+        for sentence in sentences:
             phrases_tmp: list[PhrasePrediction] = []
             for phrase_prediction in phrase_predictions:
                 if sentence.sid != phrase_prediction.sid:
                     continue
                 phrases_tmp.append(phrase_prediction)
+
             sentence_predictions.append(
                 SentencePrediction(
                     text=sentence.text, sid=sentence.sid, phrases=phrases_tmp
@@ -79,25 +59,25 @@ class SentenceJsonWriter:
     def write_phrase_predictions(
         self,
         example: MMRefExample,
-        document: Document,
+        sids: list[str],
+        phrases: list[PhraseAnnotation],
         candidate_selection_prediction: list[
             list[list[int]]
         ],  # (phrase, rel, candidate)
         is_analysis_target: list[list[bool]],  # (phrase, task)
     ) -> list[PhrasePrediction]:
         assert (
-            len(document.base_phrases)
+            len(phrases)
             == len(candidate_selection_prediction)
             == len(is_analysis_target)
         )
 
         phrase_predictions: list[PhrasePrediction] = []
-        for idx, (base_phrase, selected_candidates, is_targets) in enumerate(
-            zip(
-                document.base_phrases,
-                candidate_selection_prediction,
-                is_analysis_target,
-            )
+        for sid, phrase, selected_candidates, is_targets in zip(
+            sids,
+            phrases,
+            candidate_selection_prediction,
+            is_analysis_target,
         ):
             rel_type_to_candidate = dict(zip(self.rel_types, selected_candidates))
 
@@ -108,20 +88,17 @@ class SentenceJsonWriter:
                 if is_target is True:
                     for rel_type in self.task_to_rels[task]:
                         candidate_predictions: list[ObjectFeature] = [
-                            example.all_candidates[idx]
+                            example.candidates[idx]
                             for idx in rel_type_to_candidate[rel_type]
                         ]
                         bbox_predictions: list[BoundingBoxPrediction] = []
                         for pred in candidate_predictions:
-                            bbox = pred.bbox.tolist()
                             bbox_predictions.append(
                                 BoundingBoxPrediction(
                                     image_id=pred.image_id,
-                                    class_id=pred.class_id.item(),
-                                    rect=Rectangle(
-                                        x1=bbox[0], y1=bbox[1], x2=bbox[2], y2=bbox[3]
-                                    ),
-                                    confidence=pred.score.item(),
+                                    class_id=pred.class_id,
+                                    confidence=pred.confidence,
+                                    rect=pred.rect,
                                 )
                             )
 
@@ -133,9 +110,9 @@ class SentenceJsonWriter:
 
                 phrase_predictions.append(
                     PhrasePrediction(
-                        sid=base_phrase.sentence.sid,
+                        sid=sid,
                         task=task,
-                        text=base_phrase.text,
+                        text=phrase.text,
                         relations=relation_predictions,
                     )
                 )
