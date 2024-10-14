@@ -1,6 +1,6 @@
 from typing import Optional
 
-from rhoknp import Sentence
+from rhoknp import Document
 from tokenizers import Encoding
 
 from cl_mmref.utils.sub_document import extract_target_sentences
@@ -15,9 +15,9 @@ class BaseExample:
     def load(self):
         raise NotImplementedError
 
-    def set_knp_params(self, sentences: list[Sentence]):
+    def set_knp_params(self, document: Document):
         analysis_target_morpheme_indices = []
-        for sentence in extract_target_sentences(sentences):
+        for sentence in extract_target_sentences(document.sentences):
             analysis_target_morpheme_indices += [
                 m.global_index for m in sentence.morphemes
             ]

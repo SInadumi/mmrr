@@ -1,5 +1,5 @@
 import h5py
-from rhoknp import BasePhrase, Sentence
+from rhoknp import BasePhrase, Document
 
 from cl_mmref.cohesion_tools.extractors.base import BaseExtractor
 from cl_mmref.cohesion_tools.task import Task
@@ -12,23 +12,24 @@ from .base import BaseExample
 
 class MMRefExample(BaseExample):
     def __init__(self) -> None:
+        super().__init__()
+        self.sentence_indices: list = []
         self.phrases: dict[Task, list[MMRefBasePhrase]] = {}
         self.sid_to_objects: dict[str, list] = {}
         self.candidates: list[ObjectFeature] = None
 
     def load(
         self,
-        knp_sentences: list[Sentence],
+        knp_document: Document,
         vis_sentences: list[SentenceAnnotation],
         tasks: list[Task],
         task_to_extractor: dict[Task, BaseExtractor],
         candidates: list[ObjectFeature],
         iou_mapper: dict[str, h5py.Group],
     ):
-        self.set_knp_params(knp_sentences)
-        base_phrases: list[BasePhrase] = [
-            phrase for sentence in knp_sentences for phrase in sentence.base_phrases
-        ]
+        self.set_knp_params(knp_document)
+        self.sentence_indices = [sentence.sid for sentence in vis_sentences]
+        base_phrases: list[BasePhrase] = knp_document.base_phrases
         vis_phrases: list[PhraseAnnotation] = [
             phrase for sentence in vis_sentences for phrase in sentence.phrases
         ]
