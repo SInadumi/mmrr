@@ -24,9 +24,7 @@ from cl_mmref.cohesion_tools.extractors import MMRefExtractor
 from cl_mmref.cohesion_tools.extractors.base import BaseExtractor
 from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import MMRefExample
-from cl_mmref.utils.annotation import (
-    ImageTextAnnotation,
-)
+from cl_mmref.utils.annotation import ImageTextAnnotation, SentenceAnnotation
 from cl_mmref.utils.dataset import (
     MMRefBasePhrase,
     MMRefInputFeatures,
@@ -100,11 +98,17 @@ class MMRefDataset(BaseDataset):
         image_text_annotations: list[ImageTextAnnotation] = (
             self._load_visual_annotation(self.data_path, "json")
         )
+        self.sid2vis_sentence: dict[str, SentenceAnnotation] = {}
+        for annotation in image_text_annotations:
+            for utterance in annotation.utterances:
+                self.sid2vis_sentence.update({utterance.sid: utterance})
+
+        # load textual annotations
         documents: list[Document] = self.load_documents(self.data_path)
-        sid2sentence: dict[str, Sentence] = {}
+        sid2knp_sentence: dict[str, Sentence] = {}
         for document in documents:
             for sentence in document.sentences:
-                sid2sentence.update({sentence.sid: sentence})
+                sid2knp_sentence.update({sentence.sid: sentence})
 
         # load object features
         self.object_file_name = object_file_name
@@ -117,7 +121,7 @@ class MMRefDataset(BaseDataset):
         )
         try:
             self.examples: list[MMRefExample] = self._load_examples_per_frame(
-                image_text_annotations, sid2sentence
+                image_text_annotations, sid2knp_sentence
             )
         except Exception as e:
             logger.error(f"{type(e).__name__}: {e}")
@@ -156,11 +160,11 @@ class MMRefDataset(BaseDataset):
             _bbox = list(boxes[idx])
             ret.append(
                 ObjectFeature(
-                    image_id=image_id,
-                    rect=Rectangle(x1=_bbox[0], y1=_bbox[1], x2=_bbox[2], y2=_bbox[3]),
+                    image_id=int(image_id),
                     class_id=int(classes[idx]),
+                    confidence=float(scores[idx]),
+                    rect=Rectangle(x1=_bbox[0], y1=_bbox[1], x2=_bbox[2], y2=_bbox[3]),
                     feature=torch.Tensor(feats[idx]),
-                    score=float(scores[idx]),
                 )
             )
         return ret
@@ -180,7 +184,7 @@ class MMRefDataset(BaseDataset):
     def _load_examples_per_frame(
         self,
         image_text_annotations: list[ImageTextAnnotation],
-        sid2sentence: dict[str, Sentence],
+        sid2knp_sentence: dict[str, Sentence],
     ) -> list[MMRefExample]:
         """Loads examples from knp document and visual annotation"""
         examples = []
@@ -207,9 +211,9 @@ class MMRefDataset(BaseDataset):
             assert len(annotation.images) == 1, "single images/frames only"
             image_id: str = annotation.images[0].imageId
             scenario_id = annotation.scenarioId
-            knp_sentences: list[Sentence] = [
-                sid2sentence[utt.sid] for utt in annotation.utterances
-            ]
+            knp_document = Document.from_sentences(
+                [sid2knp_sentence[utt.sid] for utt in annotation.utterances]
+            )
             candidates: list[ObjectFeature] = self._load_objects(
                 scenario_id, image_id
             )  # Loading object candidates
@@ -228,7 +232,7 @@ class MMRefDataset(BaseDataset):
                         example = MMRefExample()
                         example = example.load(
                             vis_sentences=annotation.utterances,
-                            knp_sentences=knp_sentences,
+                            knp_document=knp_document,
                             tasks=self.tasks,
                             task_to_extractor=self.task_to_extractor,
                             candidates=candidates,
@@ -238,7 +242,7 @@ class MMRefDataset(BaseDataset):
                 example = MMRefExample()
                 example.load(
                     vis_sentences=annotation.utterances,
-                    knp_sentences=knp_sentences,
+                    knp_document=knp_document,
                     tasks=self.tasks,
                     task_to_extractor=self.task_to_extractor,
                     candidates=candidates,
@@ -298,12 +302,12 @@ class MMRefDataset(BaseDataset):
 
     def _pad_candidates(
         self,
-        all_candidates: list[ObjectFeature],
+        candidates: list[ObjectFeature],
     ) -> MMRefBasePhrase:
         max_seq_length = self.max_seq_length
         pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
-        all_candidates += [pad_mask] * (max_seq_length - len(all_candidates))
-        return all_candidates
+        candidates += [pad_mask] * (max_seq_length - len(candidates))
+        return candidates
 
     def dump_relation_prediction(
         self,
@@ -321,7 +325,7 @@ class MMRefDataset(BaseDataset):
                 self._token_to_candidate_level(
                     logits,
                     example.phrases[task],
-                    example.all_candidates,
+                    example.candidates,
                     example.encoding,
                 )
             )

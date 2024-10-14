@@ -11,9 +11,9 @@ DEFAULT_VIS_EMB_SIZE = 1024
 
 @dataclass(frozen=True)
 class ObjectFeature:
-    image_id: str = ""
+    image_id: int = -1
     class_id: int = -1
-    score: float = 0.0
+    confidence: float = 0.0
     rect: Rectangle = Rectangle(x1=0, y1=0, x2=0, y2=0)
     feature: torch.Tensor = torch.zeros(DEFAULT_VIS_EMB_SIZE)
 
