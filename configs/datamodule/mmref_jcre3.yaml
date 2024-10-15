@@ -1,13 +1,10 @@
 defaults:
   - train:
     - jcre3_mmref.yaml
-    - f30k_mmref.yaml
   - valid:
     - jcre3_mmref.yaml
-    - f30k_mmref.yaml
   - test:
     - jcre3_mmref.yaml
-    - f30k_mmref.yaml
 
 batch_size: ${max_batches_per_device}
 num_workers: ${num_workers}

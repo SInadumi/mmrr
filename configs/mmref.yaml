@@ -1,6 +1,7 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping_mmref, model_checkpoint, model_summary, lr_monitor]
+  - callbacks:
+      [early_stopping_mmref, model_checkpoint, model_summary, lr_monitor]
   - datamodule: mmref_all
   - logger: mmref
   - model: mmref_baseline
@@ -11,14 +12,11 @@ defaults:
   - _self_
 
 dataset_path: ./data
-max_seq_length: 64
-vis_max_seq_length: 256
+max_seq_length: 128
+object_file_name: CLIP_fast_rcnn_R_50_C4_zsinf
 vis_emb_size: 1024
 model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
-frw: false
-flip_reader_writer: ${frw}
 checkpoint: "" # path to trained checkpoint
-document_split_stride: 2
 analysis_target_threshold: 0.3
 
 # experimental settings
@@ -40,7 +38,7 @@ warmup_steps: 1000
 warmup_ratio: null
 
 # environment-dependent settings
-devices: ${oc.env:DEVICES,1}
+devices: ${oc.env:DEVICES,4}
 max_batches_per_device: ${oc.env:MAX_BATCHES_PER_DEVICE,4}
 num_workers: ${oc.env:NUM_WORKERS,4}
 compile: ${oc.env:COMPILE,false}

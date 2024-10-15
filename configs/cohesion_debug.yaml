@@ -1,6 +1,7 @@
 defaults:
   - base.yaml
-  - callbacks: [early_stopping_cohesion, model_checkpoint, model_summary, progress_bar]
+  - callbacks:
+      [early_stopping_cohesion, model_checkpoint, model_summary, progress_bar]
   - datamodule: cohesion_jcre3
   - logger: null
   - model: cohesion_baseline
@@ -20,7 +21,7 @@ document_split_stride: -1
 analysis_target_threshold: 0.3
 
 # experimental settings
-metric_learning_loss: {"contrastive_alignment_loss": 1.0}
+metric_learning_loss: { "contrastive_alignment_loss": 1.0 }
 cases: ["ガ", "ヲ", "ニ"]
 bar_rels: ["ノ"]
 exophora_referents:

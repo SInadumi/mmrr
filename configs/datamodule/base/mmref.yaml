@@ -6,10 +6,8 @@ cases: ${cases}
 exophora_referents: ${exophora_referents}
 special_tokens: ${special_tokens}
 max_seq_length: ${max_seq_length}
-vis_max_seq_length: ${vis_max_seq_length}
+object_file_name: ${object_file_name}
 vis_emb_size: ${vis_emb_size}
-document_split_stride: ${document_split_stride}
-flip_reader_writer: ${flip_reader_writer}
 
 tokenizer:
   _target_: transformers.AutoTokenizer.from_pretrained

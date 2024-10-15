@@ -1,0 +1,6 @@
+defaults:
+  - /datamodule/base/mmref.yaml@f30k
+
+f30k:
+  data_path: ${dataset_path}/f30k_ent_jp/train
+  training: true
