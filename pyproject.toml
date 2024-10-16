@@ -54,7 +54,7 @@ readme = "README.md"
 package-mode=true
 packages = [
     { include = "cl_mmref", from = "src" },
-    { include = "cohesion_tools", from = "src/cl_mmref" }
+    { include = "tools", from = "src/cl_mmref" }
 ]
 
 [tool.poetry.dependencies]
@@ -83,11 +83,12 @@ dataclasses-json = "^0.6.1"
 typing-extensions = ">=4.4"
 pydantic = "^2.9.2"
 
-jaconv = "^0.3.4"
-rhoknp = ">=1.5.1"
+jaconv = ">0.3.4"
+rhoknp = ">=1.5.1,<1.7.0"
+kwja = "^2.4.0"
+cohesion-tools = ">=0.5.7"
 
 h5py = "^3.12.1"
-
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.4"
 mypy = "^1.10.0"
