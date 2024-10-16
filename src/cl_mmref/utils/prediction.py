@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 import torch
+from cohesion_tools.task import Task
 
-from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.utils.annotation import ImageInfo
 from cl_mmref.utils.util import CamelCaseDataClassJsonMixin, Rectangle
 

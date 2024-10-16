@@ -54,6 +54,7 @@ readme = "README.md"
 package-mode=true
 packages = [
     { include = "cl_mmref", from = "src" },
+    { include = "cohesion_tools", from = "src/cl_mmref" }
 ]
 
 [tool.poetry.dependencies]

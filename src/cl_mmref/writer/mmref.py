@@ -1,6 +1,5 @@
-from rhoknp import Sentence
+from cohesion_tools.task import Task
 
-from cl_mmref.cohesion_tools.task import Task
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.datasets.mmref_dataset import MMRefDataset
 from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
@@ -11,7 +10,6 @@ from cl_mmref.utils.prediction import (
     RelationPrediction,
     SentencePrediction,
 )
-from cl_mmref.utils.util import Rectangle
 
 
 class SentenceJsonWriter:
