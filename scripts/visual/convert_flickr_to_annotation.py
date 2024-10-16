@@ -24,7 +24,7 @@ from cl_mmref.utils.annotation import (
 )
 
 jumanpp = Jumanpp()
-knp = KNP(options=["-tab", "-dpnd-fast"])
+knp = KNP(options=["-tab"])
 # kwja = KWJA(options=["--tasks", "word", "--model-size", "large", "--input-format", "jumanpp"])
 
 
