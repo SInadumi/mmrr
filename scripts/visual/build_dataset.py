@@ -8,9 +8,12 @@ from pathlib import Path
 
 from rhoknp import Document
 
+from cl_mmref.tools.constants import CASES, EXOPHORA_REFERENT_TYPES
+from cl_mmref.tools.extractors.pas import PasExtractor
 from cl_mmref.utils.annotation import (
     DatasetInfo,
     ImageTextAnnotation,
+    Phrase2ObjectRelation,
     SentenceAnnotation,
 )
 
@@ -24,6 +27,12 @@ class ImageTextAugmenter:
         self.dataset_name = dataset_name
         _id2cat = json.load(open("./data/categories.json", "r", encoding="utf-8"))
         self.cat2id = {v: i for i, v in enumerate(_id2cat)}
+        self.pas_extractor = PasExtractor(
+            CASES,
+            EXOPHORA_REFERENT_TYPES,
+            verbal_predicate=True,
+            nominal_predicate=True,
+        )
 
     @staticmethod
     def to_idx_from_sid(sid: str) -> int:
@@ -227,6 +236,43 @@ class ImageTextAugmenter:
         logger.info(f"{scenario_id}:{ignore_cnt} instances are ignored.")
         return self.remove_unseen_objects(annotation)
 
+    def add_silver_cases_to_phrase_annotations(
+        self, annotation: ImageTextAnnotation
+    ) -> ImageTextAnnotation:
+        scenario_id = annotation.scenarioId
+        document = Document.from_knp(
+            (
+                self.dataset_dir / "textual_annotations" / f"{scenario_id}.knp"
+            ).read_text()
+        )
+
+        doc_phrases = document.base_phrases
+        vis_phrases = [ph for utt in annotation.utterances for ph in utt.phrases]
+        assert len(doc_phrases) == len(vis_phrases)
+        _logs: dict[str, int] = defaultdict(lambda: 0)
+
+        for doc_phrase, source_vis_phrase in zip(doc_phrases, vis_phrases):
+            all_rels = self.pas_extractor.extract_rels(doc_phrase)
+            if len(all_rels) == 0:
+                continue
+            for rel, tags in all_rels.items():
+                for tag in tags:
+                    global_idx = tag.base_phrase.global_index
+                    target_vis_phrase = vis_phrases[global_idx]
+                    for vis_rel in target_vis_phrase.relations:
+                        source_vis_phrase.relations.append(
+                            Phrase2ObjectRelation(
+                                type=rel,
+                                instanceId=vis_rel.instanceId,
+                                boundingBoxes=vis_rel.boundingBoxes,
+                            )
+                        )
+                    _logs[rel] += 1
+
+        for _rel, _cnt in _logs.items():
+            logger.info(f"{scenario_id}/{_rel}: {_cnt} relations are augmented.")
+        return annotation
+
 
 def main():
     parser = ArgumentParser()
@@ -266,7 +312,7 @@ def main():
     augmenter = ImageTextAugmenter(Path(args.INPUT), args.dataset_name)
     for source in visual_paths:
         scenario_id = source.stem
-        raw_annot = json.load(open(source, "r", encoding="utf-8")) # for faster loading
+        raw_annot = json.load(open(source, "r", encoding="utf-8"))  # for faster loading
         image_text_annotation = ImageTextAnnotation(**raw_annot)
         image_text_annotation = augmenter.add_bboxes_to_phrase_annotations(
             image_text_annotation
@@ -276,6 +322,11 @@ def main():
                 image_text_annotation
             )
             image_text_annotation = augmenter.add_class_id(image_text_annotation)
+
+        if args.dataset_name == "f30k_ent_jp":
+            image_text_annotation = augmenter.add_silver_cases_to_phrase_annotations(
+                image_text_annotation
+            )
 
         annotations = augmenter.split_annotations_per_frame(
             image_text_annotation,
