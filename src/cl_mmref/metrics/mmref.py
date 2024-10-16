@@ -3,13 +3,13 @@ from typing import Optional
 
 import numpy as np
 import torch
-from cohesion_tools.constants import RECALL_TOP_KS
-from cohesion_tools.evaluators.mmref import MMRefEvaluator, MMRefScore
-from cohesion_tools.evaluators.utils import F1Metric
-from cohesion_tools.task import Task
 
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.datasets.mmref_dataset import MMRefDataset
+from cl_mmref.tools.constants import RECALL_TOP_KS
+from cl_mmref.tools.evaluators.mmref import MMRefEvaluator, MMRefScore
+from cl_mmref.tools.evaluators.utils import F1Metric
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import SentenceAnnotation
 from cl_mmref.utils.prediction import SentencePrediction
 from cl_mmref.writer.mmref import SentenceJsonWriter

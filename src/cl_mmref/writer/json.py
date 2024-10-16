@@ -5,11 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO, Union
 
-from cohesion_tools.task import Task
 from rhoknp import Document
 
 from cl_mmref.datamodule.example import KyotoExample
 from cl_mmref.datasets.cohesion_dataset import CohesionDataset
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.sub_document import extract_target_sentences, to_orig_doc_id
 from cl_mmref.utils.util import CamelCaseDataClassJsonMixin
 

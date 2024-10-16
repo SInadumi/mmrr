@@ -1,9 +1,9 @@
 import h5py
-from cohesion_tools.constants import IOU_THRESHOLD
 from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
+from cl_mmref.tools.constants import IOU_THRESHOLD
 from cl_mmref.utils.annotation import PhraseAnnotation
 from cl_mmref.utils.prediction import ObjectFeature
 

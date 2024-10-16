@@ -1,11 +1,11 @@
 import logging
 from typing import Optional
 
-from cohesion_tools.task import Task
 from rhoknp import BasePhrase, Document
 from rhoknp.cohesion import ExophoraReferent, RelTag
 
 from cl_mmref.datasets.cohesion_dataset import CohesionDataset
+from cl_mmref.tools.task import Task
 
 logger = logging.getLogger(__file__)
 

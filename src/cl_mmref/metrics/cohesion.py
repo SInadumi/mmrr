@@ -4,13 +4,13 @@ from typing import Optional
 
 import numpy as np
 import torch
-from cohesion_tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
-from cohesion_tools.evaluators.utils import F1Metric
-from cohesion_tools.task import Task
 from rhoknp import Document, Sentence
 
 from cl_mmref.datamodule.example import KyotoExample
 from cl_mmref.datasets.cohesion_dataset import CohesionDataset
+from cl_mmref.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
+from cl_mmref.tools.evaluators.utils import F1Metric
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.sub_document import extract_target_sentences, to_orig_doc_id
 from cl_mmref.writer.knp import PredictionKNPWriter
 

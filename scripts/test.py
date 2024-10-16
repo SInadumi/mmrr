@@ -17,9 +17,9 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from rhoknp import Document
 
 from cl_mmref.callbacks import CohesionWriter
-from cl_mmref.cohesion_tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.datasets.cohesion_dataset import CohesionDataset
+from cl_mmref.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
 from cl_mmref.utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)

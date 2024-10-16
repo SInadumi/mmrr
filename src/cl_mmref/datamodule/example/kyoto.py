@@ -1,13 +1,6 @@
 import copy
 from typing import Union
 
-from cohesion_tools.extractors import (
-    BridgingExtractor,
-    CoreferenceExtractor,
-    PasExtractor,
-)
-from cohesion_tools.extractors.base import BaseExtractor
-from cohesion_tools.task import Task
 from rhoknp import BasePhrase, Document
 from rhoknp.cohesion import (
     Argument,
@@ -16,6 +9,13 @@ from rhoknp.cohesion import (
     ExophoraReferent,
 )
 
+from cl_mmref.tools.extractors import (
+    BridgingExtractor,
+    CoreferenceExtractor,
+    PasExtractor,
+)
+from cl_mmref.tools.extractors.base import BaseExtractor
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.dataset import CohesionBasePhrase
 
 from .base import BaseExample

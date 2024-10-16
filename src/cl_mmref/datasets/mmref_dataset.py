@@ -11,9 +11,6 @@ from typing import Union
 import h5py
 import numpy as np
 import torch
-from cohesion_tools.extractors import MMRefExtractor
-from cohesion_tools.extractors.base import BaseExtractor
-from cohesion_tools.task import Task
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import ListConfig
 from rhoknp import Document, Sentence
@@ -24,6 +21,9 @@ from transformers import PreTrainedTokenizerBase
 from transformers.file_utils import PaddingStrategy
 
 from cl_mmref.datamodule.example import MMRefExample
+from cl_mmref.tools.extractors import MMRefExtractor
+from cl_mmref.tools.extractors.base import BaseExtractor
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import ImageTextAnnotation, SentenceAnnotation
 from cl_mmref.utils.dataset import (
     MMRefBasePhrase,

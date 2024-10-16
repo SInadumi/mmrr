@@ -25,7 +25,7 @@ class CohesionEvaluator:
     :class:`rhoknp.Document`
 
     Args:
-        tasks: 評価の対象とするタスク (cohesion_tools.task.Task を参照)
+        tasks: 評価の対象とするタスク (tools.task.Task を参照)
         exophora_referent_types: 評価の対象とする外界照応の照応先 (rhoknp.cohesion.ExophoraReferentTypeType を参照)
         pas_cases: 述語項構造の評価の対象とする格 (rhoknp.cohesion.rel.CASE_TYPES を参照)
         bridging_rel_types: 橋渡し参照解析の評価の対象とする関係 (rhoknp.cohesion.rel.CASE_TYPES を参照．default: ["ノ"])

@@ -1,8 +1,8 @@
 import h5py
 from rhoknp import BasePhrase, Document
 
-from cohesion_tools.extractors.base import BaseExtractor
-from cohesion_tools.task import Task
+from cl_mmref.tools.extractors.base import BaseExtractor
+from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
 from cl_mmref.utils.dataset import MMRefBasePhrase
 from cl_mmref.utils.prediction import ObjectFeature
