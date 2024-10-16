@@ -182,14 +182,6 @@ def convert_flickr(
         knp_sentence.morphemes = morphemes
         knp_sentence.sent_id = f"{scenario_id}-{idx:02}"
         knp_sentence.doc_id = scenario_id
-        # knp_sentence = kwja.apply_to_document(Document.from_sentences([knp_sentence]))
-        knp_sentence = knp.apply_to_sentence(knp_sentence)
-        for morpheme in knp_sentence.morphemes:
-            morpheme.semantics.clear()
-            morpheme.semantics.nil = True
-            morpheme.features.clear()
-        for knp_phrase in knp_sentence.phrases:
-            knp_phrase.features.clear()
         knp_sentences.append(knp_sentence)
         global_morphemes.extend(morphemes)
         phrase_to_morpheme_global_indices.append(phrase_to_morpheme_indices)
@@ -202,6 +194,13 @@ def convert_flickr(
                 instance_ids.append(instance_id)
 
     knp_document = KNPDocument.from_sentences(knp_sentences)
+    knp_document = knp.apply_to_document(knp_document)
+    for morpheme in knp_document.morphemes:
+        morpheme.semantics.clear()
+        morpheme.semantics.nil = True
+        morpheme.features.clear()
+    for knp_phrase in knp_document.phrases:
+        knp_phrase.features.clear()
     knp_dir.joinpath(f"{scenario_id}.knp").write_text(knp_document.to_knp())
 
     image_text_utterances: list[SentenceAnnotation] = []
