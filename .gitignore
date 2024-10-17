@@ -186,12 +186,7 @@ pyrightconfig.json
 # pip-selfcheck.json
 
 ### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+.vscode/
 
 # Local History for Visual Studio Code
 .history/
@@ -206,10 +201,17 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,visualstudiocode
 
+# Dataset paths
 data/*
 !data/categories.json
+
+# Outputs
 result
 outputs
+
+# Logs
 lightning_logs
 wandb
 log
+*.log
+*.out
