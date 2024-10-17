@@ -25,7 +25,11 @@ if [[ -z "${OUT_DIR}" ]]; then
     usage
 fi
 
-mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{f30k_ent_jp,jcre3}
+mkdir -p "${OUT_DIR}"/{f30k_ent_jp,jcre3}
+ln -s "${DATASET_ROOT}/J-CRe3/id" "${OUT_DIR}/jcre3/id"
+ln -s "${DATASET_ROOT}/J-CRe3/recording" "${OUT_DIR}/jcre3/recording"
+ln -s "${DATASET_ROOT}/J-CRe3/visual_annotations" "${OUT_DIR}/jcre3/image_text_annotation"
+ln -s "${DATASET_ROOT}/J-CRe3/textual_annotations" "${OUT_DIR}/jcre3/knp"
 
 for split in "train" "val" "test"
 do

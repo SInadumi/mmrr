@@ -69,12 +69,10 @@ class ImageTextAugmenter:
     def split_utterances_to_sentences(
         self, annotation: ImageTextAnnotation
     ) -> ImageTextAnnotation:
-        """visual_annotation/*.jsonの"utterances"エントリとtextual_annotation/*.knpの文分割を揃える処理"""
+        """image_text_annotation/*.jsonの"utterances"エントリとknp/*.knpの文分割を揃える処理"""
         scenario_id = annotation.scenarioId
         document = Document.from_knp(
-            (
-                self.dataset_dir / "textual_annotations" / f"{scenario_id}.knp"
-            ).read_text()
+            (self.dataset_dir / "knp" / f"{scenario_id}.knp").read_text()
         )
         dataset_info = DatasetInfo.from_json(
             (self.dataset_dir / "recording" / scenario_id / "info.json").read_text()
@@ -241,9 +239,7 @@ class ImageTextAugmenter:
     ) -> ImageTextAnnotation:
         scenario_id = annotation.scenarioId
         document = Document.from_knp(
-            (
-                self.dataset_dir / "textual_annotations" / f"{scenario_id}.knp"
-            ).read_text()
+            (self.dataset_dir / "knp" / f"{scenario_id}.knp").read_text()
         )
 
         doc_phrases = document.base_phrases
@@ -276,8 +272,11 @@ class ImageTextAugmenter:
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("INPUT", type=str, help="path to input visual annotation dir")
-    parser.add_argument("OUTPUT", type=str, help="path to output dir")
+    parser.add_argument(
+        "ROOT_DIR",
+        type=str,
+        help="path to input/output annotation dir (current project)",
+    )
     parser.add_argument("--dataset-name", type=str, choices=["jcre3", "f30k_ent_jp"])
     parser.add_argument("--id", type=str, help="path to id")
     parser.add_argument(
@@ -295,8 +294,8 @@ def main():
 
     args = parser.parse_args()
 
-    visual_dir = Path(args.INPUT) / "visual_annotations"
-    output_root = Path(args.OUTPUT)
+    visual_dir = Path(args.ROOT_DIR) / "image_text_annotation"
+    output_root = Path(args.ROOT_DIR)
 
     vis_id2split = {}
     for id_file in Path(args.id).glob("*.id"):
@@ -309,7 +308,7 @@ def main():
 
     # split visual annotations
     visual_paths = visual_dir.glob("*.json")
-    augmenter = ImageTextAugmenter(Path(args.INPUT), args.dataset_name)
+    augmenter = ImageTextAugmenter(Path(args.ROOT_DIR), args.dataset_name)
     for source in visual_paths:
         scenario_id = source.stem
         raw_annot = json.load(open(source, "r", encoding="utf-8"))  # for faster loading
