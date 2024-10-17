@@ -29,11 +29,8 @@ class MTDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         if stage == TrainerFn.FITTING:
             self.train_dataset = ConcatDataset(
-                [hydra.utils.instantiate(conf) for conf in self.cfg.valid.values()]
+                [hydra.utils.instantiate(conf) for conf in self.cfg.train.values()]
             )
-            # self.train_dataset = ConcatDataset(
-            #     [hydra.utils.instantiate(conf) for conf in self.cfg.train.values()]
-            # )
         if stage in (TrainerFn.FITTING, TrainerFn.VALIDATING, TrainerFn.TESTING):
             self.val_datasets = {
                 corpus: hydra.utils.instantiate(conf)
