@@ -10,25 +10,24 @@ git clone --depth 1 git@github.com:nlab-mpg/Flickr30kEnt-JP.git "${DATASET_ROOT}
 git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASET_ROOT}/flickr30k_entities"
 ```
 
-## Construct textual annotations
+## Construct annotations
 ```
 # JOBS: the number of jobs (default=1)
-# OUT_DIR: output dir (default="./data")
+# OUT_DIR: path to output dir (default="./data")
 
 # construct f30k_ent_jp annotations
 [OUT_DIR=/path/to/output/dir] bash ./scripts/visual/preprocess.sh
 
-# textual annotations
-[OUT_DIR=/path/to/output/dir] [JOBS=4] bash ./scripts/textual/build_all_datasets.sh
-
-# visual_annotations
-[OUT_DIR=/path/to/output/dir] bash ./scripts/visual/build_all_datasets.sh
+# build annotations
+[OUT_DIR=...] [JOBS=1] bash ./scripts/textual/build_all_datasets.sh
+[OUT_DIR=...] bash ./scripts/visual/build_all_datasets.sh
 ```
 
 ## Extract region features
 See [SInadumi/RegionCLIP](https://github.com/SInadumi/RegionCLIP).
 ```
-[OUT_DIR=/path/to/output/dir] bash ./scripts/visual/postprocess.sh
+# calulate IoU between gold and predicted bounding boxes
+[OUT_DIR=...] bash ./scripts/visual/postprocess.sh
 ```
 
 ### Acknowledgement
