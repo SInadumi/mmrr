@@ -31,7 +31,7 @@ echo "Processing J-CRe3 ..."
 poetry run python ./scripts/visual/build_dataset.py \
     "${DATASET_ROOT}/J-CRe3" "${OUT_DIR}/jcre3" \
     --dataset-name jcre3 --id "${DATASET_ROOT}/J-CRe3/id" \
-    --num-utterances-per-sample 3 --num-overlapping-utterances 0
+    --num-utterances-per-sample 3 --num-overlapping-utterances 2
 
 echo "Processing Flickr30k-Ent-Ja ..."
 poetry run python ./scripts/visual/build_dataset.py \
