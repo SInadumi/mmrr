@@ -336,9 +336,7 @@ def main():
         for idx, annotation in enumerate(annotations):
             assert len(annotation.images) == 1
             iid = annotation.images[0].imageId
-            output_file_name = f"{scenario_id}-{iid}"
-            if args.dataset_name == "f30k_ent_jp":
-                output_file_name = f"{idx}-{iid}"
+            output_file_name = f"{scenario_id}-{iid}-{idx}"
             target = (
                 output_root / vis_id2split[scenario_id] / f"{output_file_name}.json"
             )
