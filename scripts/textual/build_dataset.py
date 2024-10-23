@@ -22,7 +22,7 @@ from rhoknp.cohesion import RelTag
 from rhoknp.props import FeatureDict
 from rhoknp.utils.reader import chunk_by_document
 
-from cl_mmref.cohesion_tools.extractors import PasExtractor
+from cl_mmref.tools.extractors import PasExtractor
 
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -280,7 +280,7 @@ def assign_features_and_save(
 
         # 素性付与
         try:
-            document = knp.apply_to_document(document, timeout=3000)
+            document = knp.apply_to_document(document)
         except Exception as e:
             logger.warning(f"{type(e).__name__}: {e}, {document.doc_id}")
             knp = KNP(options=["-tab", "-dpnd-fast", "-read-feature"])
