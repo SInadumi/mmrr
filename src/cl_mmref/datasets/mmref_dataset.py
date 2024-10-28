@@ -1,4 +1,3 @@
-import copy
 import hashlib
 import json
 import logging
@@ -59,15 +58,12 @@ class MMRefDataset(BaseDataset):
 
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
-        self.exophora_referents: list[ExophoraReferentType] = [
-            ExophoraReferent(s) for s in exophora_referents
-        ]
+        self.exophora_referents: list[ExophoraReferentType] = [ExophoraReferent(s) for s in exophora_referents]
         self.special_tokens: list[str] = list(special_tokens)
         self.tasks = [Task(task) for task in tasks]
         self.cases = cases
         self.special_to_index: dict[str, int] = {
-            token: max_seq_length - len(self.special_tokens) + i
-            for i, token in enumerate(self.special_tokens)
+            token: max_seq_length - len(self.special_tokens) + i for i, token in enumerate(self.special_tokens)
         }
         self.max_seq_length = max_seq_length
         self.vis_emb_size = vis_emb_size
@@ -77,17 +73,13 @@ class MMRefDataset(BaseDataset):
         assert self.max_seq_length > 0
         assert self.vis_emb_size > 0
 
-        exophora_referent_types: list[ExophoraReferentType] = [
-            er.type for er in self.exophora_referents
-        ]
+        exophora_referent_types: list[ExophoraReferentType] = [er.type for er in self.exophora_referents]
         self.task_to_extractor: dict[Task, BaseExtractor] = {
             Task.VIS_PAS_ANALYSIS: MMRefExtractor(
                 list(self.cases),
                 exophora_referent_types,
             ),
-            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(
-                ["="], exophora_referent_types
-            ),
+            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(["="], exophora_referent_types),
         }
         self.task_to_rels: dict[Task, list[str]] = {
             Task.VIS_PAS_ANALYSIS: self.cases,
@@ -95,9 +87,7 @@ class MMRefDataset(BaseDataset):
         }
 
         # load visual annotations
-        image_text_annotations: list[ImageTextAnnotation] = (
-            self._load_visual_annotation(self.data_path, "json")
-        )
+        image_text_annotations: list[ImageTextAnnotation] = self._load_visual_annotation(self.data_path, "json")
         self.sid2vis_sentence: dict[str, SentenceAnnotation] = {}
         for annotation in image_text_annotations:
             for utterance in annotation.utterances:
@@ -112,17 +102,14 @@ class MMRefDataset(BaseDataset):
 
         # load object features
         self.object_file_name = object_file_name
-        self.objects = h5py.File(
-            self.dataset_path / self.dataset_name / f"{object_file_name}.h5", "r"
-        )
+        self.objects = h5py.File(self.dataset_path / self.dataset_name / f"{object_file_name}.h5", "r")
         self.iou_mapper = h5py.File(
             self.dataset_path / self.dataset_name / f"{object_file_name}_iou_mapper.h5",
             "r",
         )
+        self.pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
         try:
-            self.examples: list[MMRefExample] = self._load_examples_per_frame(
-                image_text_annotations, sid2knp_sentence
-            )
+            self.examples: list[MMRefExample] = self._load_examples_per_frame(image_text_annotations, sid2knp_sentence)
         except Exception as e:
             logger.error(f"{type(e).__name__}: {e}")
             sys.exit(1)
@@ -139,15 +126,11 @@ class MMRefDataset(BaseDataset):
         ).encodings[0]
 
     @staticmethod
-    def _load_visual_annotation(
-        data_path: Path, ext: str = "json"
-    ) -> list[ImageTextAnnotation]:
+    def _load_visual_annotation(data_path: Path, ext: str = "json") -> list[ImageTextAnnotation]:
         ret: list[ImageTextAnnotation] = []
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
-            raw_annot = json.load(
-                open(path, "r", encoding="utf-8")
-            )  # for faster loading
+            raw_annot = json.load(open(path, "r", encoding="utf-8"))  # for faster loading
             ret.append(ImageTextAnnotation(**raw_annot))
         return ret
 
@@ -189,13 +172,9 @@ class MMRefDataset(BaseDataset):
     ) -> list[MMRefExample]:
         """Loads examples from knp document and visual annotation"""
         examples = []
-        load_cache: bool = (
-            "DISABLE_CACHE" not in os.environ and "OVERWRITE_CACHE" not in os.environ
-        )
+        load_cache: bool = "DISABLE_CACHE" not in os.environ and "OVERWRITE_CACHE" not in os.environ
         save_cache: bool = "DISABLE_CACHE" not in os.environ
-        mmref_cache_dir: Path = Path(
-            os.environ.get("CACHE_DIR", f'/tmp/{os.environ["USER"]}/mmref_cache')
-        )
+        mmref_cache_dir: Path = Path(os.environ.get("CACHE_DIR", f'/tmp/{os.environ["USER"]}/mmref_cache'))
         hash_ = self._hash(
             self.data_path,
             self.tasks,
@@ -212,16 +191,10 @@ class MMRefDataset(BaseDataset):
             assert len(annotation.images) == 1, "single images/frames only"
             image_id: str = annotation.images[0].imageId
             scenario_id = annotation.scenarioId
-            knp_document = Document.from_sentences(
-                [sid2knp_sentence[utt.sid] for utt in annotation.utterances]
-            )
-            candidates: list[ObjectFeature] = self._load_objects(
-                scenario_id, image_id
-            )  # Loading object candidates
+            knp_document = Document.from_sentences([sid2knp_sentence[utt.sid] for utt in annotation.utterances])
+            candidates: list[ObjectFeature] = self._load_objects(scenario_id, image_id)  # Loading object candidates
             iou_mapper: dict[str, h5py.Group] = {
-                bbox.instanceId: self.iou_mapper[
-                    f"{scenario_id}/{image_id}/{bbox.instanceId}"
-                ]
+                bbox.instanceId: self.iou_mapper[f"{scenario_id}/{image_id}/{bbox.instanceId}"]
                 for bbox in annotation.images[0].boundingBoxes
             }
             example_cache_path = mmref_cache_dir / hash_ / f"{scenario_id}-{idx}.pkl"
@@ -272,22 +245,21 @@ class MMRefDataset(BaseDataset):
         return hashlib.md5(string.encode()).hexdigest()
 
     def _post_process_examples(
-        self, examples: list[MMRefExample]
+        self,
+        examples: list[MMRefExample],
     ) -> list[MMRefExample]:
         filtered = []
         for idx, example in enumerate(examples):
             phrases = example.phrases[self.tasks[0]]
 
-            candidates = copy.deepcopy(example.candidates)
-            assert len(candidates) <= self.max_seq_length, "too many objects"
+            assert len(example.candidates) <= self.max_seq_length, "too many objects"
             # pad candidates
-            if len(candidates) < self.max_seq_length:
-                candidates = self._pad_candidates(candidates)
-            example.candidates = candidates
+            if len(example.candidates) < self.max_seq_length:
+                example.candidates = self._pad_candidates(example.candidates)
 
             encoding: Encoding = self.tokenizer(
                 " ".join(
-                    [morpheme for phrase in phrases for morpheme in phrase.morphemes]
+                    [morpheme for phrase in phrases for morpheme in phrase.morphemes],
                 ),
                 is_split_into_words=False,
                 padding=PaddingStrategy.MAX_LENGTH,
@@ -306,8 +278,7 @@ class MMRefDataset(BaseDataset):
         candidates: list[ObjectFeature],
     ) -> MMRefBasePhrase:
         max_seq_length = self.max_seq_length
-        pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
-        candidates += [pad_mask] * (max_seq_length - len(candidates))
+        candidates += [self.pad_mask] * (max_seq_length - len(candidates))
         return candidates
 
     def dump_relation_prediction(
@@ -317,9 +288,7 @@ class MMRefDataset(BaseDataset):
     ) -> np.ndarray:
         """1 example 中に存在する基本句それぞれに対してシステム予測のリストを返す．"""
         predictions: list[np.ndarray] = []
-        task_and_rels = [
-            (task, rel) for task in self.tasks for rel in self.task_to_rels[task]
-        ]
+        task_and_rels = [(task, rel) for task in self.tasks for rel in self.task_to_rels[task]]
         assert len(relation_logits) == len(task_and_rels) == len(self.rel_types)
         for (task, _), logits in zip(task_and_rels, relation_logits):
             predictions.append(
@@ -341,14 +310,10 @@ class MMRefDataset(BaseDataset):
     ) -> np.ndarray:  # (phrase, candidate)
         phrase_level_scores_matrix: list[np.ndarray] = []
         for phrase in phrases:
-            token_index_span: tuple[int, int] = encoding.word_to_tokens(
-                phrase.head_morpheme_global_index
-            )
+            token_index_span: tuple[int, int] = encoding.word_to_tokens(phrase.head_morpheme_global_index)
             # Use the head subword as the representative of the source word.
             # Cast to built-in list because list operation is faster than numpy array operation.
-            token_level_logits: list[float] = token_level_logits_matrix[
-                token_index_span[0]
-            ].tolist()  # (t_seq)
+            token_level_logits: list[float] = token_level_logits_matrix[token_index_span[0]].tolist()  # (t_seq)
             candidate_level_logits: list[float] = []
             for idx in range(len(candidates)):
                 candidate_level_logits.append(token_level_logits[idx])
@@ -370,16 +335,12 @@ class MMRefDataset(BaseDataset):
         for task in self.tasks:
             is_targets: list[int] = [IGNORE_INDEX] * self.max_seq_length
             for phrase in example.phrases[task]:
-                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
-                    phrase.head_morpheme_global_index
-                )
+                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(phrase.head_morpheme_global_index)
                 for token_index in range(*token_index_span):
                     is_targets[token_index] = int(phrase.is_target)
             is_analysis_targets.append(is_targets)
 
-        merged_encoding: Encoding = Encoding.merge(
-            [example.encoding, self.special_encoding]
-        )
+        merged_encoding: Encoding = Encoding.merge([example.encoding, self.special_encoding])
 
         """Convert example to visual feature"""
         vis_embeds: list[torch.Tensor] = []
@@ -393,9 +354,7 @@ class MMRefDataset(BaseDataset):
         candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
-                scores, candidates = self._convert_annotation_to_feature(
-                    example.phrases[task], rel, example.encoding
-                )
+                scores, candidates = self._convert_annotation_to_feature(example.phrases[task], rel, example.encoding)
                 scores_set.append(scores)
                 candidates_set.append(candidates)
 
@@ -418,9 +377,7 @@ class MMRefDataset(BaseDataset):
         rel_type: str,
         encoding: Encoding,
     ) -> tuple[list[list[float]], list[list[bool]]]:
-        scores_set: list[list[float]] = [
-            [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
-        ]  # (src, tgt)
+        scores_set: list[list[float]] = [[0.0] * self.max_seq_length for _ in range(self.max_seq_length)]  # (src, tgt)
         candidates_set: list[list[bool]] = [
             [False] * self.max_seq_length for _ in range(self.max_seq_length)
         ]  # (src, tgt)
@@ -436,9 +393,7 @@ class MMRefDataset(BaseDataset):
                     scores[cid] = 1.0
                     token_level_candidates[cid] = True
 
-            token_index_span = encoding.word_to_tokens(
-                phrase.head_morpheme_global_index
-            )
+            token_index_span = encoding.word_to_tokens(phrase.head_morpheme_global_index)
             # use the head subword as the representative of the source word
             scores_set[token_index_span[0]] = scores
             candidates_set[token_index_span[0]] = token_level_candidates
