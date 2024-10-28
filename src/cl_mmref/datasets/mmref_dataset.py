@@ -252,9 +252,9 @@ class MMRefDataset(BaseDataset):
         for idx, example in enumerate(examples):
             phrases = example.phrases[self.tasks[0]]
 
-            # trancate candidates
+            # truncate candidates
             if len(example.candidates) > self.max_seq_length:
-                example.candidates, example.phrases = self._trancate_candidates(
+                example.candidates, example.phrases = self._truncate_candidates(
                     example.candidates,
                     example.phrases,
                 )
@@ -278,7 +278,7 @@ class MMRefDataset(BaseDataset):
             filtered.append(example)
         return filtered
 
-    def _trancate_candidates(
+    def _truncate_candidates(
         self,
         candidates: list[ObjectFeature],
         phrases: dict[Task, list[MMRefBasePhrase]],
