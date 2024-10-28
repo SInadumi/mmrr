@@ -1,5 +1,5 @@
 _target_: pytorch_lightning.loggers.WandbLogger
-name: ${config_name}_${name}
+name: ${name}_${run_id}
 save_dir: ${save_dir}
 project: cl_mmref
 log_model: false

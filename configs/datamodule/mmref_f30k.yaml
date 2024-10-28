@@ -1,0 +1,10 @@
+defaults:
+  - train:
+    - f30k_mmref.yaml
+  - valid:
+    - f30k_mmref.yaml
+  - test:
+    - f30k_mmref.yaml
+
+batch_size: ${max_batches_per_device}
+num_workers: ${num_workers}
