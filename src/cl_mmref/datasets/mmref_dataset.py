@@ -252,7 +252,12 @@ class MMRefDataset(BaseDataset):
         for idx, example in enumerate(examples):
             phrases = example.phrases[self.tasks[0]]
 
-            assert len(example.candidates) <= self.max_seq_length, "too many objects"
+            # trancate candidates
+            if len(example.candidates) > self.max_seq_length:
+                example.candidates, example.phrases = self._trancate_candidates(
+                    example.candidates,
+                    example.phrases,
+                )
             # pad candidates
             if len(example.candidates) < self.max_seq_length:
                 example.candidates = self._pad_candidates(example.candidates)
@@ -273,10 +278,25 @@ class MMRefDataset(BaseDataset):
             filtered.append(example)
         return filtered
 
+    def _trancate_candidates(
+        self,
+        candidates: list[ObjectFeature],
+        phrases: dict[Task, list[MMRefBasePhrase]],
+    ) -> tuple[list[ObjectFeature], dict[Task, list[MMRefBasePhrase]]]:
+        max_seq_length = self.max_seq_length
+        candidates = candidates[:max_seq_length]
+        for _, task_phrases in phrases.items():
+            for task_phrase in task_phrases:
+                if task_phrase.rel2tags is None:
+                    continue
+                for _, tags in task_phrase.rel2tags.items():
+                    tags = [tag for tag in tags if tag < max_seq_length]
+        return candidates, phrases
+
     def _pad_candidates(
         self,
         candidates: list[ObjectFeature],
-    ) -> MMRefBasePhrase:
+    ) -> list[ObjectFeature]:
         max_seq_length = self.max_seq_length
         candidates += [self.pad_mask] * (max_seq_length - len(candidates))
         return candidates
