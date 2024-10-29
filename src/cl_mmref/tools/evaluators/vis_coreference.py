@@ -84,4 +84,5 @@ class VisCoreferenceResolutionEvaluator:
             ]
             if len(group_iou) > 0:
                 cnt += 1
+        assert cnt <= len(gold_bboxes)
         return cnt

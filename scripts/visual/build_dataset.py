@@ -169,10 +169,13 @@ class ImageTextAugmenter:
                 for utterance in _utterances:
                     for phrase in utterance.phrases:
                         for rel in phrase.relations:
+                            _set_instances = set(
+                                bbox.instanceId for bbox in rel.boundingBoxes
+                            )
                             _bboxes = []
-                            for bbox in rel.boundingBoxes:
-                                if bbox.instanceId in _instances:
-                                    _bboxes.append(_instances[bbox.instanceId])
+                            for _instanceId in _set_instances:
+                                if (_bbox := _instances.get(_instanceId)) is not None:
+                                    _bboxes.append(_bbox)
                             rel.boundingBoxes = _bboxes
                             tot_bboxes += len(_bboxes)
                 if tot_bboxes == 0:
