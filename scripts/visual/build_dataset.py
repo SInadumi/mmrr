@@ -145,7 +145,10 @@ class ImageTextAugmenter:
         dataset_info = DatasetInfo.from_json(
             (self.dataset_dir / "recording" / scenario_id / "info.json").read_text()
         )
-
+        iid2bboxes = {
+            image.imageId: [bbox for bbox in image.boundingBoxes]
+            for image in annotation.images
+        }
         for start_idx in range(0, len(dataset_info.utterances), split_stride):
             end_idx = min(start_idx + num_utterances, len(dataset_info.utterances))
             assert start_idx <= end_idx
@@ -153,20 +156,23 @@ class ImageTextAugmenter:
             sids = [sid for utt in utterances for sid in utt.sids]
             iids = list(set(iid for utt in utterances for iid in utt.image_ids))
             for iid in iids:
+                # collect sentence annotations based on utterance annotations
                 _utterances = [
                     copy.deepcopy(sent)
                     for sent in annotation.utterances
                     if sent.sid in sids
                 ]
+                # update boundingBoxes
+                # `utterances` -> `phrases` -> `relations` -> `boundingBoxes`
+                _instances = {bbox.instanceId: bbox for bbox in iid2bboxes[iid]}
                 tot_bboxes = 0
                 for utterance in _utterances:
                     for phrase in utterance.phrases:
                         for rel in phrase.relations:
-                            _bboxes = [
-                                bbox
-                                for bbox in rel.boundingBoxes
-                                if bbox.imageId == iid
-                            ]
+                            _bboxes = []
+                            for bbox in rel.boundingBoxes:
+                                if bbox.instanceId in _instances:
+                                    _bboxes.append(_instances[bbox.instanceId])
                             rel.boundingBoxes = _bboxes
                             tot_bboxes += len(_bboxes)
                 if tot_bboxes == 0:
