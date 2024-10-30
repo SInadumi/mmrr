@@ -12,8 +12,8 @@ defaults:
   - _self_
 
 dataset_path: ./data
-max_seq_length: 128
-object_file_name: CLIP_fast_rcnn_R_50_C4_zsinf
+max_seq_length: 256
+object_file_name: ""
 vis_emb_size: 1024
 model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
 checkpoint: "" # path to trained checkpoint
@@ -29,6 +29,7 @@ exophora_referents:
 tasks: ["vis_pas", "vis_coreference"]
 special_tokens:
   ["[著者]", "[読者]", "[不特定:人]", "[不特定:物]", "[NULL]", "[NA]"]
+include_nonidentical: True
 
 # hyper-parameters to be tuned
 effective_batch_size: 16

@@ -15,9 +15,11 @@ class MMRefExtractor(BaseExtractor):
         self,
         rels: list[str],
         exophora_referent_types: list[ExophoraReferentType],
+        include_nonidentical: bool = False,
     ) -> None:
         super().__init__(exophora_referent_types)
         self.rels: list[str] = rels
+        self.include_nonidentical = include_nonidentical
 
     def extract_rels(
         self,
@@ -28,7 +30,9 @@ class MMRefExtractor(BaseExtractor):
         all_arguments: dict[str, list[int]] = {}
         for rel_type in self.rels:
             all_arguments[rel_type] = []
-            _rel_types = self.get_rel_types([rel_type], include_nonidentical=False)
+            _rel_types = self.get_rel_types(
+                [rel_type], include_nonidentical=self.include_nonidentical
+            )
             for relation in predicate.relations:
                 if relation.type not in _rel_types:
                     continue
@@ -44,7 +48,9 @@ class MMRefExtractor(BaseExtractor):
         return all_arguments
 
     def is_target(self, visual_phrase: dict[str, list]) -> bool:
-        rel_types = self.get_rel_types(self.rels, include_nonidentical=False)
+        rel_types = self.get_rel_types(
+            self.rels, include_nonidentical=self.include_nonidentical
+        )
         for rel in visual_phrase.relations:
             if rel.type in rel_types:
                 return True

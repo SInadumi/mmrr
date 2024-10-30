@@ -2,12 +2,12 @@ _target_: cl_mmref.datasets.mmref_dataset.MMRefDataset
 dataset_path: ${dataset_path}
 tasks: ${tasks}
 cases: ${cases}
-# bar_rels: ${bar_rels}
-exophora_referents: ${exophora_referents}
-special_tokens: ${special_tokens}
 max_seq_length: ${max_seq_length}
 object_file_name: ${object_file_name}
 vis_emb_size: ${vis_emb_size}
+exophora_referents: ${exophora_referents}
+include_nonidentical: ${include_nonidentical}
+special_tokens: ${special_tokens}
 
 tokenizer:
   _target_: transformers.AutoTokenizer.from_pretrained

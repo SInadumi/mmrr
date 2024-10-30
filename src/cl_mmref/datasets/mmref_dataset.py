@@ -48,6 +48,7 @@ class MMRefDataset(BaseDataset):
         vis_emb_size: int,
         tokenizer: PreTrainedTokenizerBase,
         exophora_referents: ListConfig,
+        include_nonidentical: bool,
         special_tokens: ListConfig,
         training: bool,
     ) -> None:
@@ -83,9 +84,12 @@ class MMRefDataset(BaseDataset):
             Task.VIS_PAS_ANALYSIS: MMRefExtractor(
                 list(self.cases),
                 exophora_referent_types,
+                include_nonidentical,
             ),
             Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(
-                ["="], exophora_referent_types
+                ["="],
+                exophora_referent_types,
+                include_nonidentical,
             ),
         }
         self.task_to_rels: dict[Task, list[str]] = {
@@ -94,8 +98,8 @@ class MMRefDataset(BaseDataset):
         }
 
         # load visual annotations
-        image_text_annotations: list[ImageTextAnnotation] = self._load_visual_annotation(
-            self.data_path, "json"
+        image_text_annotations: list[ImageTextAnnotation] = (
+            self._load_visual_annotation(self.data_path, "json")
         )
         self.sid2vis_sentence: dict[str, SentenceAnnotation] = {}
         for annotation in image_text_annotations:
@@ -145,7 +149,9 @@ class MMRefDataset(BaseDataset):
         ret: list[ImageTextAnnotation] = []
         assert data_path.is_dir()
         for path in sorted(data_path.glob(f"*.{ext}")):
-            raw_annot = json.load(open(path, "r", encoding="utf-8"))  # for faster loading
+            raw_annot = json.load(
+                open(path, "r", encoding="utf-8")
+            )  # for faster loading
             ret.append(ImageTextAnnotation(**raw_annot))
         return ret
 
@@ -455,7 +461,9 @@ class MMRefDataset(BaseDataset):
                     scores[cid] = 1.0
                     token_level_candidates[cid] = True
 
-            token_index_span = encoding.word_to_tokens(phrase.head_morpheme_global_index)
+            token_index_span = encoding.word_to_tokens(
+                phrase.head_morpheme_global_index
+            )
             # use the head subword as the representative of the source word
             scores_set[token_index_span[0]] = scores
             candidates_set[token_index_span[0]] = token_level_candidates
