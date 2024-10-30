@@ -1,6 +1,6 @@
 # Dataset Preparation
 ## Download annotations
-```
+```bash
 export DATASET_ROOT=/path/to/input/dir
 git clone --depth 1 git@github.com:ku-nlp/KWDLC.git "${DATASET_ROOT}/KWDLC"
 git clone --depth 1 git@github.com:ku-nlp/AnnotatedFKCCorpus.git "${DATASET_ROOT}/AnnotatedFKCCorpus"
@@ -11,7 +11,7 @@ git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASE
 ```
 
 ## Construct annotations
-```
+```bash
 # JOBS: the number of jobs (default=1)
 # OUT_DIR: path to output dir (default="./data")
 
@@ -25,9 +25,12 @@ git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASE
 
 ## Extract region features
 See [SInadumi/RegionCLIP](https://github.com/SInadumi/RegionCLIP).
-```
+```bash
+# ROOT_DIR: path to input/output dir (default="./data")
+# DETECTION_CONFIG: file name of the detection results (e.g. Detic, RegionCLIP, ...). This is required argument.
+
 # calulate IoU between gold and predicted bounding boxes
-[OUT_DIR=...] bash ./scripts/visual/postprocess.sh
+[ROOT_DIR=...] DETECTION_CONFIG=... bash ./scripts/visual/postprocess.sh
 ```
 
 ### Acknowledgement
