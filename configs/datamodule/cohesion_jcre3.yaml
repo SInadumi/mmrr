@@ -5,6 +5,8 @@ defaults:
     - jcre3_cohesion.yaml
   - test:
     - jcre3_cohesion.yaml
+  - predict:
+    - cohesion.yaml
 
 batch_size: ${max_batches_per_device}
 num_workers: ${num_workers}

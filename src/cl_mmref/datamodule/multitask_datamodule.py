@@ -20,12 +20,13 @@ class MTDataModule(pl.LightningDataModule):
         self.train_dataset: Optional[Dataset] = None
         self.val_datasets: dict[str, Dataset] = {}
         self.test_datasets: dict[str, Dataset] = {}
+        self.predict_dataset: Optional[Dataset] = None
 
     # 1. Download Dataset
     def prepare_data(self):
         pass
 
-    # 2. Load Dataset Partition (train, valid, test)
+    # 2. Load Dataset Partition (train, valid, test, predict)
     def setup(self, stage: Optional[str] = None):
         if stage == TrainerFn.FITTING:
             self.train_dataset = ConcatDataset(
@@ -41,6 +42,9 @@ class MTDataModule(pl.LightningDataModule):
                 corpus: hydra.utils.instantiate(conf)
                 for corpus, conf in self.cfg.test.items()
             }
+        if stage == TrainerFn.PREDICTING:
+            if self.cfg.predict.data_path is not None:
+                self.predict_dataset = hydra.utils.instantiate(self.cfg.predict)
 
     # 3. Return Train Dataloader from "self.train_dataset"
     # NOTE: When running under a distributed strategy, Lightning handles the distributed sampler for you by default.
@@ -60,6 +64,10 @@ class MTDataModule(pl.LightningDataModule):
             corpus: self._get_dataloader(dataset, shuffle=False)
             for corpus, dataset in self.test_datasets.items()
         }
+
+    def predict_dataloader(self) -> DataLoader:
+        assert self.predict_dataset is not None
+        return self._get_dataloader(self.predict_dataset, shuffle=False)
 
     def _get_dataloader(self, dataset: Dataset, shuffle: bool) -> DataLoader:
         return DataLoader(
