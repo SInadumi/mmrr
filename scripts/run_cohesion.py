@@ -16,10 +16,10 @@ from lightning.pytorch.trainer.states import TrainerFn
 from omegaconf import DictConfig, OmegaConf
 from rhoknp import KNP, KWJA, Document
 from torch.utils.data import DataLoader
-from utils.util import current_datetime_string
 
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.modules import CohesionModule
+from cl_mmref.utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)
@@ -121,9 +121,7 @@ class Analyzer:
         return string
 
 
-@hydra.main(
-    config_path="../../configs/predict", config_name="cohesion", version_base=None
-)
+@hydra.main(config_path="../configs/predict", config_name="cohesion", version_base=None)
 def main(cfg: DictConfig):
     if isinstance(cfg.devices, str):
         cfg.devices = (
