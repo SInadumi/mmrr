@@ -1,9 +1,8 @@
 defaults:
   - _self_
-  - callbacks: [progress_bar]
-  - module: null
 
 checkpoint: null  # path to trained checkpoint
+module: null
 eval_set: test  # or valid
 # Threshold for analysis target prediction probability. If the probability is lower than this value, the base phrase is
 # not analyzed.

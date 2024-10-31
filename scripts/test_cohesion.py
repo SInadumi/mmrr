@@ -1,9 +1,6 @@
 import logging
 import warnings
-from collections import defaultdict
 from collections.abc import Mapping
-from functools import reduce
-from operator import add
 from pathlib import Path
 
 import hydra
@@ -11,16 +8,15 @@ import lightning.pytorch as pl
 import torch
 import transformers.utils.logging as hf_logging
 from lightning.pytorch.trainer.states import TrainerFn
-from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from lightning.pytorch.utilities.warnings import PossibleUserWarning
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from rhoknp import Document
 
 from cl_mmref.callbacks import CohesionWriter
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.datasets.cohesion_dataset import CohesionDataset
-from cl_mmref.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
+from cl_mmref.modules import CohesionModule
 from cl_mmref.utils.util import current_datetime_string
+from utils import save_prediction, save_results
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 warnings.filterwarnings(
@@ -36,7 +32,7 @@ OmegaConf.register_new_resolver(
 OmegaConf.register_new_resolver("len", len, replace=True, use_cache=True)
 
 
-@hydra.main(config_path="../configs", config_name="test", version_base=None)
+@hydra.main(config_path="../configs/test", config_name="cohesion", version_base=None)
 def main(eval_cfg: DictConfig):
     if isinstance(eval_cfg.devices, str):
         eval_cfg.devices = (
@@ -50,8 +46,8 @@ def main(eval_cfg: DictConfig):
         eval_cfg.num_workers = int(eval_cfg.num_workers)
 
     # Load saved model and config
-    model: pl.LightningModule = hydra.utils.call(
-        eval_cfg.module.load_from_checkpoint, _recursive_=False
+    model = CohesionModule.load_from_checkpoint(
+        checkpoint_path=hydra.utils.to_absolute_path(eval_cfg.checkpoint)
     )
     if eval_cfg.compile is True:
         model = torch.compile(model)
@@ -108,51 +104,6 @@ def main(eval_cfg: DictConfig):
         prediction_writer.json_destination = pred_dir / f"json_{corpus}"
         trainer.predict(model=model, dataloaders=dataloader)
     save_prediction(datasets, pred_dir)
-
-
-@rank_zero_only
-def save_results(results: list[Mapping[str, float]], save_dir: Path) -> None:
-    test_results: dict[str, dict[str, float]] = defaultdict(dict)
-    for k, v in [item for result in results for item in result.items()]:
-        met, corpus = k.split("/")
-        if met in test_results[corpus]:
-            assert v == test_results[corpus][met]
-        else:
-            test_results[corpus][met] = v
-
-    save_dir.mkdir(exist_ok=True, parents=True)
-    for corpus, result in test_results.items():
-        with save_dir.joinpath(f"{corpus}.csv").open(mode="wt") as f:
-            f.write(",".join(result.keys()) + "\n")
-            f.write(",".join(f"{v:.6}" for v in result.values()) + "\n")
-
-
-@rank_zero_only
-def save_prediction(datasets: dict[str, CohesionDataset], pred_dir: Path) -> None:
-    all_results = []
-    for corpus, dataset in datasets.items():
-        predicted_documents: list[Document] = []
-        for path in pred_dir.joinpath(f"knp_{corpus}").glob("*.knp"):
-            predicted_documents.append(Document.from_knp(path.read_text()))
-        evaluator = CohesionEvaluator(
-            tasks=dataset.tasks,
-            exophora_referent_types=[e.type for e in dataset.exophora_referents],
-            pas_cases=dataset.cases,
-            bridging_rel_types=dataset.bar_rels,
-        )
-        evaluator.coreference_evaluator.is_target_mention = (
-            lambda mention: mention.features.get("体言") is True
-        )
-        score_result: CohesionScore = evaluator.run(
-            gold_documents=dataset.orig_documents,
-            predicted_documents=predicted_documents,
-        )
-        score_result.export_csv(pred_dir / f"{corpus}.csv")
-        score_result.export_txt(pred_dir / f"{corpus}.txt")
-        all_results.append(score_result)
-    score_result = reduce(add, all_results)
-    score_result.export_csv(pred_dir / "all.csv")
-    score_result.export_txt(pred_dir / "all.txt")
 
 
 if __name__ == "__main__":

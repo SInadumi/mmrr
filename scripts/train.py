@@ -14,10 +14,10 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.utilities.warnings import PossibleUserWarning
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from test import save_results
 
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.utils.util import current_datetime_string
+from utils import save_results
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
