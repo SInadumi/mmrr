@@ -11,7 +11,7 @@ from cl_mmref.utils.prediction import (
 )
 
 
-class SentenceJsonWriter:
+class ProbabilityJsonWriter:
     def __init__(self, dataset: MMRefDataset) -> None:
         self.rel_types: list[str] = dataset.rel_types
         self.tasks: list[Task] = dataset.tasks

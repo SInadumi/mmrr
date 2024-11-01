@@ -14,7 +14,7 @@ from typing_extensions import override
 
 from cl_mmref.datasets import CohesionDataset
 from cl_mmref.utils.sub_document import extract_target_sentences, to_orig_doc_id
-from cl_mmref.writer.json import ProbabilityJsonWriter
+from cl_mmref.writer.cohesion import ProbabilityJsonWriter
 from cl_mmref.writer.knp import PredictionKNPWriter
 
 logger = logging.getLogger(__name__)

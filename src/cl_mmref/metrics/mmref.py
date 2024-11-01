@@ -12,7 +12,7 @@ from cl_mmref.tools.evaluators.utils import F1Metric
 from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import SentenceAnnotation
 from cl_mmref.utils.prediction import SentencePrediction
-from cl_mmref.writer.mmref import SentenceJsonWriter
+from cl_mmref.writer.mmref import ProbabilityJsonWriter
 
 from .base import BaseModuleMetric
 
@@ -65,7 +65,7 @@ class MMRefMetric(BaseModuleMetric):
         sentence_predictions: list[SentencePrediction] = []
         sentence_annotations: list[SentenceAnnotation] = []
         assert self.dataset is not None, "dataset is not set"
-        json_writer = SentenceJsonWriter(self.dataset)
+        json_writer = ProbabilityJsonWriter(self.dataset)
         assert (
             len(self.example_ids)
             == len(self.relation_logits)
