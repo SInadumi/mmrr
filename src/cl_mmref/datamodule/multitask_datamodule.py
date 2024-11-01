@@ -75,7 +75,7 @@ class MTDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=shuffle,
             num_workers=self.num_workers,
-            pin_memory=True,
+            pin_memory=False,
             collate_fn=self._dataclass_data_collator,
         )
 
