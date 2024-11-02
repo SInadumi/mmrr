@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import torch
 
 from cl_mmref.tools.task import Task
-from cl_mmref.utils.annotation import ImageInfo
 from cl_mmref.utils.util import CamelCaseDataClassJsonMixin, Rectangle
 
 DEFAULT_VIS_EMB_SIZE = 1024
@@ -48,14 +47,7 @@ class SentencePrediction(CamelCaseDataClassJsonMixin):
 
 
 @dataclass
-class UtterancePrediction(CamelCaseDataClassJsonMixin):
-    text: str
-    sids: list[str]
-    phrases: list[PhrasePrediction]
-
-
-@dataclass
 class MMRefPrediction(CamelCaseDataClassJsonMixin):
-    scenario_id: str
-    images: list[ImageInfo]
-    utterances: list[UtterancePrediction]
+    doc_id: str
+    image_id: str
+    phrases: list[PhrasePrediction]
