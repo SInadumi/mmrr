@@ -13,6 +13,7 @@ from .base import BaseExample
 class MMRefExample(BaseExample):
     def __init__(self) -> None:
         super().__init__()
+        self.image_id: str = ""
         self.sentence_indices: list = []
         self.phrases: dict[Task, list[MMRefBasePhrase]] = {}
         self.sid_to_objects: dict[str, list] = {}
@@ -21,6 +22,7 @@ class MMRefExample(BaseExample):
     def load(
         self,
         knp_document: Document,
+        image_id: str,
         vis_sentences: list[SentenceAnnotation],
         tasks: list[Task],
         task_to_extractor: dict[Task, BaseExtractor],
@@ -28,6 +30,7 @@ class MMRefExample(BaseExample):
         iou_mapper: dict[str, h5py.Group],
     ):
         self.set_knp_params(knp_document)
+        self.image_id = image_id
         self.sentence_indices = [sentence.sid for sentence in vis_sentences]
         base_phrases: list[BasePhrase] = knp_document.base_phrases
         vis_phrases: list[PhraseAnnotation] = [

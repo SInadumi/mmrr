@@ -236,6 +236,7 @@ class MMRefDataset(BaseDataset):
                     except EOFError:
                         example = MMRefExample()
                         example = example.load(
+                            image_id=image_id,
                             vis_sentences=annotation.utterances,
                             knp_document=knp_document,
                             tasks=self.tasks,
@@ -246,6 +247,7 @@ class MMRefDataset(BaseDataset):
             else:
                 example = MMRefExample()
                 example.load(
+                    image_id=image_id,
                     vis_sentences=annotation.utterances,
                     knp_document=knp_document,
                     tasks=self.tasks,
