@@ -162,7 +162,7 @@ class MMRefDataset(BaseDataset):
         feats = list(self.objects[f"{scenario_id}/{image_id}/feats"])
         scores = list(self.objects[f"{scenario_id}/{image_id}/scores"])
         for idx in range(len(boxes)):
-            _bbox = list(boxes[idx])
+            _bbox = boxes[idx].tolist()
             ret.append(
                 ObjectFeature(
                     image_id=int(image_id),
