@@ -24,7 +24,6 @@ from .base import BaseExample
 class KyotoExample(BaseExample):
     def __init__(self) -> None:
         super().__init__()
-        self.doc_id: str = ""
         self.phrases: dict[Task, list[CohesionBasePhrase]] = {}
         self.sid_to_type_id: dict[str, int] = {}
 
@@ -38,7 +37,6 @@ class KyotoExample(BaseExample):
         flip_writer_reader_according_to_type_id: bool,
     ):
         self.set_knp_params(document)
-        self.doc_id = document.doc_id
         self.sid_to_type_id = sid_to_type_id
         for task in tasks:
             extractor: BaseExtractor = task_to_extractor[task]
