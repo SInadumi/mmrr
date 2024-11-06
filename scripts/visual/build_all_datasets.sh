@@ -25,15 +25,14 @@ if [[ -z "${OUT_DIR}" ]]; then
 fi
 
 echo "Processing J-CRe3 ..."
-# poetry run python ./scripts/visual/build_dataset.py \
-#     "${OUT_DIR}/jcre3" \
-#     --dataset-name jcre3 --id "${DATASET_ROOT}/J-CRe3/id" \
-#     --num-utterances-per-sample 3 --num-overlapping-utterances 2
+poetry run python ./scripts/visual/build_dataset.py \
+    "${OUT_DIR}/jcre3" \
+    --dataset-name jcre3 --id "${DATASET_ROOT}/J-CRe3/id" \
+    --num-utterances-per-sample 3 --num-overlapping-utterances 2
 
 echo "Processing Flickr30k-Ent-Ja ..."
 poetry run python ./scripts/visual/build_dataset.py \
     "${OUT_DIR}/f30k_ent_jp" \
-    --dataset-name f30k_ent_jp --id "${OUT_DIR}/f30k_ent_jp/id" \
-    --num-utterances-per-sample 3 --num-overlapping-utterances 0
+    --dataset-name f30k_ent_jp --id "${OUT_DIR}/f30k_ent_jp/id"
 
 echo "done!"

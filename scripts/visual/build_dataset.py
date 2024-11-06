@@ -85,30 +85,30 @@ class ImageTextAugmenter:
         assert len(sid_mapper) == len(annotation.utterances)
 
         # split utterances field
-        sentences = []  # [{"sid": xx, "phrases": xx}, ...]
+        vis_sentences = []  # [{"sid": xx, "phrases": xx}, ...]
         for idx, utterance in enumerate(annotation.utterances):
             sids = sid_mapper[idx]
-            sentences.extend(
+            vis_sentences.extend(
                 [
                     SentenceAnnotation(text="", phrases=utterance.phrases, sid=sid)
                     for sid in sids
                 ]
             )
-        assert len(sentences) == len(document.sentences)
+        assert len(vis_sentences) == len(document.sentences)
 
         # format visual phrases by base_phrases
         for sentence in document.sentences:
             s_idx = self.to_idx_from_sid(sentence.sid)  # a index of sid
-            _s = sentences[s_idx]
-            _s.text = sentence.text
-            if len(sentence.base_phrases) != len(_s.phrases):
+            vis_sentence = vis_sentences[s_idx]
+            vis_sentence.text = sentence.text
+            if len(sentence.base_phrases) != len(vis_sentence.phrases):
                 # update visual phrase annotation
                 doc_phrase = [b.text for b in sentence.base_phrases]
-                vis_phrase = [u.text for u in _s.phrases]
+                vis_phrase = [u.text for u in vis_sentence.phrases]
                 st_idx = vis_phrase.index(doc_phrase[0])
                 end_idx = st_idx + len(doc_phrase)
-                _s.phrases = _s.phrases[st_idx:end_idx]
-        annotation.utterances = sentences
+                vis_sentence.phrases = vis_sentence.phrases[st_idx:end_idx]
+        annotation.utterances = vis_sentences
 
         return annotation
 
@@ -330,17 +330,18 @@ def main():
                 image_text_annotation
             )
             image_text_annotation = augmenter.add_class_id(image_text_annotation)
+            annotations = augmenter.split_annotations_per_frame(
+                image_text_annotation,
+                args.num_utterances_per_sample,
+                args.num_overlapping_utterances,
+            )
 
         if args.dataset_name == "f30k_ent_jp":
             image_text_annotation = augmenter.add_silver_cases_to_phrase_annotations(
                 image_text_annotation
             )
+            annotations = [image_text_annotation]
 
-        annotations = augmenter.split_annotations_per_frame(
-            image_text_annotation,
-            args.num_utterances_per_sample,
-            args.num_overlapping_utterances,
-        )
         for idx, annotation in enumerate(annotations):
             assert len(annotation.images) == 1
             iid = annotation.images[0].imageId
