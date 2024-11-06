@@ -28,7 +28,7 @@ class BoundingBoxPrediction(CamelCaseDataClassJsonMixin):
 @dataclass(frozen=True, eq=True)
 class RelationPrediction(CamelCaseDataClassJsonMixin):
     type: str  # ガ, ヲ, ニ, ノ, =, etc...
-    bounding_box: list[BoundingBoxPrediction]
+    bounding_boxes: list[BoundingBoxPrediction]
 
 
 @dataclass

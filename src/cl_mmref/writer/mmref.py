@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import TextIO, Union
+
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.datasets.mmref_dataset import MMRefDataset
 from cl_mmref.tools.task import Task
@@ -16,6 +19,14 @@ class ProbabilityJsonWriter:
         self.rel_types: list[str] = dataset.rel_types
         self.tasks: list[Task] = dataset.tasks
         self.task_to_rels: dict[Task, list[str]] = dataset.task_to_rels
+
+    # TODO: WIP
+    def write(
+        self,
+        probabilities: dict[int, list[list[list[float]]]],
+        destination: Union[Path, TextIO, None] = None,
+    ) -> None:
+        pass
 
     def write_sentence_predictions(
         self,
@@ -101,7 +112,7 @@ class ProbabilityJsonWriter:
 
                         relation_predictions.append(
                             RelationPrediction(
-                                type=rel_type, bounding_box=bbox_predictions
+                                type=rel_type, bounding_boxes=bbox_predictions
                             )
                         )
 
