@@ -2,4 +2,5 @@ defaults:
   - /datamodule/base/mmref.yaml@
 
 data_path: null
+object_file_root: null
 training: false

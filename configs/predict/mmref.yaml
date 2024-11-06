@@ -6,7 +6,8 @@ checkpoint: /somewhere/model.ckpt
 
 # Path to dir where documents and annotatios.
 input_dir: null
-# File name of the object features (xxx.h5)
+# File dir/name of the object features (xxx.h5 and xxx_mapper.h5)
+object_file_root: null
 object_file_name: null
 
 # Directory where analyzed knp files are exported.

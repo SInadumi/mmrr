@@ -73,11 +73,13 @@ class Analyzer:
         else:
             return torch.device("cuda:0" if device_name == "gpu" else "cpu")
 
-    def gen_dataloader(self, input_dir: Path, object_file_name: str) -> DataLoader:
+    def gen_dataloader(self, input_dir: Path, object_root: str, object_name: str) -> DataLoader:
         # Instantiate lightning datamodule
         datamodule_cfg = self.cfg.datamodule
+        # OmegaConf.set_struct(datamodule_cfg, False)  # HACK: enable to add new key-value pairs
         datamodule_cfg.predict.data_path = str(input_dir)
-        datamodule_cfg.predict.object_file_name = object_file_name
+        datamodule_cfg.predict.object_file_root = object_root
+        datamodule_cfg.predict.object_file_name = object_name
         datamodule_cfg.num_workers = int(self.cfg.num_workers)
         datamodule_cfg.batch_size = int(self.cfg.max_batches_per_device)
         datamodule = MTDataModule(cfg=datamodule_cfg)
@@ -115,7 +117,7 @@ def main(cfg: DictConfig):
 
     source = Path(cfg.input_dir)
     destination = Path(cfg.export_dir)
-    dataloader = analyzer.gen_dataloader(source, cfg.object_file_name)
+    dataloader = analyzer.gen_dataloader(source, cfg.object_file_root, cfg.object_file_name)
     analyzer.analyze(dataloader, prediction_destination=destination)
 
 

@@ -44,6 +44,7 @@ class MMRefDataset(BaseDataset):
         tasks: ListConfig,  # "vis-pas", "vis-coref"
         cases: ListConfig,  # target case frames
         max_seq_length: int,
+        object_file_root: Union[str, Path],
         object_file_name: str,
         vis_emb_size: int,
         tokenizer: PreTrainedTokenizerBase,
@@ -115,12 +116,9 @@ class MMRefDataset(BaseDataset):
 
         # load object features
         self.object_file_name = object_file_name
-        self.objects = h5py.File(
-            self.dataset_path / self.dataset_name / f"{object_file_name}.h5", "r"
-        )
+        self.objects = h5py.File(Path(object_file_root) / f"{object_file_name}.h5", "r")
         self.iou_mapper = h5py.File(
-            self.dataset_path / self.dataset_name / f"{object_file_name}_iou_mapper.h5",
-            "r",
+            Path(object_file_root) / f"{object_file_name}_iou_mapper.h5", "r"
         )
         self.pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
         try:

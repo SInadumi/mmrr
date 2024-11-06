@@ -3,4 +3,5 @@ defaults:
 
 f30k:
   data_path: ${dataset_path}/f30k_ent_jp/train
+  object_file_root: ${dataset_path}/f30k_ent_jp
   training: true

@@ -3,4 +3,5 @@ defaults:
 
 jcre3:
   data_path: ${dataset_path}/jcre3/test
+  object_file_root: ${dataset_path}/jcre3
   training: false
