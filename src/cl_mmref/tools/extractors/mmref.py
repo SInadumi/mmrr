@@ -36,7 +36,7 @@ class MMRefExtractor(BaseExtractor):
             for relation in predicate.relations:
                 if relation.type not in _rel_types:
                     continue
-                if len(relation.boundingBoxes) == 0:
+                if relation.boundingBoxes is None or len(relation.boundingBoxes) == 0:
                     continue
                 assert len(candidates) == len(iou_mapper[f"{relation.instanceId}"])
                 all_arguments[rel_type] = [
