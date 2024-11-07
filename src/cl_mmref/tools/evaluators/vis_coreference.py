@@ -44,7 +44,7 @@ class VisCoreferenceResolutionEvaluator:
             candidates: list[BoundingBoxPrediction] = []
             if len(predicted_mention.relations) == 1:
                 assert predicted_mention.relations[0].type == self.rel
-                candidates = predicted_mention.relations[0].bounding_box
+                candidates = predicted_mention.relations[0].bounding_boxes
             elif len(predicted_mention.relations) > 1:
                 raise ValueError
 
