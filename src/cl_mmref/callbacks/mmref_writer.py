@@ -24,7 +24,6 @@ class MMRefWriter(BasePredictionWriter):
         self,
         prediction_destination: Union[Path, TextIO, None] = None,
         json_destination: Union[Path, TextIO, None] = None,
-        analysis_target_threshold: float = 0.5,
     ) -> None:
         super().__init__(write_interval="epoch")
 
@@ -38,7 +37,6 @@ class MMRefWriter(BasePredictionWriter):
             ), f"destination must be either Path or TextIO, but got {type(dest)}"
             if isinstance(dest, Path):
                 dest.mkdir(parents=True, exist_ok=True)
-        self.analysis_target_threshold: float = analysis_target_threshold
 
     def write_on_batch_end(
         self,
@@ -66,14 +64,9 @@ class MMRefWriter(BasePredictionWriter):
         for pred in predictions:
             batch_example_ids = pred["example_ids"]  # (b)
             batch_relation_logits = pred["relation_logits"]  # (b, rel, seq, seq)
-            batch_source_mask_logits = pred["source_mask_logits"]  # (b, task, seq)
-            assert (
-                len(batch_relation_logits)
-                == len(batch_example_ids)
-                == len(batch_source_mask_logits)
-            )
-            for example_id, relation_logits, source_mask_logits in zip(
-                batch_example_ids, batch_relation_logits, batch_source_mask_logits
+            assert len(batch_relation_logits) == len(batch_example_ids)
+            for example_id, relation_logits in zip(
+                batch_example_ids, batch_relation_logits
             ):
                 example: MMRefExample = dataset.examples[example_id.item()]
                 sentences: list[SentenceAnnotation] = [
@@ -87,22 +80,11 @@ class MMRefWriter(BasePredictionWriter):
                 candidate_selection_prediction: np.ndarray = np.argsort(
                     -relation_prediction, axis=2
                 )  # descending order
-                # (phrase, task)
-                source_mask_prediction: np.ndarray = (
-                    dataset.dump_source_mask_prediction(
-                        source_mask_logits.cpu().numpy(), example
-                    )
-                )
-                # (phrase, task)
-                is_analysis_target: np.ndarray = (
-                    source_mask_prediction >= self.analysis_target_threshold
-                )
 
                 sentence_prediction = json_writer.write_sentence_predictions(
                     example,
                     sentences,
                     candidate_selection_prediction.tolist(),
-                    is_analysis_target.tolist(),
                 )
 
                 self.write_prediction(

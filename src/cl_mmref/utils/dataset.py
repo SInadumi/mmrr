@@ -56,8 +56,6 @@ class MMRefInputFeatures:
     input_ids: list[int]
     attention_mask: list[bool]
     token_type_ids: list[int]
-    source_mask: list[bool]  # loss を計算する対象の基本句かどうか
-    source_label: list[list[int]]  # 解析対象基本句かどうか
     vis_embeds: torch.Tensor
     vis_attention_mask: list[bool]
     target_mask: list[list[list[bool]]]

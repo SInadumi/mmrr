@@ -45,9 +45,7 @@ class Analyzer:
         callbacks: list[Callback] = list(
             map(hydra.utils.instantiate, self.cfg.get("callbacks", {}).values())
         )
-        self.prediction_writer = MMRefWriter(
-            analysis_target_threshold=self.cfg.analysis_target_threshold,
-        )
+        self.prediction_writer = MMRefWriter()
 
         # Instantiate lightning trainer
         self.trainer: pl.Trainer = hydra.utils.instantiate(
@@ -73,10 +71,19 @@ class Analyzer:
         else:
             return torch.device("cuda:0" if device_name == "gpu" else "cpu")
 
-    def gen_dataloader(self, input_dir: Path, object_root: str, object_name: str) -> DataLoader:
+    def gen_dataloader(
+        self, input_dir: Path, object_root: str, object_name: str
+    ) -> DataLoader:
         # Instantiate lightning datamodule
         datamodule_cfg = self.cfg.datamodule
-        # OmegaConf.set_struct(datamodule_cfg, False)  # HACK: enable to add new key-value pairs
+        OmegaConf.set_struct(
+            datamodule_cfg, False
+        )  # HACK: enable to add new key-value pairs
+        if "predict" not in datamodule_cfg:
+            import copy
+
+            datamodule_cfg.predict = copy.deepcopy(datamodule_cfg.test.jcre3)
+            datamodule_cfg.predict.include_nonidentical = True
         datamodule_cfg.predict.data_path = str(input_dir)
         datamodule_cfg.predict.object_file_root = object_root
         datamodule_cfg.predict.object_file_name = object_name
@@ -117,7 +124,9 @@ def main(cfg: DictConfig):
 
     source = Path(cfg.input_dir)
     destination = Path(cfg.export_dir)
-    dataloader = analyzer.gen_dataloader(source, cfg.object_file_root, cfg.object_file_name)
+    dataloader = analyzer.gen_dataloader(
+        source, cfg.object_file_root, cfg.object_file_name
+    )
     analyzer.analyze(dataloader, prediction_destination=destination)
 
 

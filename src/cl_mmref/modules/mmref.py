@@ -9,10 +9,7 @@ from torch import nn
 from typing_extensions import override
 
 from cl_mmref.metrics import MMRefMetric
-from cl_mmref.modules.model.loss import (
-    binary_cross_entropy_with_logits,
-    cross_entropy_loss,
-)
+from cl_mmref.modules.model.loss import cross_entropy_loss
 
 from .base import BaseModule
 
@@ -21,10 +18,7 @@ IGNORE_INDEX = -100
 
 class MMRefModule(BaseModule[MMRefMetric]):
     def __init__(self, hparams: DictConfig):
-        analysis_target_threshold: float = getattr(
-            hparams, "analysis_target_threshold", 0.5
-        )  # default: 0.5
-        super().__init__(hparams, MMRefMetric(analysis_target_threshold))
+        super().__init__(hparams, MMRefMetric())
         self.model: nn.Module = hydra.utils.instantiate(
             hparams.model,
             num_relations=int("vis_pas" in hparams.tasks) * len(hparams.cases)
@@ -35,12 +29,11 @@ class MMRefModule(BaseModule[MMRefMetric]):
         pass
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, source_mask_logits, h_src, h_tgt = self.model(**batch)
+        relation_logits, h_src, h_tgt = self.model(**batch)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["vis_attention_mask"].unsqueeze(1).unsqueeze(2), -1024.0
             ),
-            "source_mask_logits": source_mask_logits,
             "h_src": h_src,
             "h_tgt": h_tgt,
         }
@@ -49,26 +42,12 @@ class MMRefModule(BaseModule[MMRefMetric]):
         ret: dict[str, torch.Tensor] = self(batch)
         losses: dict[str, torch.Tensor] = {}
 
-        txt_source_mask: torch.Tensor = batch["source_mask"]  # (b, t_seq)
-        relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, t_seq, v_seq)
-
+        relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, seq, seq)
         losses["relation_loss"] = cross_entropy_loss(
             ret["relation_logits"], batch["target_label"], relation_mask
         )
 
-        source_label: torch.Tensor = batch["source_label"]  # (b, task, t_seq)
-        analysis_target_mask = source_label.ne(
-            IGNORE_INDEX
-        ) & txt_source_mask.unsqueeze(1)  # (b, task, t_seq)
-        source_label = torch.where(
-            analysis_target_mask, source_label, torch.zeros_like(source_label)
-        )
-        losses["source_mask_loss"] = binary_cross_entropy_with_logits(
-            ret["source_mask_logits"], source_label, analysis_target_mask
-        )
-        # weighted sum
-        losses["loss"] = losses["relation_loss"] + losses["source_mask_loss"] * 0.5
-
+        losses["loss"] = losses["relation_loss"]
         self.log_dict({f"train/{key}": value for key, value in losses.items()})
         return losses["loss"]
 

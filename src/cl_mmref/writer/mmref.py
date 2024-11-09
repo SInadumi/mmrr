@@ -35,9 +35,7 @@ class ProbabilityJsonWriter:
         candidate_selection_prediction: list[
             list[list[int]]
         ],  # (phrase, rel, candidate)
-        is_analysis_target: list[list[bool]],  # (phrase, task)
     ) -> list[SentencePrediction]:
-        assert len(candidate_selection_prediction) == len(is_analysis_target)
         phrase_predictions: list[PhrasePrediction] = self.write_phrase_predictions(
             example,
             [
@@ -47,7 +45,6 @@ class ProbabilityJsonWriter:
             ],
             [phrase for sentence in sentences for phrase in sentence.phrases],
             candidate_selection_prediction,
-            is_analysis_target,
         )
         sentence_predictions: list[SentencePrediction] = []
         for sentence in sentences:
@@ -72,28 +69,24 @@ class ProbabilityJsonWriter:
         candidate_selection_prediction: list[
             list[list[int]]
         ],  # (phrase, rel, candidate)
-        is_analysis_target: list[list[bool]],  # (phrase, task)
     ) -> list[PhrasePrediction]:
-        assert (
-            len(phrases)
-            == len(candidate_selection_prediction)
-            == len(is_analysis_target)
-        )
+        assert len(phrases) == len(candidate_selection_prediction)
 
         phrase_predictions: list[PhrasePrediction] = []
-        for sid, phrase, selected_candidates, is_targets in zip(
-            sids,
-            phrases,
-            candidate_selection_prediction,
-            is_analysis_target,
+        for example_idx, (sid, phrase, selected_candidates) in enumerate(
+            zip(
+                sids,
+                phrases,
+                candidate_selection_prediction,
+            )
         ):
             rel_type_to_candidate = dict(zip(self.rel_types, selected_candidates))
 
-            for task, is_target in zip(self.tasks, is_targets):
+            for task in self.tasks:
                 relation_predictions: list[RelationPrediction] = []
-                # mmref_base_phrase = example.phrases[task][idx]
+                mmref_base_phrase = example.phrases[task][example_idx]
                 # NOTE: mmref_base_phrase.is_target is gold annotation
-                if is_target is True:
+                if mmref_base_phrase.is_target is True:
                     for rel_type in self.task_to_rels[task]:
                         candidate_predictions: list[ObjectFeature] = [
                             example.candidates[idx]

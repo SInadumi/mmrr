@@ -29,7 +29,7 @@ from cl_mmref.utils.dataset import (
     MMRefInputFeatures,
 )
 from cl_mmref.utils.prediction import ObjectFeature
-from cl_mmref.utils.util import IGNORE_INDEX, Rectangle, sigmoid
+from cl_mmref.utils.util import Rectangle, sigmoid
 
 from .base_dataset import BaseDataset
 
@@ -358,7 +358,7 @@ class MMRefDataset(BaseDataset):
 
     def _token_to_candidate_level(
         self,
-        token_level_logits_matrix: np.ndarray,  # (t_seq, v_seq)
+        token_level_logits_matrix: np.ndarray,  # (seq, seq)
         phrases: list[MMRefBasePhrase],
         candidates: list[ObjectFeature],
         encoding: Encoding,
@@ -372,7 +372,7 @@ class MMRefDataset(BaseDataset):
             # Cast to built-in list because list operation is faster than numpy array operation.
             token_level_logits: list[float] = token_level_logits_matrix[
                 token_index_span[0]
-            ].tolist()  # (t_seq)
+            ].tolist()  # (seq)
             candidate_level_logits: list[float] = []
             for idx in range(len(candidates)):
                 candidate_level_logits.append(token_level_logits[idx])
@@ -384,23 +384,6 @@ class MMRefDataset(BaseDataset):
         example: MMRefExample,
     ) -> MMRefInputFeatures:
         """Convert example to textual feature"""
-        assert example.encoding is not None, "encoding isn't set"
-        source_mask = [False] * self.max_seq_length
-        for global_index in example.analysis_target_morpheme_indices:
-            for token_index in range(*example.encoding.word_to_tokens(global_index)):
-                source_mask[token_index] = True
-
-        is_analysis_targets: list[list[int]] = []  # (task, src)
-        for task in self.tasks:
-            is_targets: list[int] = [IGNORE_INDEX] * self.max_seq_length
-            for phrase in example.phrases[task]:
-                token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
-                    phrase.head_morpheme_global_index
-                )
-                for token_index in range(*token_index_span):
-                    is_targets[token_index] = int(phrase.is_target)
-            is_analysis_targets.append(is_targets)
-
         merged_encoding: Encoding = Encoding.merge(
             [example.encoding, self.special_encoding]
         )
@@ -428,8 +411,6 @@ class MMRefDataset(BaseDataset):
             input_ids=merged_encoding.ids,
             attention_mask=merged_encoding.attention_mask,
             token_type_ids=merged_encoding.type_ids,
-            source_mask=source_mask,
-            source_label=is_analysis_targets,
             vis_embeds=vis_embeds,
             vis_attention_mask=vis_attention_mask,
             target_mask=candidates_set,

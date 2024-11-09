@@ -12,9 +12,6 @@ object_file_name: null
 
 # Directory where analyzed knp files are exported.
 export_dir: null
-# Threshold for analysis target prediction probability. If the probability is lower than this value, the base phrase is
-# not analyzed.
-analysis_target_threshold: 0.3
 
 # environment-dependent settings
 devices: ${oc.env:DEVICES,1}
