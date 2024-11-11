@@ -33,11 +33,7 @@ class BaselineModel(nn.Module):
         self.num_relation_types = num_relations
         hidden_size = self.pretrained_model.config.hidden_size
 
-        self.l_source = nn.Linear(
-            self.pretrained_model.config.hidden_size,
-            hidden_size * self.num_relation_types,
-        )
-        self.l_target = nn.Linear(
+        self.linear = nn.Linear(
             self.pretrained_model.config.hidden_size,
             hidden_size * self.num_relation_types,
         )
@@ -65,27 +61,21 @@ class BaselineModel(nn.Module):
         ).last_hidden_state  # (b, seq, hid)
         batch_size, sequence_len, hidden_size = encoder_last_hidden_state.size()
 
-        h_src = self.l_source(
+        hidden_state = self.linear(
             self.dropout(encoder_last_hidden_state)
         )  # (b, seq, rel*hid)
-        h_tgt = self.l_target(
-            self.dropout(encoder_last_hidden_state)
-        )  # (b, seq, rel*hid)
-        h_src = h_src.view(
-            batch_size, sequence_len, self.num_relation_types, hidden_size
-        )  # (b, seq, rel, hid)
-        h_tgt = h_tgt.view(
+        hidden_state = hidden_state.view(
             batch_size, sequence_len, self.num_relation_types, hidden_size
         )  # (b, seq, rel, hid)
         h = torch.tanh(
-            self.dropout(h_src.unsqueeze(2) + h_tgt.unsqueeze(1))
+            self.dropout(hidden_state.unsqueeze(2) + hidden_state.unsqueeze(1))
         )  # (b, seq, seq, rel, hid)
         # -> (b, seq, seq, rel, 1) -> (b, seq, seq, rel) -> (b, rel, seq, seq)
         relation_logits = self.out(h).squeeze(-1).permute(0, 3, 1, 2).contiguous()
 
         source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
         dist_matrix = calc_4d_cosine_matrix(
-            h_src.permute(0, 2, 1, 3), h_tgt.permute(0, 2, 1, 3)
+            hidden_state.permute(0, 2, 1, 3), hidden_state.permute(0, 2, 1, 3)
         )  # (b, seq, rel, hid) -> (b, rel, seq, seq)
 
         return relation_logits, source_mask_logits, dist_matrix
