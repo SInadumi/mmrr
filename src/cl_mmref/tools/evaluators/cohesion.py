@@ -120,7 +120,7 @@ class CohesionScore:
 
     def to_dict(self) -> Dict[str, Dict[str, F1Metric]]:
         """Convert data to dictionary"""
-        df_all = pd.DataFrame(index=["pas"])
+        df_all = pd.DataFrame()
         if self.pas_metrics is not None:
             df_pas: pd.DataFrame = self.pas_metrics.copy()
             df_pas["overt_dep"] = df_pas["overt"] + df_pas["dep"]
@@ -149,9 +149,11 @@ class CohesionScore:
             df_all.loc["bridging"] = df_bridging.sum(axis=0)
 
         if self.coreference_metrics is not None:
-            df_coref = self.coreference_metrics.copy()
+            df_coref: pd.DataFrame = self.coreference_metrics.copy()
             df_coref["all"] = df_coref["endophora"] + df_coref["exophora"]
-            df_all.loc["coreference"] = df_coref
+            df_coref = df_coref.rename(index=lambda x: f"coreference_{x}")
+            df_all = pd.concat([df_all, df_coref])
+            df_all.loc["coreference"] = df_coref.sum(axis=0)
 
         return {
             k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)}
