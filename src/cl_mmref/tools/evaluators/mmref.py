@@ -94,7 +94,7 @@ class MMRefScore:
     coreference_metrics: Optional[pd.DataFrame]
 
     def to_dict(self) -> dict[str, dict[str, F1Metric]]:
-        df_all = pd.DataFrame(index=["vis_pas"])
+        df_all = pd.DataFrame()
         if self.pas_metrics is not None:
             df_pas: pd.DataFrame = self.pas_metrics.copy()
             df_all = pd.concat([df_pas, df_all])
