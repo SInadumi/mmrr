@@ -8,7 +8,7 @@ defaults:
   - module: mmref
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup
-  - trainer: default
+  - trainer: debug
   - _self_
 
 dataset_path: ./data
@@ -34,8 +34,8 @@ include_nonidentical: True
 effective_batch_size: 2
 max_epochs: 2
 lr: 0.00005
-warmup_steps: 1000
-warmup_ratio: null
+warmup_steps: null
+warmup_ratio: 0.1
 
 # environment-dependent settings
 devices: ${oc.env:DEVICES,1}
