@@ -48,13 +48,13 @@ class CohesionModule(BaseModule[CohesionMetric]):
                 NotImplementedError
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, source_mask_logits, dist_matrix = self.model(**batch)
+        relation_logits, source_mask_logits = self.model(**batch)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["target_mask"], -1024.0
             ),
             "source_mask_logits": source_mask_logits,
-            "dist_matrix": dist_matrix,
+            "dist_matrix": relation_logits,
         }
 
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -84,7 +84,7 @@ class CohesionModule(BaseModule[CohesionMetric]):
         # weighted sum
         losses["loss"] = losses["relation_loss"] + losses["source_mask_loss"] * 0.5
 
-        # add metric learning losses
+        # add metric learning losses (optional)
         for name, _loss in self.ml_loss.items():
             _weight = self.ml_loss_weights[name]
             losses[name] = _loss.compute_loss(

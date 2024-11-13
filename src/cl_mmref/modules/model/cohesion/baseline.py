@@ -3,7 +3,8 @@ from omegaconf import ListConfig
 from torch import nn
 from transformers import AutoModel, PreTrainedModel
 
-from cl_mmref.modules.model.dist import calc_4d_cosine_matrix
+from cl_mmref.modules.model.dist import calc_4d_dot_product
+from cl_mmref.modules.model.heads import Mlp
 
 
 class BaselineModel(nn.Module):
@@ -31,13 +32,14 @@ class BaselineModel(nn.Module):
         self.dropout = nn.Dropout(hidden_dropout_prob)
 
         self.num_relation_types = num_relations
-        hidden_size = self.pretrained_model.config.hidden_size
 
-        self.linear = nn.Linear(
-            self.pretrained_model.config.hidden_size,
-            hidden_size * self.num_relation_types,
+        self.mlp = Mlp(
+            in_features=self.pretrained_model.config.hidden_size,
+            hidden_features=self.pretrained_model.config.hidden_size,
+            out_features=self.pretrained_model.config.hidden_size
+            * self.num_relation_types,
+            drop=hidden_dropout_prob,
         )
-        self.out = nn.Linear(hidden_size, 1, bias=False)
 
         self.analysis_target_classifier = TokenBinaryClassificationHead(
             num_tasks=num_tasks,
@@ -61,24 +63,16 @@ class BaselineModel(nn.Module):
         ).last_hidden_state  # (b, seq, hid)
         batch_size, sequence_len, hidden_size = encoder_last_hidden_state.size()
 
-        hidden_state = self.linear(
-            self.dropout(encoder_last_hidden_state)
-        )  # (b, seq, rel*hid)
+        hidden_state = self.mlp(encoder_last_hidden_state)  # (b, seq, rel*hid)
         hidden_state = hidden_state.view(
             batch_size, sequence_len, self.num_relation_types, hidden_size
         )  # (b, seq, rel, hid)
-        h = torch.tanh(
-            self.dropout(hidden_state.unsqueeze(2) + hidden_state.unsqueeze(1))
-        )  # (b, seq, seq, rel, hid)
-        # -> (b, seq, seq, rel, 1) -> (b, seq, seq, rel) -> (b, rel, seq, seq)
-        relation_logits = self.out(h).squeeze(-1).permute(0, 3, 1, 2).contiguous()
-
-        source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
-        dist_matrix = calc_4d_cosine_matrix(
+        relation_logits = calc_4d_dot_product(
             hidden_state.permute(0, 2, 1, 3), hidden_state.permute(0, 2, 1, 3)
         )  # (b, seq, rel, hid) -> (b, rel, seq, seq)
+        source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
 
-        return relation_logits, source_mask_logits, dist_matrix
+        return relation_logits, source_mask_logits
 
 
 class TokenBinaryClassificationHead(nn.Module):
