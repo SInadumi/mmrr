@@ -116,7 +116,7 @@ class CohesionScore:
 
     pas_metrics: Optional[pd.DataFrame]
     bridging_metrics: Optional[pd.DataFrame]
-    coreference_metrics: Optional[pd.Series]
+    coreference_metrics: Optional[pd.DataFrame]
 
     def to_dict(self) -> Dict[str, Dict[str, F1Metric]]:
         """Convert data to dictionary"""
@@ -151,9 +151,7 @@ class CohesionScore:
         if self.coreference_metrics is not None:
             df_coref: pd.DataFrame = self.coreference_metrics.copy()
             df_coref["all"] = df_coref["endophora"] + df_coref["exophora"]
-            df_coref = df_coref.rename(index=lambda x: f"coreference_{x}")
             df_all = pd.concat([df_all, df_coref])
-            df_all.loc["coreference"] = df_coref.sum(axis=0)
 
         return {
             k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)}

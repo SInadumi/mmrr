@@ -27,6 +27,7 @@ class CoreferenceResolutionEvaluator:
         self.exophora_referent_types: List[ExophoraReferentType] = list(
             exophora_referent_types
         )
+        self.rel_type = "coreference"
         self.is_target_mention: Callable[[BasePhrase], bool] = is_target_mention or (
             lambda _: True
         )
@@ -35,9 +36,11 @@ class CoreferenceResolutionEvaluator:
     def run(self, predicted_document: Document, gold_document: Document) -> pd.Series:
         """Compute coreference resolution scores"""
         assert len(predicted_document.base_phrases) == len(gold_document.base_phrases)
-        metrics: Dict[str, F1Metric] = {
-            anal: F1Metric() for anal in ("endophora", "exophora")
-        }
+        metrics = pd.DataFrame(
+            [[F1Metric() for _ in ("endophora", "exophora")] for _ in [self.rel_type]],
+            index=[self.rel_type],
+            columns=["endophora", "exophora"],
+        )
         local_comp_result: Dict[tuple, str] = {}
         for predicted_mention, gold_mention in zip(
             predicted_document.base_phrases, gold_document.base_phrases
@@ -94,15 +97,15 @@ class CoreferenceResolutionEvaluator:
                 ):
                     analysis = "endophora"
                     local_comp_result[key] = analysis
-                    metrics[analysis].tp += 1
+                    metrics.loc[self.rel_type, analysis].tp += 1
                 elif predicted_exophora_referents & relaxed_gold_exophora_referents:
                     analysis = "exophora"
                     local_comp_result[key] = analysis
-                    metrics[analysis].tp += 1
+                    metrics.loc[self.rel_type, analysis].tp += 1
                 else:
                     analysis = "endophora" if predicted_other_mentions else "exophora"
                     local_comp_result[key] = "wrong"
-                metrics[analysis].tp_fp += 1
+                metrics.loc[self.rel_type, analysis].tp_fp += 1
 
             # Compute recall
             if (
@@ -122,11 +125,11 @@ class CoreferenceResolutionEvaluator:
                 else:
                     analysis = "endophora" if gold_other_mentions else "exophora"
                     local_comp_result[key] = "wrong"
-                metrics[analysis].tp_fn += 1
+                metrics.loc[self.rel_type, analysis].tp_fn += 1
         self.comp_result.update(
             {(gold_document.doc_id, *k): v for k, v in local_comp_result.items()}
         )
-        return pd.Series(metrics)
+        return metrics
 
     @staticmethod
     def _filter_mentions(
