@@ -5,8 +5,6 @@ from omegaconf import ListConfig
 from torch import nn
 from transformers import AutoModel, PreTrainedModel
 
-from cl_mmref.modules.model.dist import calc_4d_cosine_matrix
-
 
 class LoRARelationWiseWordSelectionHead(nn.Module):
     def __init__(
@@ -83,11 +81,7 @@ class LoRARelationWiseWordSelectionHead(nn.Module):
 
         source_mask_logits = self.analysis_target_classifier(encoder_last_hidden_state)
 
-        dist_matrix = calc_4d_cosine_matrix(
-            source_out.permute(0, 3, 1, 2), target_out.permute(0, 3, 1, 2)
-        )
-
-        return relation_logits, source_mask_logits, dist_matrix
+        return relation_logits, source_mask_logits
 
 
 class LoRADelta(nn.Module):
