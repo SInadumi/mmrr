@@ -5,7 +5,7 @@ from typing import Optional
 import hydra
 import torch
 from omegaconf import DictConfig
-from torch import nn
+from transformers import AutoModel, PreTrainedModel
 from typing_extensions import override
 
 from cl_mmref.metrics import MMRefMetric
@@ -19,29 +19,46 @@ IGNORE_INDEX = -100
 class MMRefModule(BaseModule[MMRefMetric]):
     def __init__(self, hparams: DictConfig):
         super().__init__(hparams, MMRefMetric())
-        self.model: nn.Module = hydra.utils.instantiate(
-            hparams.model,
-            num_relations=int("vis_pas" in hparams.tasks) * len(hparams.cases)
-            + int("vis_coreference" in hparams.tasks),
+        self.encoder: PreTrainedModel = AutoModel.from_pretrained(
+            pretrained_model_name_or_path=hparams.model_name_or_path
+        )
+        self.encoder.resize_token_embeddings(
+            new_num_tokens=self.encoder.config.vocab_size
+            + len(hparams.exophora_referents)
+            + 2,  # +2: [NULL] and [NA]
+        )
+        num_relation_types = int("vis_pas" in hparams.tasks) * len(hparams.cases) + int(
+            "vis_coreference" in hparams.tasks
+        )
+        hidden_size = self.encoder.config.hidden_size
+        self.relation_classifier = hydra.utils.instantiate(
+            hparams.model.relation_head,
+            num_relations=num_relation_types,
+            source_hidden_size=hidden_size,
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
         pass
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, h_src, h_tgt = self.model(**batch)
+        encoded_text = self.encoder(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            token_type_ids=batch["token_type_ids"],
+        ).last_hidden_state  # (b, seq) -> (b, seq, hid)
+        relation_logits = self.relation_classifier(
+            source_hidden_state=encoded_text, target_hidden_state=batch["vis_embeds"]
+        )
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["vis_attention_mask"].unsqueeze(1).unsqueeze(2), -1024.0
             ),
-            "h_src": h_src,
-            "h_tgt": h_tgt,
         }
 
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         ret: dict[str, torch.Tensor] = self(batch)
         losses: dict[str, torch.Tensor] = {}
-
+        # source_mask: torch.Tensor = batch["source_mask"]
         relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, seq, seq)
         losses["relation_loss"] = cross_entropy_loss(
             ret["relation_logits"], batch["target_label"], relation_mask

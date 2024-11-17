@@ -1,0 +1,7 @@
+defaults:
+  - base.yaml
+
+relation_head:
+  _target_: cl_mmref.modules.model.components.LoRARelationWiseObjectSelectionHeads
+  target_hidden_size: ${vis_emb_size}
+  rank: 2
