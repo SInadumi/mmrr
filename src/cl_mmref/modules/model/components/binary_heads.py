@@ -45,7 +45,7 @@ class LoRARelationWiseTokenBinaryClassificationHead(nn.Module):
         super().__init__()
         self.num_tasks = num_tasks
         self.dense = nn.Linear(hidden_size, hidden_size * self.num_tasks)
-        self.delta = LoRADelta(num_tasks, hidden_size, rank)
+        self.delta = LoRADelta(num_tasks, hidden_size, hidden_size, rank)
         self.dropout = nn.Dropout(hidden_dropout_prob)
         self.classifier = nn.Parameter(torch.Tensor(hidden_size, num_tasks))
         nn.init.kaiming_uniform_(self.classifier, a=math.sqrt(5))

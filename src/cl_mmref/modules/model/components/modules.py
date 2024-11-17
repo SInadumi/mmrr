@@ -5,10 +5,16 @@ from torch import nn
 
 
 class LoRADelta(nn.Module):
-    def __init__(self, num_labels: int, hidden_size: int, rank: int) -> None:
+    def __init__(
+        self,
+        num_labels: int,
+        input_hidden_size: int,
+        output_hidden_size: int,
+        rank: int,
+    ) -> None:
         super().__init__()
-        self.dense_a = nn.Parameter(torch.Tensor(hidden_size, rank, num_labels))
-        self.dense_b = nn.Parameter(torch.Tensor(rank, hidden_size, num_labels))
+        self.dense_a = nn.Parameter(torch.Tensor(input_hidden_size, rank, num_labels))
+        self.dense_b = nn.Parameter(torch.Tensor(rank, output_hidden_size, num_labels))
         nn.init.kaiming_uniform_(self.dense_a, a=math.sqrt(5))
         nn.init.zeros_(self.dense_b)
 

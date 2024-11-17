@@ -47,7 +47,7 @@ class LoRARelationWiseWordSelectionHead(nn.Module):
         rank: int = 2,
     ) -> None:
         super().__init__()
-        self.delta_parameters = LoRADelta(num_relations, hidden_size, rank)
+        self.delta_parameters = LoRADelta(num_relations, hidden_size, hidden_size, rank)
 
     def forward(
         self,
