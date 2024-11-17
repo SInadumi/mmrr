@@ -5,7 +5,7 @@ from typing import Optional, Union
 import hydra
 import torch
 from omegaconf import DictConfig
-from torch import nn
+from transformers import AutoModel, PreTrainedModel
 from typing_extensions import override
 
 from cl_mmref.metrics import CohesionMetric
@@ -28,33 +28,45 @@ class CohesionModule(BaseModule[CohesionMetric]):
             hparams, "analysis_target_threshold", 0.5
         )  # default: 0.5
         super().__init__(hparams, CohesionMetric(analysis_target_threshold))
-
-        self.model: nn.Module = hydra.utils.instantiate(
-            hparams.model,
-            num_relations=int("pas" in hparams.tasks) * len(hparams.cases)
-            + int("coreference" in hparams.tasks)
-            + int("bridging" in hparams.tasks),
+        self.encoder: PreTrainedModel = AutoModel.from_pretrained(
+            pretrained_model_name_or_path=hparams.model_name_or_path
         )
-        self.ml_loss_weights: dict[str, float] = hparams.metric_learning_loss
-        self.ml_loss: dict[str, LossType] = {}
+        self.encoder.resize_token_embeddings(
+            new_num_tokens=self.encoder.config.vocab_size
+            + len(hparams.exophora_referents)
+            + 2,  # +2: [NULL] and [NA]
+        )
+        num_relation_types = (
+            int("pas" in hparams.tasks) * len(hparams.cases)
+            + int("coreference" in hparams.tasks)
+            + int("bridging" in hparams.tasks)
+        )
+        hidden_size = self.encoder.config.hidden_size
+        self.relation_classifier = hydra.utils.instantiate(
+            hparams.model.relation_head,
+            num_relations=num_relation_types,
+            hidden_size=hidden_size,
+        )
+        self.analysis_target_classifier = hydra.utils.instantiate(
+            hparams.model.binary_head, hidden_size=hidden_size
+        )
 
     def setup(self, stage: Optional[str] = None) -> None:
-        for name in self.ml_loss_weights.keys():
-            if name == "contrastive_alignment_loss":
-                self.ml_loss[name] = ContrastiveLoss()
-            elif name == "supervised_contrastive_loss":
-                self.ml_loss[name] = SupConLoss()
-            else:
-                NotImplementedError
+        pass
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        relation_logits, source_mask_logits = self.model(**batch)
+        encoded = self.encoder(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            token_type_ids=batch["token_type_ids"],
+        ).last_hidden_state  # (b, seq) -> (b, seq, hid)
+        relation_logits = self.relation_classifier(encoded)
+        source_mask_logits = self.analysis_target_classifier(encoded)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["target_mask"], -1024.0
             ),
             "source_mask_logits": source_mask_logits,
-            "dist_matrix": relation_logits,
         }
 
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -83,15 +95,6 @@ class CohesionModule(BaseModule[CohesionMetric]):
         )
         # weighted sum
         losses["loss"] = losses["relation_loss"] + losses["source_mask_loss"] * 0.5
-
-        # add metric learning losses (optional)
-        for name, _loss in self.ml_loss.items():
-            _weight = self.ml_loss_weights[name]
-            losses[name] = _loss.compute_loss(
-                ret["dist_matrix"],
-                target_mask,
-            )
-            losses["loss"] += losses[name] * _weight
 
         self.log_dict({f"train/{key}": value for key, value in losses.items()})
         return losses["loss"]
