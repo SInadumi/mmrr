@@ -40,7 +40,7 @@ class BaseModule(pl.LightningModule, Generic[MetricType]):
             {
                 "params": [
                     p
-                    for n, p in self.model.named_parameters()
+                    for n, p in self.named_parameters()
                     if not any(nd in n for nd in no_decay) and p.requires_grad
                 ],
                 "weight_decay": self.hparams.optimizer.weight_decay,
@@ -49,7 +49,7 @@ class BaseModule(pl.LightningModule, Generic[MetricType]):
             {
                 "params": [
                     p
-                    for n, p in self.model.named_parameters()
+                    for n, p in self.named_parameters()
                     if any(nd in n for nd in no_decay) and p.requires_grad
                 ],
                 "weight_decay": 0.0,
