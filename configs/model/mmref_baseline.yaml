@@ -4,4 +4,4 @@ defaults:
 relation_head:
   _target_: cl_mmref.modules.model.components.RelationWiseObjectSelectionHeads
   hidden_dropout_prob: ${model.hidden_dropout_prob}
-  target_hidden_size: ${vis_emb_size}
+  target_hidden_size: ${object_hidden_size}

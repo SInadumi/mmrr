@@ -4,7 +4,7 @@ tasks: ${tasks}
 cases: ${cases}
 max_seq_length: ${max_seq_length}
 object_file_name: ${object_file_name}
-vis_emb_size: ${vis_emb_size}
+object_hidden_size: ${object_hidden_size}
 exophora_referents: ${exophora_referents}
 include_nonidentical: ${include_nonidentical}
 special_tokens: ${special_tokens}

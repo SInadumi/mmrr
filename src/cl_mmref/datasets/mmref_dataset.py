@@ -46,7 +46,7 @@ class MMRefDataset(BaseDataset):
         max_seq_length: int,
         object_file_root: Union[str, Path],
         object_file_name: str,
-        vis_emb_size: int,
+        object_hidden_size: int,
         tokenizer: PreTrainedTokenizerBase,
         exophora_referents: ListConfig,
         include_nonidentical: bool,
@@ -71,12 +71,12 @@ class MMRefDataset(BaseDataset):
             for i, token in enumerate(self.special_tokens)
         }
         self.max_seq_length = max_seq_length
-        self.vis_emb_size = vis_emb_size
+        self.object_hidden_size = object_hidden_size
         self.dataset_name = self.data_path.parts[-2]
 
         assert len(self.tasks) > 0
         assert self.max_seq_length > 0
-        assert self.vis_emb_size > 0
+        assert self.object_hidden_size > 0
 
         exophora_referent_types: list[ExophoraReferentType] = [
             er.type for er in self.exophora_referents
@@ -120,7 +120,7 @@ class MMRefDataset(BaseDataset):
         self.iou_mapper = h5py.File(
             Path(object_file_root) / f"{object_file_name}_iou_mapper.h5", "r"
         )
-        self.pad_mask = ObjectFeature(feature=torch.zeros(self.vis_emb_size))
+        self.pad_mask = ObjectFeature(feature=torch.zeros(self.object_hidden_size))
         try:
             self.examples: list[MMRefExample] = self._load_examples_per_frame(
                 image_text_annotations, sid2knp_sentence

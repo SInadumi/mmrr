@@ -3,5 +3,5 @@ defaults:
 
 relation_head:
   _target_: cl_mmref.modules.model.components.LoRARelationWiseObjectSelectionHeads
-  target_hidden_size: ${vis_emb_size}
+  target_hidden_size: ${object_hidden_size}
   rank: 2
