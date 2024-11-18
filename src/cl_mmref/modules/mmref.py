@@ -58,7 +58,6 @@ class MMRefModule(BaseModule[MMRefMetric]):
     def training_step(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         ret: dict[str, torch.Tensor] = self(batch)
         losses: dict[str, torch.Tensor] = {}
-        # source_mask: torch.Tensor = batch["source_mask"]
         relation_mask: torch.Tensor = batch["target_mask"]  # (b, rel, seq, seq)
         losses["relation_loss"] = cross_entropy_loss(
             ret["relation_logits"], batch["target_label"], relation_mask
