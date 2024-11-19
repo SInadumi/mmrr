@@ -17,7 +17,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.utils.util import current_datetime_string
-from utils import save_results
+from utils import initialize_parameters, save_results
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
@@ -95,20 +95,29 @@ def main(cfg: DictConfig):
     datamodule: pl.LightningDataModule = MTDataModule(cfg=cfg.datamodule)
 
     # Instantiate lightning module
-    model: pl.LightningDataModule
-    if cfg.checkpoint:
-        model = hydra.utils.call(cfg.module.load_from_checkpoint, _recursive_=False)
-    else:
-        model = hydra.utils.instantiate(cfg.module.cls, hparams=cfg, _recursive_=False)
+    target_module: pl.LightningDataModule
+    target_module = hydra.utils.instantiate(
+        cfg.module.target_module.cls, hparams=cfg, _recursive_=False
+    )
+    if cfg.target_checkpoint:
+        target_module = hydra.utils.call(
+            cfg.module.target_module.load_from_checkpoint, _recursive_=False
+        )
+    if cfg.source_checkpoint:
+        source_module = hydra.utils.call(
+            cfg.module.source_module.load_from_checkpoint, _recursive_=False
+        )
+        # Overwrite text encoder parameters
+        initialize_parameters(target_module.encoder, source_module.encoder)
     if cfg.compile is True:
-        model = torch.compile(model)  # type: ignore
+        target_module = torch.compile(target_module)  # type: ignore
 
     # Run training
-    trainer.fit(model=model, datamodule=datamodule)
+    trainer.fit(model=target_module, datamodule=datamodule)
 
     # Run test
     raw_results: list[Mapping[str, float]] = trainer.test(
-        model=model, datamodule=datamodule
+        model=target_module, datamodule=datamodule
     )
     save_results(raw_results, Path(cfg.run_dir) / "eval_test")
 

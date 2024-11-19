@@ -16,7 +16,8 @@ max_seq_length: 256
 model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
 frw: false
 flip_reader_writer: ${frw}
-checkpoint: "" # path to trained checkpoint
+target_checkpoint: "" # path to trained checkpoint
+source_checkpoint: "" # specify trained mmref model
 document_split_stride: 2
 analysis_target_threshold: 0.3
 

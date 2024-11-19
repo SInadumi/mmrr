@@ -16,7 +16,8 @@ max_seq_length: 128
 object_file_name: ""
 object_hidden_size: 1024
 model_name_or_path: "ku-nlp/deberta-v2-tiny-japanese"
-checkpoint: "" # path to trained checkpoint
+target_checkpoint: "" # path to trained checkpoint
+source_checkpoint: "" # specify trained cohesion model
 
 # experimental settings
 cases: ["ガ", "ヲ", "ニ"]

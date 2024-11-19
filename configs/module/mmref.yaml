@@ -1,6 +1,13 @@
-cls:
-  _target_: cl_mmref.modules.mmref.MMRefModule
+target_module:
+  cls:
+    _target_: cl_mmref.modules.mmref.MMRefModule
+  load_from_checkpoint:
+    _target_: ${module.target_module.cls._target_}.load_from_checkpoint
+    checkpoint_path: ${target_checkpoint}
 
-load_from_checkpoint:
-  _target_: ${module.cls._target_}.load_from_checkpoint
-  checkpoint_path: ${checkpoint}
+source_module:
+  cls:
+    _target_: cl_mmref.modules.cohesion.CohesionModule
+  load_from_checkpoint:
+    _target_: ${module.source_module.cls._target_}.load_from_checkpoint
+    checkpoint_path: ${source_checkpoint}
