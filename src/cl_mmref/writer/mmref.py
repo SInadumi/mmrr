@@ -6,13 +6,13 @@ from cl_mmref.datasets.mmref_dataset import MMRefDataset
 from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
 from cl_mmref.utils.prediction import (
-    IGNORE_ID,
     BoundingBoxPrediction,
     ObjectFeature,
     PhrasePrediction,
     RelationPrediction,
     SentencePrediction,
 )
+from cl_mmref.utils.util import IGNORE_ID
 
 
 class ProbabilityJsonWriter:

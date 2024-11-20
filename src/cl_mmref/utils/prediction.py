@@ -2,9 +2,8 @@ from dataclasses import dataclass
 
 import torch
 
-from cl_mmref.utils.util import CamelCaseDataClassJsonMixin, Rectangle
+from cl_mmref.utils.util import IGNORE_ID, CamelCaseDataClassJsonMixin, Rectangle
 
-IGNORE_ID = -1
 DEFAULT_VIS_EMB_SIZE = 1024
 
 

@@ -9,6 +9,7 @@ from omegaconf import Container, OmegaConf
 from rhoknp import BasePhrase, Phrase
 
 IGNORE_INDEX = -100
+IGNORE_ID = -1
 
 number = Union[int, float]
 
@@ -136,6 +137,7 @@ class Rectangle(CamelCaseDataClassJsonMixin):
         return Rectangle.from_xyxy(
             xyxy[0], xyxy[1], max(xyxy[0], xyxy[2]), max(xyxy[1], xyxy[3])
         )
+
 
 def box_iou(box1: Rectangle, box2: Rectangle) -> float:
     if box1.area == 0 or box2.area == 0:
