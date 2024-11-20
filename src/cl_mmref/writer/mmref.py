@@ -12,7 +12,6 @@ from cl_mmref.utils.prediction import (
     RelationPrediction,
     SentencePrediction,
 )
-from cl_mmref.utils.util import IGNORE_ID
 
 
 class ProbabilityJsonWriter:
@@ -98,8 +97,6 @@ class ProbabilityJsonWriter:
                         ]
                         bbox_predictions: list[BoundingBoxPrediction] = []
                         for pred in candidate_predictions:
-                            if pred.image_id == IGNORE_ID or pred.class_id == IGNORE_ID:
-                                continue
                             bbox_predictions.append(
                                 BoundingBoxPrediction(
                                     image_id=pred.image_id,

@@ -29,7 +29,7 @@ from cl_mmref.utils.dataset import (
     MMRefInputFeatures,
 )
 from cl_mmref.utils.prediction import ObjectFeature
-from cl_mmref.utils.util import Rectangle, sigmoid
+from cl_mmref.utils.util import IGNORE_ID, Rectangle, sigmoid
 
 from .base_dataset import BaseDataset
 
@@ -374,7 +374,9 @@ class MMRefDataset(BaseDataset):
                 token_index_span[0]
             ].tolist()  # (seq)
             candidate_level_logits: list[float] = []
-            for idx in range(len(candidates)):
+            for idx, candidate in enumerate(candidates):
+                if candidate.image_id == IGNORE_ID or candidate.class_id == IGNORE_ID:
+                    continue
                 candidate_level_logits.append(token_level_logits[idx])
             phrase_level_scores_matrix.append(sigmoid(np.array(candidate_level_logits)))
         return np.array(phrase_level_scores_matrix)
