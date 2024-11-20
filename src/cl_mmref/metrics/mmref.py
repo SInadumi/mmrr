@@ -66,16 +66,20 @@ class MMRefMetric(BaseModuleMetric):
             relation_prediction: np.ndarray = self.dataset.dump_relation_prediction(
                 relation_logits.cpu().numpy(), gold_example
             )
-            # (phrase, rel, candidate)
-            candidate_selection_prediction: np.ndarray = np.argsort(
+
+            # descending order
+            predicted_candidates: np.ndarray = np.argsort(-relation_prediction, axis=2)
+            predicted_probabilities: np.ndarray = (-1) * np.sort(
                 -relation_prediction, axis=2
-            )  # descending order
+            )
+            assert predicted_candidates.size == predicted_probabilities.size
 
             sentence_predictions.extend(
                 json_writer.write_sentence_predictions(
                     gold_example,
                     gold_sentences,
-                    candidate_selection_prediction.tolist(),
+                    predicted_candidates.tolist(),
+                    predicted_probabilities.tolist(),
                 )
             )
             sentence_annotations.extend(gold_sentences)

@@ -32,9 +32,8 @@ class ProbabilityJsonWriter:
         self,
         example: MMRefExample,
         sentences: list[SentenceAnnotation],
-        candidate_selection_prediction: list[
-            list[list[int]]
-        ],  # (phrase, rel, candidate)
+        predicted_candidates: list[list[list[int]]],  # (phrase, rel, candidate)
+        predicted_probabilities: list[list[list[float]]],  # (phrase, rel, candidate)
     ) -> list[SentencePrediction]:
         phrase_predictions: list[PhrasePrediction] = self.write_phrase_predictions(
             example,
@@ -44,7 +43,8 @@ class ProbabilityJsonWriter:
                 for _ in range(len(sentence.phrases))
             ],
             [phrase for sentence in sentences for phrase in sentence.phrases],
-            candidate_selection_prediction,
+            predicted_candidates,
+            predicted_probabilities,
         )
         sentence_predictions: list[SentencePrediction] = []
         for sentence in sentences:
@@ -66,21 +66,22 @@ class ProbabilityJsonWriter:
         example: MMRefExample,
         sids: list[str],
         phrases: list[PhraseAnnotation],
-        candidate_selection_prediction: list[
-            list[list[int]]
-        ],  # (phrase, rel, candidate)
+        predicted_candidates: list[list[list[int]]],  # (phrase, rel, candidate)
+        predicted_probabilities: list[list[list[float]]],  # (phrase, rel, candidate)
     ) -> list[PhrasePrediction]:
-        assert len(phrases) == len(candidate_selection_prediction)
+        assert len(phrases) == len(predicted_candidates) == len(predicted_probabilities)
 
         phrase_predictions: list[PhrasePrediction] = []
-        for example_idx, (sid, phrase, selected_candidates) in enumerate(
+        for example_idx, (sid, phrase, candidates, probabilities) in enumerate(
             zip(
                 sids,
                 phrases,
-                candidate_selection_prediction,
+                predicted_candidates,
+                predicted_probabilities,
             )
         ):
-            rel_type_to_candidate = dict(zip(self.rel_types, selected_candidates))
+            rel_type_to_candidate = dict(zip(self.rel_types, candidates))
+            rel_type_to_probability = dict(zip(self.rel_types, probabilities))
 
             relation_predictions: list[RelationPrediction] = []
             for task in self.tasks:
@@ -91,10 +92,13 @@ class ProbabilityJsonWriter:
                         # NOTE: `mmref_base_phrase.rel2tags[rel_type]` has gold phrase to object relationships
                         if mmref_base_phrase.rel2tags.get(rel_type) is None:
                             continue
-                        candidate_predictions: list[ObjectFeature] = [
-                            example.candidates[idx]
-                            for idx in rel_type_to_candidate[rel_type]
-                        ]
+                        candidate_predictions: list[ObjectFeature] = (
+                            self.update_object_features(
+                                example.candidates,
+                                rel_type_to_candidate[rel_type],
+                                rel_type_to_probability[rel_type],
+                            )
+                        )
                         bbox_predictions: list[BoundingBoxPrediction] = []
                         for pred in candidate_predictions:
                             bbox_predictions.append(
@@ -121,3 +125,16 @@ class ProbabilityJsonWriter:
             )
 
         return phrase_predictions
+
+    @staticmethod
+    def update_object_features(
+        object_annotations: list[ObjectFeature],
+        candidates: list[int],
+        probabilities: list[float],
+    ) -> list[ObjectFeature]:
+        object_predictions: list[ObjectFeature] = []
+        for candidate_idx, prob in zip(candidates, probabilities):
+            prediction: ObjectFeature = object_annotations[candidate_idx]
+            prediction.confidence = prob
+            object_predictions.append(prediction)
+        return object_predictions

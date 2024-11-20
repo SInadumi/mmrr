@@ -76,15 +76,20 @@ class MMRefWriter(BasePredictionWriter):
                 relation_prediction: np.ndarray = dataset.dump_relation_prediction(
                     relation_logits.cpu().numpy(), example
                 )
-                # (phrase, rel, candidate)
-                candidate_selection_prediction: np.ndarray = np.argsort(
+                # descending order
+                predicted_candidates: np.ndarray = np.argsort(
                     -relation_prediction, axis=2
-                )  # descending order
+                )
+                predicted_probabilities: np.ndarray = (-1) * np.sort(
+                    -relation_prediction, axis=2
+                )
+                assert predicted_candidates.size == predicted_probabilities.size
 
                 sentence_prediction = json_writer.write_sentence_predictions(
                     example,
                     sentences,
-                    candidate_selection_prediction.tolist(),
+                    predicted_candidates.tolist(),
+                    predicted_probabilities.tolist(),
                 )
 
                 self.write_prediction(
