@@ -30,7 +30,6 @@ class MMRefEvaluator:
         pas_cases: Collection[str],
     ) -> None:
         self.tasks: list[Task] = list(map(Task, tasks))
-        self.pas_cases: list[str] = list(pas_cases)
         self.pas_evaluator = VisPASAnalysisEvaluator(pas_cases)
         self.coreference_evaluator = VisCoreferenceResolutionEvaluator()
 
@@ -54,30 +53,20 @@ class MMRefEvaluator:
         gold_annotation: SentenceAnnotation,
     ) -> "MMRefScore":
         if Task.VIS_PAS_ANALYSIS in self.tasks:
-            _pred_annot_phrases = [
-                phrase
-                for phrase in predicted_annotation.phrases
-                if phrase.task is Task.VIS_PAS_ANALYSIS
-            ]
-            assert len(_pred_annot_phrases) == len(gold_annotation.phrases)
+            assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
             pas_metrics = self.pas_evaluator.run(
                 sid=gold_annotation.sid,
-                predicted_phrases=_pred_annot_phrases,
+                predicted_phrases=predicted_annotation.phrases,
                 gold_phrases=gold_annotation.phrases,
             )
         else:
             pas_metrics = None
 
         if Task.VIS_COREFERENCE_RESOLUTION in self.tasks:
-            _pred_annot_phrases = [
-                phrase
-                for phrase in predicted_annotation.phrases
-                if phrase.task is Task.VIS_COREFERENCE_RESOLUTION
-            ]
-            assert len(_pred_annot_phrases) == len(gold_annotation.phrases)
+            assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
             coreference_metrics = self.coreference_evaluator.run(
                 sid=gold_annotation.sid,
-                predicted_phrases=_pred_annot_phrases,
+                predicted_phrases=predicted_annotation.phrases,
                 gold_phrases=gold_annotation.phrases,
             )
         else:

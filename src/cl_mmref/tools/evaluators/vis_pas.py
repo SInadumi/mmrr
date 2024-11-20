@@ -41,8 +41,9 @@ class VisPASAnalysisEvaluator:
         ):
             # NOTE: `is_target==False` ならば candidatesは空集合
             candidates: dict[str, list[BoundingBoxPrediction]] = {}
-            for rel_pred in predicted_mention.relations:
-                candidates[rel_pred.type] = rel_pred.bounding_boxes
+            for relation in predicted_mention.relations:
+                if relation.type in self.cases:
+                    candidates[relation.type] = relation.bounding_boxes
 
             for pas_case in self.cases:
                 _gold_case_relations = [

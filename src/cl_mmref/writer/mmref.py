@@ -109,13 +109,12 @@ class ProbabilityJsonWriter:
                             )
                         )
 
-                phrase_predictions.append(
-                    PhrasePrediction(
-                        sid=sid,
-                        task=task,
-                        text=phrase.text,
-                        relations=relation_predictions,
-                    )
+            phrase_predictions.append(
+                PhrasePrediction(
+                    sid=sid,
+                    text=phrase.text,
+                    relations=relation_predictions,
                 )
+            )
 
         return phrase_predictions

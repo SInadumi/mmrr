@@ -14,7 +14,7 @@ class VisCoreferenceResolutionEvaluator:
     def __init__(self) -> None:
         self.comp_result: dict[tuple, str] = {}
         # NOTE: 現在の実装では総称名詞は評価の対象外 ("=≒")
-        self.rel: str = "="
+        self.rel_type: str = "="
         self.analysis: dict[int, str] = {k: f"recall@{k}" for k in RECALL_TOP_KS}
 
     def run(
@@ -25,8 +25,8 @@ class VisCoreferenceResolutionEvaluator:
     ) -> pd.DataFrame:
         assert len(predicted_phrases) == len(gold_phrases)
         metrics = pd.DataFrame(
-            [[F1Metric() for _ in self.analysis.values()] for _ in [self.rel]],
-            index=[self.rel],
+            [[F1Metric() for _ in self.analysis.values()] for _ in [self.rel_type]],
+            index=[self.rel_type],
             columns=list(self.analysis.values()),
         )
 
@@ -35,24 +35,21 @@ class VisCoreferenceResolutionEvaluator:
             zip(predicted_phrases, gold_phrases)
         ):
             _gold_coref_relations = [
-                rel for rel in gold_mention.relations if rel.type == self.rel
+                rel for rel in gold_mention.relations if rel.type == self.rel_type
             ]
             if len(_gold_coref_relations) == 0:
                 continue
 
             # NOTE: `is_target==False` ならば `len(candidates)==0`
             candidates: list[BoundingBoxPrediction] = []
-            if len(predicted_mention.relations) == 1:
-                assert predicted_mention.relations[0].type == self.rel
-                candidates = predicted_mention.relations[0].bounding_boxes
-            elif len(predicted_mention.relations) > 1:
-                raise ValueError
-
-            key = (f"{idx}:{predicted_mention.text}", self.rel)
+            for relation in predicted_mention.relations:
+                if relation.type == self.rel_type:
+                    candidates = relation.bounding_boxes
+            key = (f"{idx}:{predicted_mention.text}", self.rel_type)
 
             # Compute recall
             for recall_top_k, _metric_name in self.analysis.items():
-                local_comp_result[key] = f"{self.rel}:{_metric_name}"
+                local_comp_result[key] = f"{self.rel_type}:{_metric_name}"
                 for rel in _gold_coref_relations:
                     _topk = recall_top_k
                     if len(candidates) == 0:
@@ -63,8 +60,10 @@ class VisCoreferenceResolutionEvaluator:
                     if rel.boundingBoxes is None:
                         # NOTE: Skip an out of span instance
                         continue
-                    metrics.loc[self.rel, _metric_name].tp_fn += len(rel.boundingBoxes)
-                    metrics.loc[self.rel, _metric_name].tp += self._eval_group_iou(
+                    metrics.loc[self.rel_type, _metric_name].tp_fn += len(
+                        rel.boundingBoxes
+                    )
+                    metrics.loc[self.rel_type, _metric_name].tp += self._eval_group_iou(
                         rel.boundingBoxes, candidates[:_topk]
                     )
 

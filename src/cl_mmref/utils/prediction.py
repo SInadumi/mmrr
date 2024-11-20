@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 import torch
 
-from cl_mmref.tools.task import Task
 from cl_mmref.utils.util import CamelCaseDataClassJsonMixin, Rectangle
 
 DEFAULT_VIS_EMB_SIZE = 1024
@@ -34,7 +33,6 @@ class RelationPrediction(CamelCaseDataClassJsonMixin):
 @dataclass
 class PhrasePrediction(CamelCaseDataClassJsonMixin):
     sid: str
-    task: Task
     text: str
     relations: list[RelationPrediction]
 
