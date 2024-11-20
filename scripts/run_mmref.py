@@ -77,14 +77,6 @@ class Analyzer:
         # Instantiate lightning datamodule
         datamodule_cfg = self.cfg.datamodule
 
-        # HACK:
-        OmegaConf.set_struct(datamodule_cfg, False)  # enable to add new key-value pairs
-        if "predict" not in datamodule_cfg:
-            import copy
-
-            datamodule_cfg.predict = copy.deepcopy(datamodule_cfg.test.jcre3)
-            datamodule_cfg.predict.include_nonidentical = True
-
         datamodule_cfg.predict.data_path = str(input_dir)
         datamodule_cfg.predict.object_file_root = object_root
         datamodule_cfg.predict.object_file_name = object_name

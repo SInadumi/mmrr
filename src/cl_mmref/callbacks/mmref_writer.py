@@ -95,8 +95,6 @@ class MMRefWriter(BasePredictionWriter):
                 self.write_prediction(
                     example.doc_id, example.image_id, sentence_prediction
                 )
-        # TODO: WIP
-        # _ = json_writer.write(sentence_predictions, destination=self.json_destination)
 
     def write_prediction(
         self, doc_id: str, image_id: str, prediction: SentencePrediction
