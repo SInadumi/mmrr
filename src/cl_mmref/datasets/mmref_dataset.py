@@ -437,7 +437,7 @@ class MMRefDataset(BaseDataset):
             # その場合は scores が全てゼロになるため loss が計算されない．
             if phrase.rel2tags is not None:
                 # 学習・解析対象物体
-                for cid in phrase.rel2tags[rel_type]:
+                for cid in phrase.rel2tags.get(rel_type, []):
                     assert cid < self.max_seq_length
                     scores[cid] = 1.0
                     token_level_candidates[cid] = True

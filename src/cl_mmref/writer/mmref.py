@@ -90,7 +90,7 @@ class ProbabilityJsonWriter:
                 if mmref_base_phrase.is_target is True:
                     for rel_type in self.task_to_rels[task]:
                         # NOTE: `mmref_base_phrase.rel2tags[rel_type]` has gold phrase to object relationships
-                        if len(mmref_base_phrase.rel2tags[rel_type]) == 0:
+                        if mmref_base_phrase.rel2tags.get(rel_type) is None:
                             continue
                         candidate_predictions: list[ObjectFeature] = [
                             example.candidates[idx]

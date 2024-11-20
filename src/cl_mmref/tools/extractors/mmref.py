@@ -4,7 +4,7 @@ from rhoknp.cohesion import (
 )
 
 from cl_mmref.tools.constants import IOU_THRESHOLD
-from cl_mmref.utils.annotation import PhraseAnnotation
+from cl_mmref.utils.annotation import Phrase2ObjectRelation, PhraseAnnotation
 from cl_mmref.utils.prediction import ObjectFeature
 
 from .base import BaseExtractor, T
@@ -27,8 +27,12 @@ class MMRefExtractor(BaseExtractor):
         candidates: list[ObjectFeature],
         iou_mapper: dict[str, h5py.Group],
     ) -> dict[str, list[int]]:
-        all_arguments: dict[str, list[int]] = {}
-        for rel_type in self.rels:
+        # NOTE: Initialize with gold phrase to object relations
+        all_arguments: dict[str, list[int]] = {
+            rel_type: []
+            for rel_type in self.get_nonidentical_types(predicate.relations)
+        }
+        for rel_type in all_arguments.keys():
             all_arguments[rel_type] = []
             _rel_types = self.get_rel_types(
                 [rel_type], include_nonidentical=self.include_nonidentical
@@ -67,3 +71,8 @@ class MMRefExtractor(BaseExtractor):
             nonidentical_rels = [r + "≒" for r in rels]
             return rels + nonidentical_rels
         return rels
+
+    @staticmethod
+    def get_nonidentical_types(relations: list[Phrase2ObjectRelation]) -> list[str]:
+        all_rels = set(relation.type for relation in relations)
+        return [rel for rel in all_rels if "≒" not in rel]
