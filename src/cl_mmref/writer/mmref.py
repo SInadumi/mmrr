@@ -83,12 +83,15 @@ class ProbabilityJsonWriter:
         ):
             rel_type_to_candidate = dict(zip(self.rel_types, selected_candidates))
 
+            relation_predictions: list[RelationPrediction] = []
             for task in self.tasks:
-                relation_predictions: list[RelationPrediction] = []
                 mmref_base_phrase = example.phrases[task][example_idx]
-                # NOTE: mmref_base_phrase.is_target is gold annotation
+                # NOTE: `mmref_base_phrase.is_target` is gold base_phrase
                 if mmref_base_phrase.is_target is True:
                     for rel_type in self.task_to_rels[task]:
+                        # NOTE: `mmref_base_phrase.rel2tags[rel_type]` has gold phrase to object relationships
+                        if len(mmref_base_phrase.rel2tags[rel_type]) == 0:
+                            continue
                         candidate_predictions: list[ObjectFeature] = [
                             example.candidates[idx]
                             for idx in rel_type_to_candidate[rel_type]
