@@ -6,6 +6,7 @@ from cl_mmref.datasets.mmref_dataset import MMRefDataset
 from cl_mmref.tools.task import Task
 from cl_mmref.utils.annotation import PhraseAnnotation, SentenceAnnotation
 from cl_mmref.utils.prediction import (
+    IGNORE_ID,
     BoundingBoxPrediction,
     ObjectFeature,
     PhrasePrediction,
@@ -94,6 +95,8 @@ class ProbabilityJsonWriter:
                         ]
                         bbox_predictions: list[BoundingBoxPrediction] = []
                         for pred in candidate_predictions:
+                            if pred.image_id == IGNORE_ID or pred.class_id == IGNORE_ID:
+                                continue
                             bbox_predictions.append(
                                 BoundingBoxPrediction(
                                     image_id=pred.image_id,
