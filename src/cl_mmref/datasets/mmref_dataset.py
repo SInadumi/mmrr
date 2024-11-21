@@ -82,20 +82,20 @@ class MMRefDataset(BaseDataset):
             er.type for er in self.exophora_referents
         ]
         self.task_to_extractor: dict[Task, BaseExtractor] = {
-            Task.VIS_PAS_ANALYSIS: MMRefExtractor(
+            Task.MM_PAS_ANALYSIS: MMRefExtractor(
                 list(self.cases),
                 exophora_referent_types,
                 include_nonidentical,
             ),
-            Task.VIS_COREFERENCE_RESOLUTION: MMRefExtractor(
+            Task.MM_COREFERENCE_RESOLUTION: MMRefExtractor(
                 ["="],
                 exophora_referent_types,
                 include_nonidentical,
             ),
         }
         self.task_to_rels: dict[Task, list[str]] = {
-            Task.VIS_PAS_ANALYSIS: self.cases,
-            Task.VIS_COREFERENCE_RESOLUTION: ["="],
+            Task.MM_PAS_ANALYSIS: self.cases,
+            Task.MM_COREFERENCE_RESOLUTION: ["="],
         }
 
         # load visual annotations

@@ -27,8 +27,8 @@ class MMRefModule(BaseModule[MMRefMetric]):
             + len(hparams.exophora_referents)
             + 2,  # +2: [NULL] and [NA]
         )
-        num_relation_types = int("vis_pas" in hparams.tasks) * len(hparams.cases) + int(
-            "vis_coreference" in hparams.tasks
+        num_relation_types = int("mm_pas" in hparams.tasks) * len(hparams.cases) + int(
+            "mm_coreference" in hparams.tasks
         )
         hidden_size = self.encoder.config.hidden_size
         self.relation_classifier = hydra.utils.instantiate(

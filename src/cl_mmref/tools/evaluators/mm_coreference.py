@@ -8,8 +8,8 @@ from ..constants import IOU_THRESHOLD, RECALL_TOP_KS
 from .utils import F1Metric
 
 
-class VisCoreferenceResolutionEvaluator:
-    """A class to evaluate visual coreference resolution or phrase grounding"""
+class MultiModalCoreferenceResolutionEvaluator:
+    """A class to evaluate multimodal direct reference relation (coreference) analysis. This is also known as phrase grounding."""
 
     def __init__(self) -> None:
         self.comp_result: dict[tuple, str] = {}

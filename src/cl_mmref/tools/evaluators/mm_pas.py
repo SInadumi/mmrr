@@ -10,8 +10,8 @@ from ..constants import IOU_THRESHOLD, RECALL_TOP_KS
 from .utils import F1Metric
 
 
-class VisPASAnalysisEvaluator:
-    """A class to evaluate visually-grounded predicate argument structure analysis"""
+class MultiModalPASAnalysisEvaluator:
+    """A class to evaluate multimodal indirect reference relation (predicate argument structure) analysis"""
 
     def __init__(
         self,

@@ -112,7 +112,7 @@ class MMRefMetric(BaseModuleMetric):
             _metric_name = f"recall@{recall_top_k}"
             metrics[f"mmref_{_metric_name}"] = mean(
                 metrics[key]
-                for key in (f"vis_pas_{_metric_name}", f"vis_coref_{_metric_name}")
+                for key in (f"mm_pas_{_metric_name}", f"mm_coreference_{_metric_name}")
                 if key in metrics
             )
         return metrics

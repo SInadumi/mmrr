@@ -11,9 +11,9 @@ from cl_mmref.utils.annotation import SentenceAnnotation
 from cl_mmref.utils.prediction import SentencePrediction
 
 from ..task import Task
+from .mm_coreference import MultiModalCoreferenceResolutionEvaluator
+from .mm_pas import MultiModalPASAnalysisEvaluator
 from .utils import F1Metric
-from .vis_coreference import VisCoreferenceResolutionEvaluator
-from .vis_pas import VisPASAnalysisEvaluator
 
 
 class MMRefEvaluator:
@@ -30,8 +30,8 @@ class MMRefEvaluator:
         pas_cases: Collection[str],
     ) -> None:
         self.tasks: list[Task] = list(map(Task, tasks))
-        self.pas_evaluator = VisPASAnalysisEvaluator(pas_cases)
-        self.coreference_evaluator = VisCoreferenceResolutionEvaluator()
+        self.pas_evaluator = MultiModalPASAnalysisEvaluator(pas_cases)
+        self.coreference_evaluator = MultiModalCoreferenceResolutionEvaluator()
 
     def run(
         self,
@@ -52,7 +52,7 @@ class MMRefEvaluator:
         predicted_annotation: SentencePrediction,
         gold_annotation: SentenceAnnotation,
     ) -> "MMRefScore":
-        if Task.VIS_PAS_ANALYSIS in self.tasks:
+        if Task.MM_PAS_ANALYSIS in self.tasks:
             assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
             pas_metrics = self.pas_evaluator.run(
                 sid=gold_annotation.sid,
@@ -62,7 +62,7 @@ class MMRefEvaluator:
         else:
             pas_metrics = None
 
-        if Task.VIS_COREFERENCE_RESOLUTION in self.tasks:
+        if Task.MM_COREFERENCE_RESOLUTION in self.tasks:
             assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
             coreference_metrics = self.coreference_evaluator.run(
                 sid=gold_annotation.sid,
@@ -87,11 +87,11 @@ class MMRefScore:
         if self.pas_metrics is not None:
             df_pas: pd.DataFrame = self.pas_metrics.copy()
             df_all = pd.concat([df_pas, df_all])
-            df_all.loc["vis_pas"] = df_pas.sum(axis=0)
+            df_all.loc["mm_pas"] = df_pas.sum(axis=0)
         if self.coreference_metrics is not None:
             df_coref = self.coreference_metrics.copy()
             df_all = pd.concat([df_all, df_coref])
-            df_all.loc["vis_coref"] = df_coref.sum(axis=0)
+            df_all.loc["mm_coreference"] = df_coref.sum(axis=0)
 
         return {
             k1: {k2: v2 for k2, v2 in v1.items() if pd.notna(v2)}
