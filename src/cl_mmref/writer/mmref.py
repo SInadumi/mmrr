@@ -1,4 +1,3 @@
-
 from cl_mmref.datamodule.example import MMRefExample
 from cl_mmref.datasets.mmref_dataset import MMRefDataset
 from cl_mmref.tools.task import Task
@@ -93,7 +92,7 @@ class ProbabilityJsonWriter:
                         for pred in candidate_predictions:
                             bbox_predictions.append(
                                 BoundingBoxPrediction(
-                                    image_id=pred.image_id,
+                                    image_id=f"{pred.image_id:03}",
                                     class_id=pred.class_id,
                                     confidence=pred.confidence,
                                     rect=pred.rect,

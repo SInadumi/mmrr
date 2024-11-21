@@ -16,7 +16,7 @@ class ObjectFeature:
 
 @dataclass(eq=True)
 class BoundingBoxPrediction(CamelCaseDataClassJsonMixin):
-    image_id: int
+    image_id: str
     class_id: int
     rect: Rectangle
     confidence: float
