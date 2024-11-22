@@ -2,6 +2,6 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: cl_mmref.modules.model.components.LoRARelationWiseObjectSelectionHeads
+  _target_: mmrr.modules.model.components.LoRARelationWiseObjectSelectionHeads
   target_hidden_size: ${object_hidden_size}
   rank: 2

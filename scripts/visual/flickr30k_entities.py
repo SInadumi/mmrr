@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
-from cl_mmref.utils.util import CamelCaseDataClassJsonMixin
+from mmrr.utils.util import CamelCaseDataClassJsonMixin
 
 
 @dataclass(frozen=True)

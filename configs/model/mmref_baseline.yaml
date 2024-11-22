@@ -2,6 +2,6 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: cl_mmref.modules.model.components.RelationWiseObjectSelectionHeads
+  _target_: mmrr.modules.model.components.RelationWiseObjectSelectionHeads
   hidden_dropout_prob: ${model.hidden_dropout_prob}
   target_hidden_size: ${object_hidden_size}

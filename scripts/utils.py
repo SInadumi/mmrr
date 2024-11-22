@@ -9,8 +9,8 @@ import torch
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from rhoknp import Document
 
-from cl_mmref.datasets.cohesion_dataset import CohesionDataset
-from cl_mmref.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
+from mmrr.datasets.cohesion_dataset import CohesionDataset
+from mmrr.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
 
 
 @torch.no_grad()

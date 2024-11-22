@@ -2,10 +2,10 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: cl_mmref.modules.model.components.LoRARelationWiseWordSelectionHead
+  _target_: mmrr.modules.model.components.LoRARelationWiseWordSelectionHead
   rank: 2
 binary_head:
-  _target_: cl_mmref.modules.model.components.LoRARelationWiseTokenBinaryClassificationHead
+  _target_: mmrr.modules.model.components.LoRARelationWiseTokenBinaryClassificationHead
   num_tasks: ${model.num_tasks}
   hidden_dropout_prob: ${model.hidden_dropout_prob}
   rank: 2

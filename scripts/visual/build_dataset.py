@@ -8,9 +8,9 @@ from pathlib import Path
 
 from rhoknp import Document
 
-from cl_mmref.tools.constants import CASES, EXOPHORA_REFERENT_TYPES
-from cl_mmref.tools.extractors.pas import PasExtractor
-from cl_mmref.utils.annotation import (
+from mmrr.tools.constants import CASES, EXOPHORA_REFERENT_TYPES
+from mmrr.tools.extractors.pas import PasExtractor
+from mmrr.utils.annotation import (
     DatasetInfo,
     ImageTextAnnotation,
     Phrase2ObjectRelation,

@@ -22,7 +22,7 @@ from rhoknp.cohesion import RelTag
 from rhoknp.props import FeatureDict
 from rhoknp.utils.reader import chunk_by_document
 
-from cl_mmref.tools.extractors import PasExtractor
+from mmrr.tools.extractors import PasExtractor
 
 logging.getLogger("rhoknp").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)

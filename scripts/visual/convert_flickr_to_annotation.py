@@ -10,7 +10,7 @@ from rhoknp import Document as KNPDocument
 from rhoknp import Sentence as KNPSentence
 from tqdm import tqdm
 
-from cl_mmref.utils.annotation import (
+from mmrr.utils.annotation import (
     BoundingBox,
     DatasetInfo,
     ImageAnnotation,

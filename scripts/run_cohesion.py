@@ -16,10 +16,10 @@ from omegaconf import DictConfig, OmegaConf
 from rhoknp import KNP, KWJA, Document
 from torch.utils.data import DataLoader
 
-from cl_mmref.callbacks import CohesionWriter
-from cl_mmref.datamodule.multitask_datamodule import MTDataModule
-from cl_mmref.modules import CohesionModule
-from cl_mmref.utils.util import current_datetime_string
+from mmrr.callbacks import CohesionWriter
+from mmrr.datamodule.multitask_datamodule import MTDataModule
+from mmrr.modules import CohesionModule
+from mmrr.utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)

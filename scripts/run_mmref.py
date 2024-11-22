@@ -11,10 +11,10 @@ from lightning.pytorch.trainer.states import TrainerFn
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader
 
-from cl_mmref.callbacks import MMRefWriter
-from cl_mmref.datamodule.multitask_datamodule import MTDataModule
-from cl_mmref.modules import MMRefModule
-from cl_mmref.utils.util import current_datetime_string
+from mmrr.callbacks import MMRefWriter
+from mmrr.datamodule.multitask_datamodule import MTDataModule
+from mmrr.modules import MMRefModule
+from mmrr.utils.util import current_datetime_string
 
 hf_logging.set_verbosity(hf_logging.ERROR)
 logging.getLogger("torch").setLevel(logging.ERROR)
@@ -76,23 +76,6 @@ class Analyzer:
     ) -> DataLoader:
         # Instantiate lightning datamodule
         datamodule_cfg = self.cfg.datamodule
-        # HACK:
-        OmegaConf.set_struct(datamodule_cfg, False)  # enable to add new key-value pairs
-        if "predict" not in datamodule_cfg:
-            import copy
-
-            datamodule_cfg.predict = copy.deepcopy(datamodule_cfg.test.jcre3)
-            datamodule_cfg.predict.include_nonidentical = True
-            # datamodule_cfg.predict
-        # HACK:
-        tmp = []
-        if "vis_pas" in datamodule_cfg.predict.tasks:
-            tmp.append("mm_pas")
-        if "vis_coreference" in datamodule_cfg.predict.tasks:
-            tmp.append("mm_coreference")
-        if len(tmp) > 0:
-            datamodule_cfg.predict.tasks = tmp
-
         datamodule_cfg.predict.data_path = str(input_dir)
         datamodule_cfg.predict.object_file_root = object_root
         datamodule_cfg.predict.object_file_name = object_name

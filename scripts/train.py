@@ -15,8 +15,8 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.utilities.warnings import PossibleUserWarning
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-from cl_mmref.datamodule.multitask_datamodule import MTDataModule
-from cl_mmref.utils.util import current_datetime_string
+from mmrr.datamodule.multitask_datamodule import MTDataModule
+from mmrr.utils.util import current_datetime_string
 from utils import initialize_parameters, save_results
 
 hf_logging.set_verbosity(hf_logging.ERROR)

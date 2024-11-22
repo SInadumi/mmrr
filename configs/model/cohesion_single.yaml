@@ -2,9 +2,9 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: cl_mmref.modules.model.components.RelationWiseWordSelectionHead
+  _target_: mmrr.modules.model.components.RelationWiseWordSelectionHead
   hidden_dropout_prob: ${model.hidden_dropout_prob}
 binary_head:
-  _target_: cl_mmref.modules.model.components.TokenBinaryClassificationHead
+  _target_: mmrr.modules.model.components.TokenBinaryClassificationHead
   num_tasks: ${model.num_tasks}
   hidden_dropout_prob: ${model.hidden_dropout_prob}

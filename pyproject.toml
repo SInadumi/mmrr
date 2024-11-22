@@ -54,15 +54,15 @@ module = "pandas-stubs.*"
 ignore_errors = true
 
 [tool.poetry]
-name = "cl_mmref"
+name = "mmrr"
 version = "0.1.0"
-description = "Region-Phrase Contrastive Learning for Multimodal Reference Resolution"
+description = "Multimodal Reference Relation Analysis"
 authors = ["SInadumi <inazumi19@icloud.com>"]
 readme = "README.md"
 package-mode=true
 packages = [
-    { include = "cl_mmref", from = "src" },
-    { include = "tools", from = "src/cl_mmref" }
+    { include = "mmrr", from = "src" },
+    { include = "tools", from = "src/mmrr" }
 ]
 
 [tool.poetry.dependencies]

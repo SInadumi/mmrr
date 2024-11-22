@@ -7,11 +7,11 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from cl_mmref.utils.annotation import (
+from mmrr.utils.annotation import (
     BoundingBox,
     ImageTextAnnotation,
 )
-from cl_mmref.utils.util import Rectangle, box_iou
+from mmrr.utils.util import Rectangle, box_iou
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
