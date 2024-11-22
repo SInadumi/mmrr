@@ -10,13 +10,13 @@ import jaconv
 import lightning.pytorch as pl
 import torch
 import transformers.utils.logging as hf_logging
-from callbacks import CohesionWriter
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.trainer.states import TrainerFn
 from omegaconf import DictConfig, OmegaConf
 from rhoknp import KNP, KWJA, Document
 from torch.utils.data import DataLoader
 
+from cl_mmref.callbacks import CohesionWriter
 from cl_mmref.datamodule.multitask_datamodule import MTDataModule
 from cl_mmref.modules import CohesionModule
 from cl_mmref.utils.util import current_datetime_string
