@@ -2,7 +2,7 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: cl_mmref.modules.model.components.RelationWiseWordSelectionHead
+  _target_: cl_mmref.modules.model.components.BaseHeads
   hidden_dropout_prob: ${model.hidden_dropout_prob}
 binary_head:
   _target_: cl_mmref.modules.model.components.TokenBinaryClassificationHead

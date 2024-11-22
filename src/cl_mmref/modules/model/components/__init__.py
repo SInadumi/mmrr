@@ -3,6 +3,8 @@ from .binary_heads import (
     TokenBinaryClassificationHead,
 )
 from .relation_heads import (
+    BaseHeads,
+    KWJAHeads,
     LoRARelationWiseObjectSelectionHeads,
     LoRARelationWiseWordSelectionHead,
     RelationWiseObjectSelectionHeads,
@@ -16,4 +18,6 @@ __all__ = [
     "LoRARelationWiseWordSelectionHead",
     "RelationWiseObjectSelectionHeads",
     "LoRARelationWiseObjectSelectionHeads",
+    "KWJAHeads",
+    "BaseHeads",
 ]
