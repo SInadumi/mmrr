@@ -74,7 +74,7 @@ See [SInadumi/Detic](https://github.com/SInadumi/Detic).
 # cohesion analysis
 poetry run python scripts/train.py -cn cohesion devices=[0,1] max_batches_per_device=4 effective_batch_size=16
 # multi-modal reference resolution
-poetry run python scripts/train.py -cn mmref object_file_name=xxx devices=[0,1] max_batches_per_device=4 effective_batch_size=16
+poetry run python scripts/train.py -cn mmref object_file_name=`file_name` devices=[0,1] max_batches_per_device=4 effective_batch_size=16
 ```
 These are commonly used options to train cohesion model:
 - `-cn`: Config name
@@ -93,7 +93,7 @@ For more options, see [cohesion configs](./configs/cohesion.yaml) and [mmref con
 poetry run python scripts/test_cohesion.py checkpoint=/path/to/trained/checkpoint eval_set=test devices=[0,1]
 ```
 ### Multimodal Reference Resolution
-WIP
+See [SInadumi/multimodal-reference](https://github.com/SInadumi/multimodal-reference) for J-CRe3 evaluation.
 
 ## Debugging
 This is an example of the F30k-ent-jp preparation.
@@ -115,11 +115,11 @@ poetry run python -m pdb ./scripts/visual/build_dataset.py ./data/jcre3 \
 
 # The following code examples are based on the assumption that object detection has already been performed.
 poetry run python -m pdb ./scripts/visual/calc_iou_mapper.py ./data/jcre3 \
-  --dataset-name=jcre3 --object-file-name=xxx
+  --dataset-name=jcre3 --object-file-name=`file_name`
 
 # training
 poetry run python -m pdb -cn cohesion_debug devices=[0]
-poetry run python -m pdb -cn mmref_debug object_file_name=xxx devices=[0]
+poetry run python -m pdb -cn mmref_debug object_file_name=`file_name` devices=[0]
 ```
 
 
