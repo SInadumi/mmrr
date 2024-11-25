@@ -108,9 +108,9 @@ poetry run python -m pdb ./scripts/visual/convert_flickr_to_annotation.py \
 These are examples of the workflow from J-CRe3 preparation to training.
 ```bash
 # dataset preparation
-poetry run python -m pdb ./scripts/textual/build_dataset.py ./data/jcre3/knp ./data/jcre3 \
+poetry run python -m pdb ./scripts/textual/build_textual.py ./data/jcre3/knp ./data/jcre3 \
   --id="${DATASET_ROOT}/J-CRe3/id" -j=1
-poetry run python -m pdb ./scripts/visual/build_dataset.py ./data/jcre3 \
+poetry run python -m pdb ./scripts/visual/build_visual.py ./data/jcre3 \
   --dataset-name=jcre3 --id="${DATASET_ROOT}/J-CRe3/id"
 
 # The following code examples are based on the assumption that object detection has already been performed.

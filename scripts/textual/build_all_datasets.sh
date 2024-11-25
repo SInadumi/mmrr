@@ -30,28 +30,28 @@ fi
 mkdir -p "${DATASET_ROOT}" "${OUT_DIR}"/{kwdlc,fuman,wac}
 
 echo "Processing KWDLC ..."
-poetry run python ./scripts/textual/build_dataset.py "${DATASET_ROOT}/KWDLC/knp" "${OUT_DIR}/kwdlc" \
+poetry run python ./scripts/textual/build_textual.py "${DATASET_ROOT}/KWDLC/knp" "${OUT_DIR}/kwdlc" \
     --id "${DATASET_ROOT}/KWDLC/id/split_for_pas" \
     -j "${JOBS}" \
     --doc-id-format kwdlc
 
 echo "Processing AnnotatedFKCCorpus ..."
-poetry run python ./scripts/textual/build_dataset.py "${DATASET_ROOT}/AnnotatedFKCCorpus/knp" "${OUT_DIR}/fuman" \
+poetry run python ./scripts/textual/build_textual.py "${DATASET_ROOT}/AnnotatedFKCCorpus/knp" "${OUT_DIR}/fuman" \
     --id "${DATASET_ROOT}/AnnotatedFKCCorpus/id/split_for_pas" \
     -j "${JOBS}"
 
 echo "Processing WikipediaAnnotatedCorpus ..."
-poetry run python ./scripts/textual/build_dataset.py "${DATASET_ROOT}/WikipediaAnnotatedCorpus/knp" "${OUT_DIR}/wac" \
+poetry run python ./scripts/textual/build_textual.py "${DATASET_ROOT}/WikipediaAnnotatedCorpus/knp" "${OUT_DIR}/wac" \
     --id "${DATASET_ROOT}/WikipediaAnnotatedCorpus/id" \
     -j "${JOBS}" --doc-id-format wac
 
 echo "Processing J-CRe3 ..."
-poetry run python ./scripts/textual/build_dataset.py "${OUT_DIR}/jcre3/knp" "${OUT_DIR}/jcre3" \
+poetry run python ./scripts/textual/build_textual.py "${OUT_DIR}/jcre3/knp" "${OUT_DIR}/jcre3" \
     --id "${DATASET_ROOT}/J-CRe3/id" \
     -j "${JOBS}"
 
 echo "Processing Flickr30k-Ent-Ja ..."
-poetry run python ./scripts/textual/build_dataset.py "${OUT_DIR}/f30k_ent_jp/knp" "${OUT_DIR}/f30k_ent_jp" \
+poetry run python ./scripts/textual/build_textual.py "${OUT_DIR}/f30k_ent_jp/knp" "${OUT_DIR}/f30k_ent_jp" \
     --id "${OUT_DIR}/f30k_ent_jp/id" \
     -j "${JOBS}"
 
