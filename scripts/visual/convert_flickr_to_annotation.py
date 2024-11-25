@@ -25,7 +25,6 @@ from mmrr.utils.annotation import (
 
 jumanpp = Jumanpp()
 knp = KNP(options=["-tab"])
-# kwja = KWJA(options=["--tasks", "word", "--model-size", "large", "--input-format", "jumanpp"])
 
 
 def main() -> None:

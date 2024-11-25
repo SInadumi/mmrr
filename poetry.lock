@@ -325,23 +325,6 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
-name = "cohesion-tools"
-version = "0.5.7"
-description = ""
-optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "cohesion_tools-0.5.7-py3-none-any.whl", hash = "sha256:abea07196b7e7cbab4c928dd1fead89e88cfe898ce4d26d62fede8a9fc4dc18f"},
-    {file = "cohesion_tools-0.5.7.tar.gz", hash = "sha256:b96f2ffcbb274e1b9da2f5e4d681d9a16e0643fcd0f06e3c45b44a52373c634b"},
-]
-
-[package.dependencies]
-rhoknp = ">=1.5.1,<1.7"
-
-[package.extras]
-eval = ["pandas (>=2.0,<3.0)", "pandas (>=2.0.3,<2.1.0)"]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -724,20 +707,6 @@ files = [
 ]
 
 [[package]]
-name = "jinf"
-version = "1.0.4"
-description = "A Japanese inflection converter."
-optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "jinf-1.0.4-py3-none-any.whl", hash = "sha256:e35bef8efb476c78a2d6d9bb3c60f722cdf5f0df4d7642b19b46b8cc10f8f23f"},
-    {file = "jinf-1.0.4.tar.gz", hash = "sha256:749982c729a76ea73a075edb1fc9226c81f676b549497f9cb935898ae08f6495"},
-]
-
-[package.extras]
-pyknp = ["pyknp[pyknp] (>=0.6,<1.0)"]
-
-[[package]]
 name = "jinja2"
 version = "3.1.4"
 description = "A very fast and expressive template engine."
@@ -753,34 +722,6 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
-
-[[package]]
-name = "kwja"
-version = "2.4.0"
-description = "A unified Japanese analyzer based on foundation models"
-optional = false
-python-versions = "<3.13,>=3.8"
-files = [
-    {file = "kwja-2.4.0-py3-none-any.whl", hash = "sha256:6f869ddfe702799b1c0639a6300f64f3adb7bb334211c9ccbc204512f9691849"},
-    {file = "kwja-2.4.0.tar.gz", hash = "sha256:f022037824ffad4aeccb50e017caa3e9f2f785f07661a22775994765e14a92ea"},
-]
-
-[package.dependencies]
-cohesion-tools = ">=0.5.7,<0.6.0"
-hydra-core = ">=1.2,<2.0"
-jinf = ">=1.0.4,<2.0.0"
-numpy = {version = ">=1.26,<2.0", markers = "python_version >= \"3.9\""}
-omegaconf = ">=2.1,<3.0"
-pure-cdb = ">=4.0,<5.0"
-pytorch-lightning = ">=2.3.3,<2.4.0"
-pyyaml = ">=6.0,<7.0"
-regex = ">=2024.7.24"
-rhoknp = ">=1.6.0,<2.0.0"
-rich = ">=12.4"
-tokenizers = ">=0.19.1,<0.20.0"
-torch = ">=1.11,<2.0.1 || >2.0.1,<2.1.0 || >2.1.0"
-transformers = {version = ">=4.42.2,<4.43.0", extras = ["sentencepiece"]}
-typer-slim = ">=0.12.3,<0.13.0"
 
 [[package]]
 name = "lightning"
@@ -1917,22 +1858,6 @@ dev = ["black", "check-manifest", "coverage", "packaging", "pylint", "pyperf", "
 test = ["pytest", "pytest-xdist", "setuptools"]
 
 [[package]]
-name = "pure-cdb"
-version = "4.0.0"
-description = "Pure Python reader/writer for Dan J. Berstein's CDB format."
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pure-cdb-4.0.0.tar.gz", hash = "sha256:8c44801e281f029769ef1cf2a53cfeec67bc962d595b83365c0463daea95b08c"},
-    {file = "pure_cdb-4.0.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f78d336bf18dbc0997879a95cbd854536176810af262d13486145273584a5528"},
-    {file = "pure_cdb-4.0.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fccd0ab52073ed9d7bf123e1d9549fb2fca65ff6f50d124c1c5c9ca04422fc8f"},
-    {file = "pure_cdb-4.0.0-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ccbe08f448f314c892d4109a42b19547816f4076a5860e469afb63d003e5c1cf"},
-    {file = "pure_cdb-4.0.0-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:67c3d22879f0e4de928bdd42d9634c05ec5eb1f0669d48af2f23f8da221ac4d0"},
-    {file = "pure_cdb-4.0.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ac7ac6f25bf857a82d93ed0be12399c68f6dc2b32885f48693a51c8d97209426"},
-    {file = "pure_cdb-4.0.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:add3e82a6476076fecaddc58689e326125e56d0593f705dcd44a0467df08ba2f"},
-]
-
-[[package]]
 name = "pydantic"
 version = "2.10.1"
 description = "Data validation using Python type hints"
@@ -2134,34 +2059,33 @@ six = ">=1.5"
 
 [[package]]
 name = "pytorch-lightning"
-version = "2.3.3"
+version = "2.4.0"
 description = "PyTorch Lightning is the lightweight PyTorch wrapper for ML researchers. Scale your models. Write less boilerplate."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytorch-lightning-2.3.3.tar.gz", hash = "sha256:5f974015425af6873b5689246c5495ca12686b446751479273c154b73aeea843"},
-    {file = "pytorch_lightning-2.3.3-py3-none-any.whl", hash = "sha256:4365e3f2874e223e63cb42628d24c88c2bdc8d1794453cac38c0619b31115fba"},
+    {file = "pytorch-lightning-2.4.0.tar.gz", hash = "sha256:6aa897fd9d6dfa7b7b49f37c2f04e13592861831d08deae584dfda423fdb71c8"},
+    {file = "pytorch_lightning-2.4.0-py3-none-any.whl", hash = "sha256:9ac7935229ac022ef06994c928217ed37f525ac6700f7d4fc57009624570e655"},
 ]
 
 [package.dependencies]
 fsspec = {version = ">=2022.5.0", extras = ["http"]}
 lightning-utilities = ">=0.10.0"
-numpy = ">=1.17.2"
 packaging = ">=20.0"
 PyYAML = ">=5.4"
-torch = ">=2.0.0"
+torch = ">=2.1.0"
 torchmetrics = ">=0.7.0"
 tqdm = ">=4.57.0"
 typing-extensions = ">=4.4.0"
 
 [package.extras]
-all = ["bitsandbytes (>=0.42.0)", "deepspeed (>=0.8.2,<=0.9.3)", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "requests (<2.32.0)", "rich (>=12.3.0)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.15.0)"]
+all = ["bitsandbytes (>=0.42.0)", "deepspeed (>=0.8.2,<=0.9.3)", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "requests (<2.32.0)", "rich (>=12.3.0)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)"]
 deepspeed = ["deepspeed (>=0.8.2,<=0.9.3)"]
-dev = ["bitsandbytes (>=0.42.0)", "cloudpickle (>=1.3)", "coverage (==7.3.1)", "deepspeed (>=0.8.2,<=0.9.3)", "fastapi", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "onnx (>=0.14.0)", "onnxruntime (>=0.15.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "requests (<2.32.0)", "rich (>=12.3.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.15.0)", "uvicorn"]
-examples = ["ipython[all] (<8.15.0)", "lightning-utilities (>=0.8.0)", "requests (<2.32.0)", "torchmetrics (>=0.10.0)", "torchvision (>=0.15.0)"]
+dev = ["bitsandbytes (>=0.42.0)", "cloudpickle (>=1.3)", "coverage (==7.3.1)", "deepspeed (>=0.8.2,<=0.9.3)", "fastapi", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "numpy (>=1.17.2)", "omegaconf (>=2.2.3)", "onnx (>=1.12.0)", "onnxruntime (>=1.12.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "requests (<2.32.0)", "rich (>=12.3.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)", "uvicorn"]
+examples = ["ipython[all] (<8.15.0)", "lightning-utilities (>=0.8.0)", "requests (<2.32.0)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)"]
 extra = ["bitsandbytes (>=0.42.0)", "hydra-core (>=1.2.0)", "jsonargparse[signatures] (>=4.27.7)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "rich (>=12.3.0)", "tensorboardX (>=2.2)"]
 strategies = ["deepspeed (>=0.8.2,<=0.9.3)"]
-test = ["cloudpickle (>=1.3)", "coverage (==7.3.1)", "fastapi", "onnx (>=0.14.0)", "onnxruntime (>=0.15.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "uvicorn"]
+test = ["cloudpickle (>=1.3)", "coverage (==7.3.1)", "fastapi", "numpy (>=1.17.2)", "onnx (>=1.12.0)", "onnxruntime (>=1.12.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "uvicorn"]
 
 [[package]]
 name = "pytz"
@@ -3217,20 +3141,20 @@ url = "https://download.pytorch.org/whl/cu121/torchvision-0.18.0%2Bcu121-cp39-cp
 
 [[package]]
 name = "tqdm"
-version = "4.67.0"
+version = "4.67.1"
 description = "Fast, Extensible Progress Meter"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tqdm-4.67.0-py3-none-any.whl", hash = "sha256:0cd8af9d56911acab92182e88d763100d4788bdf421d251616040cc4d44863be"},
-    {file = "tqdm-4.67.0.tar.gz", hash = "sha256:fe5a6f95e6fe0b9755e9469b77b9c3cf850048224ecaa8293d7d2d31f97d869a"},
+    {file = "tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2"},
+    {file = "tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2"},
 ]
 
 [package.dependencies]
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.extras]
-dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout", "pytest-xdist"]
+dev = ["nbval", "pytest (>=6)", "pytest-asyncio (>=0.24)", "pytest-cov", "pytest-timeout"]
 discord = ["requests"]
 notebook = ["ipywidgets (>=6)"]
 slack = ["slack-sdk"]
@@ -3350,24 +3274,6 @@ filelock = "*"
 build = ["cmake (>=3.20)", "lit"]
 tests = ["autopep8", "flake8", "isort", "llnl-hatchet", "numpy", "pytest", "scipy (>=1.7.1)"]
 tutorials = ["matplotlib", "pandas", "tabulate"]
-
-[[package]]
-name = "typer-slim"
-version = "0.12.5"
-description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "typer_slim-0.12.5-py3-none-any.whl", hash = "sha256:9a994f721b828783dbf144e17461b1c720bb4598e0d5eff7c1b3f08ee58cb062"},
-    {file = "typer_slim-0.12.5.tar.gz", hash = "sha256:c8e3fcf93cc7dd584036df8755d2e2363f85f8a4dd028c7911eed3f00cf0ebb1"},
-]
-
-[package.dependencies]
-click = ">=8.0.0"
-typing-extensions = ">=3.7.4.3"
-
-[package.extras]
-standard = ["rich (>=10.11.0)", "shellingham (>=1.3.0)"]
 
 [[package]]
 name = "typing-extensions"
@@ -3564,4 +3470,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "c992129187ec8818cebfb20149426e84f4d39e82c9086faf62fb07c8146ff89d"
+content-hash = "3c79d5afd58ab81cb38c1c096112cf3ebe115075174efa951a40a2a1a2eada6b"
