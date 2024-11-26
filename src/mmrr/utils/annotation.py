@@ -71,7 +71,7 @@ class ImageAnnotation(CamelCaseDataClassJsonMixin):
 class SentenceAnnotation(CamelCaseDataClassJsonMixin):
     text: str
     phrases: list[PhraseAnnotation]
-    sid: Optional[str] = None
+    sid: str = ""
 
 
 @dataclass
