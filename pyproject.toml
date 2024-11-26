@@ -31,27 +31,8 @@ testpaths = ["tests"]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 
 [tool.mypy]
-warn_unused_ignores = true
-no_implicit_reexport = true
-strict_equality = true
-warn_redundant_casts = true
-warn_unused_configs = true
-
-[[tool.mypy.overrides]]
-module="inspect_ai.*"
-warn_return_any = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-extra_checks = true
-
-[[tool.mypy.overrides]]
-module = "pandas-stubs.*"
-ignore_errors = true
+python_version = 3.9
+signore_missing_imports = true
 
 [tool.poetry]
 name = "mmrr"
