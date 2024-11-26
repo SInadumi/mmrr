@@ -82,7 +82,7 @@ def main(eval_cfg: DictConfig):
 
     datasets: dict[str, CohesionDataset]
     if cfg.eval_set == "valid":
-        datasets = datamodule.valid_datasets
+        datasets = datamodule.val_datasets
         dataloaders = datamodule.val_dataloader()
     elif cfg.eval_set == "test":
         datasets = datamodule.test_datasets
