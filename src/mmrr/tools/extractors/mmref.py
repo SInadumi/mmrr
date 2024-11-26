@@ -1,4 +1,3 @@
-
 import h5py
 from rhoknp.cohesion import (
     ExophoraReferentType,
@@ -8,7 +7,7 @@ from mmrr.tools.constants import IOU_THRESHOLD
 from mmrr.utils.annotation import Phrase2ObjectRelation, PhraseAnnotation
 from mmrr.utils.prediction import ObjectFeature
 
-from .base import BaseExtractor, T
+from .base import BaseExtractor, T, U
 
 
 class MMRefExtractor(BaseExtractor):
@@ -64,6 +63,10 @@ class MMRefExtractor(BaseExtractor):
             if rel.type in rel_types:
                 return True
         return False
+
+    @staticmethod
+    def is_candidate(unit: U, predicate: U) -> bool:
+        raise NotImplementedError
 
     @staticmethod
     def get_rel_types(rels: list[str], include_nonidentical: bool = False) -> list[str]:
