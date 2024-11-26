@@ -9,7 +9,7 @@ from rhoknp.cohesion import (
     ExophoraReferentType,
 )
 
-from .base import BaseExtractor, T
+from .base import BaseExtractor, T, U
 
 
 class PasExtractor(BaseExtractor):
@@ -25,13 +25,14 @@ class PasExtractor(BaseExtractor):
         self.verbal_predicate: bool = verbal_predicate
         self.nominal_predicate: bool = nominal_predicate
 
-    def extract_rels(self, predicate: BasePhrase) -> Dict[str, List[Argument]]:
+    def extract_rels(self, base_phrase: T) -> Dict[str, List[Argument]]:
+        assert isinstance(base_phrase, BasePhrase)  # `base_phrase` means predicate
         all_arguments: Dict[str, List[Argument]] = defaultdict(list)
         candidates: List[BasePhrase] = self.get_candidates(
-            predicate, predicate.document.base_phrases
+            base_phrase, base_phrase.document.base_phrases
         )
         for case in self.cases:
-            for argument in predicate.pas.get_arguments(case, relax=False):
+            for argument in base_phrase.pas.get_arguments(case, relax=False):
                 if isinstance(argument, EndophoraArgument):
                     if argument.base_phrase in candidates:
                         all_arguments[case].append(argument)
@@ -44,7 +45,8 @@ class PasExtractor(BaseExtractor):
                     )
         return all_arguments
 
-    def is_target(self, base_phrase: BasePhrase) -> bool:
+    def is_target(self, base_phrase: T) -> bool:
+        assert isinstance(base_phrase, BasePhrase)
         return self.is_pas_target(
             base_phrase, verbal=self.verbal_predicate, nominal=self.nominal_predicate
         )
@@ -58,7 +60,7 @@ class PasExtractor(BaseExtractor):
         return False
 
     @staticmethod
-    def is_candidate(unit: T, predicate: T) -> bool:
+    def is_candidate(unit: U, predicate: U) -> bool:
         is_anaphora = unit.global_index < predicate.global_index
         is_intra_sentential_cataphora = (
             unit.global_index > predicate.global_index

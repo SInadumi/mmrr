@@ -54,6 +54,7 @@ class MMRefEvaluator:
     ) -> "MMRefScore":
         if Task.MM_PAS_ANALYSIS in self.tasks:
             assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
+            assert isinstance(gold_annotation.sid, str)
             pas_metrics = self.pas_evaluator.run(
                 sid=gold_annotation.sid,
                 predicted_phrases=predicted_annotation.phrases,
@@ -64,6 +65,7 @@ class MMRefEvaluator:
 
         if Task.MM_COREFERENCE_RESOLUTION in self.tasks:
             assert len(predicted_annotation.phrases) == len(gold_annotation.phrases)
+            assert isinstance(gold_annotation.sid, str)
             coreference_metrics = self.coreference_evaluator.run(
                 sid=gold_annotation.sid,
                 predicted_phrases=predicted_annotation.phrases,

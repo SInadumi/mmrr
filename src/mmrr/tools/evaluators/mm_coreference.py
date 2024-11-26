@@ -20,8 +20,8 @@ class MultiModalCoreferenceResolutionEvaluator:
     def run(
         self,
         sid: str,
-        predicted_phrases: PhrasePrediction,
-        gold_phrases: PhraseAnnotation,
+        predicted_phrases: list[PhrasePrediction],
+        gold_phrases: list[PhraseAnnotation],
     ) -> pd.DataFrame:
         assert len(predicted_phrases) == len(gold_phrases)
         metrics = pd.DataFrame(

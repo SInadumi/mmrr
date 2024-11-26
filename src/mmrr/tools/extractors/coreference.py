@@ -3,35 +3,35 @@ from typing import List, Union
 from rhoknp import BasePhrase
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
 
-from .base import BaseExtractor, T
+from .base import BaseExtractor, T, U
 
 
 class CoreferenceExtractor(BaseExtractor):
     def __init__(self, exophora_referent_types: List[ExophoraReferentType]) -> None:
         super().__init__(exophora_referent_types)
 
-    def extract_rels(
-        self, mention: BasePhrase
-    ) -> List[Union[BasePhrase, ExophoraReferent]]:
+    def extract_rels(self, base_phrase: T) -> List[Union[BasePhrase, ExophoraReferent]]:
+        assert isinstance(base_phrase, BasePhrase)  # `base_phrase` means mention
         referents: List[Union[BasePhrase, ExophoraReferent]] = []
         candidates: List[BasePhrase] = self.get_candidates(
-            mention, mention.document.base_phrases
+            base_phrase, base_phrase.document.base_phrases
         )
-        for coreferent in mention.get_coreferents(
+        for coreferent in base_phrase.get_coreferents(
             include_nonidentical=False, include_self=False
         ):
             if coreferent in candidates:
                 referents.append(coreferent)
         for exophora_referent in [
             e.exophora_referent
-            for e in mention.entities
+            for e in base_phrase.entities
             if e.exophora_referent is not None
         ]:
             if exophora_referent.type in self.exophora_referent_types:
                 referents.append(exophora_referent)
         return referents
 
-    def is_target(self, mention: BasePhrase) -> bool:
+    def is_target(self, mention: T) -> bool:
+        assert isinstance(mention, BasePhrase)
         return self.is_coreference_target(mention)
 
     @staticmethod
@@ -39,5 +39,5 @@ class CoreferenceExtractor(BaseExtractor):
         return mention.features.get("体言") is True
 
     @staticmethod
-    def is_candidate(target_mention: T, source_mention: T) -> bool:
+    def is_candidate(target_mention: U, source_mention: U) -> bool:
         return target_mention.global_index < source_mention.global_index

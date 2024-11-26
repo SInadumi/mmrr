@@ -1,3 +1,4 @@
+
 import h5py
 from rhoknp.cohesion import (
     ExophoraReferentType,
@@ -23,21 +24,24 @@ class MMRefExtractor(BaseExtractor):
 
     def extract_rels(
         self,
-        predicate: PhraseAnnotation,
+        base_phrase: T,
         candidates: list[ObjectFeature],
         iou_mapper: dict[str, h5py.Group],
     ) -> dict[str, list[int]]:
-        # NOTE: Initialize with gold phrase to object relations
+        # Initialize with gold phrase to object relations
+        assert isinstance(
+            base_phrase, PhraseAnnotation
+        )  # `base_phrase` means vis_phrase
         all_arguments: dict[str, list[int]] = {
             rel_type: []
-            for rel_type in self.get_nonidentical_types(predicate.relations)
+            for rel_type in self.get_nonidentical_types(base_phrase.relations)
         }
         for rel_type in all_arguments.keys():
             all_arguments[rel_type] = []
             _rel_types = self.get_rel_types(
                 [rel_type], include_nonidentical=self.include_nonidentical
             )
-            for relation in predicate.relations:
+            for relation in base_phrase.relations:
                 if relation.type not in _rel_types:
                     continue
                 if relation.boundingBoxes is None or len(relation.boundingBoxes) == 0:
@@ -51,7 +55,8 @@ class MMRefExtractor(BaseExtractor):
 
         return all_arguments
 
-    def is_target(self, visual_phrase: dict[str, list]) -> bool:
+    def is_target(self, visual_phrase: T) -> bool:
+        assert isinstance(visual_phrase, PhraseAnnotation)
         rel_types = self.get_rel_types(
             self.rels, include_nonidentical=self.include_nonidentical
         )
@@ -59,10 +64,6 @@ class MMRefExtractor(BaseExtractor):
             if rel.type in rel_types:
                 return True
         return False
-
-    @staticmethod
-    def is_candidate(unit: T, predicate: T) -> bool:
-        raise NotImplementedError
 
     @staticmethod
     def get_rel_types(rels: list[str], include_nonidentical: bool = False) -> list[str]:

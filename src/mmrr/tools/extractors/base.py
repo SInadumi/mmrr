@@ -4,7 +4,10 @@ from typing import Any, Collection, List, TypeVar
 from rhoknp import BasePhrase, Morpheme
 from rhoknp.cohesion import ExophoraReferentType
 
-T = TypeVar("T", BasePhrase, Morpheme)
+from mmrr.utils.annotation import PhraseAnnotation
+
+T = TypeVar("T", BasePhrase, PhraseAnnotation)
+U = TypeVar("U", BasePhrase, Morpheme)
 
 
 class BaseExtractor(ABC):
@@ -12,21 +15,23 @@ class BaseExtractor(ABC):
         self.exophora_referent_types = exophora_referent_types
 
     @abstractmethod
-    def extract_rels(self, base_phrase: BasePhrase) -> Collection[Any]:
+    def extract_rels(
+        self, base_phrase: T, *args: Any, **kwargs: Any
+    ) -> Collection[Any]:
         raise NotImplementedError
 
     @abstractmethod
-    def is_target(self, base_phrase: BasePhrase) -> bool:
+    def is_target(self, base_phrase: T) -> bool:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def is_candidate(possible_candidate: T, anaphor: T) -> bool:
+    def is_candidate(possible_candidate: U, anaphor: U) -> bool:
         raise NotImplementedError
 
     def get_candidates(
-        self, anaphor: T, morphemes_or_base_phrases: Collection[T]
-    ) -> List[T]:
+        self, anaphor: U, morphemes_or_base_phrases: Collection[U]
+    ) -> List[U]:
         return [
             unit
             for unit in morphemes_or_base_phrases
