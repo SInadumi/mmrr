@@ -97,7 +97,7 @@ class MMRefWriter(BasePredictionWriter):
                 )
 
     def write_prediction(
-        self, doc_id: str, image_id: str, prediction: SentencePrediction
+        self, doc_id: str, image_id: str, prediction: list[SentencePrediction]
     ) -> None:
         mmref_prediction = MMRefPrediction(
             doc_id=doc_id,

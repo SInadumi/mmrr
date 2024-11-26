@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 
 eps = 1e-6
@@ -28,10 +30,10 @@ def binary_cross_entropy_with_logits(
 
 
 class ContrastiveLoss:
-    def __init__(self):
+    def __init__(self, margin_pos: float = 1.0, margin_neg: float = 0.0):
         # cf.) https://kevinmusgrave.github.io/pytorch-metric-learning/losses/#contrastiveloss
-        self.margin_pos: float = 1.0
-        self.margin_neg: float = 0.0
+        self.margin_pos = margin_pos
+        self.margin_neg = margin_neg
 
     def compute_loss(
         self,
@@ -50,8 +52,8 @@ class ContrastiveLoss:
 
 
 class SupConLoss:
-    def __init__(self):
-        self.temperature: float = 0.1
+    def __init__(self, temperature: float = 0.1):
+        self.temperature = temperature
 
     def compute_loss(
         self,
@@ -90,7 +92,7 @@ class SupConLoss:
     def _logsumexp(
         self,
         x: torch.Tensor,
-        keep_mask: torch.Tensor = None,
+        keep_mask: Optional[torch.Tensor] = None,
         add_one: bool = True,
         dim: int = 1,
     ) -> torch.Tensor:

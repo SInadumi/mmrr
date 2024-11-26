@@ -25,7 +25,7 @@ class CohesionMetric(BaseModuleMetric):
         "source_mask_logits",
     )
 
-    def __init__(self, analysis_target_threshold: float = None) -> None:
+    def __init__(self, analysis_target_threshold: float = 0.3) -> None:
         super().__init__()
         self.analysis_target_threshold = analysis_target_threshold
         self.dataset: Optional[CohesionDataset] = None
