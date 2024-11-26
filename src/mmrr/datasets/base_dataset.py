@@ -8,6 +8,7 @@ from rhoknp.utils.reader import chunk_by_document
 from transformers import PreTrainedTokenizerBase
 
 from mmrr.datamodule.example import KyotoExample, MMRefExample
+from mmrr.tools.task import Task
 from mmrr.utils.util import sigmoid
 
 ExampleType = Union[KyotoExample, MMRefExample]
@@ -16,10 +17,12 @@ ExampleType = Union[KyotoExample, MMRefExample]
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(
         self,
+        tasks: list[Task],
         tokenizer: PreTrainedTokenizerBase,
         training: bool,
     ):
         super().__init__()
+        self.tasks = tasks
         self.tokenizer: PreTrainedTokenizerBase = tokenizer
         self.training: bool = training
 
@@ -49,9 +52,6 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def _get_tokenized_len(self, source: Union[Document, Sentence]) -> int:
         return len(self.tokenizer.tokenize(" ".join(m.text for m in source.morphemes)))
-
-    def dump_relation_prediction(self):
-        raise NotImplementedError
 
     def dump_source_mask_prediction(
         self,

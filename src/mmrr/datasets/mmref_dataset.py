@@ -54,18 +54,18 @@ class MMRefDataset(BaseDataset):
         training: bool,
     ) -> None:
         super().__init__(
+            tasks=[Task(task) for task in tasks],
             tokenizer=tokenizer,
             training=training,
         )
 
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
-        self.exophora_referents: list[ExophoraReferentType] = [
+        self.exophora_referents: list[ExophoraReferent] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
         self.special_tokens: list[str] = list(special_tokens)
-        self.tasks = [Task(task) for task in tasks]
-        self.cases = cases
+        self.cases = list(cases)
         self.special_to_index: dict[str, int] = {
             token: max_seq_length - len(self.special_tokens) + i
             for i, token in enumerate(self.special_tokens)
@@ -83,7 +83,7 @@ class MMRefDataset(BaseDataset):
         ]
         self.task_to_extractor: dict[Task, BaseExtractor] = {
             Task.MM_PAS_ANALYSIS: MMRefExtractor(
-                list(self.cases),
+                self.cases,
                 exophora_referent_types,
                 include_nonidentical,
             ),
@@ -105,6 +105,7 @@ class MMRefDataset(BaseDataset):
         self.sid2vis_sentence: dict[str, SentenceAnnotation] = {}
         for annotation in image_text_annotations:
             for utterance in annotation.utterances:
+                assert isinstance(utterance.sid, str)
                 self.sid2vis_sentence.update({utterance.sid: utterance})
 
         # load textual annotations
@@ -234,22 +235,22 @@ class MMRefDataset(BaseDataset):
                     except EOFError:
                         example = MMRefExample()
                         example = example.load(
-                            image_id=image_id,
-                            vis_sentences=annotation.utterances,
-                            knp_document=knp_document,
+                            document=knp_document,
                             tasks=self.tasks,
                             task_to_extractor=self.task_to_extractor,
+                            image_id=image_id,
+                            vis_sentences=annotation.utterances,
                             candidates=candidates,
                             iou_mapper=iou_mapper,
                         )
             else:
                 example = MMRefExample()
                 example.load(
-                    image_id=image_id,
-                    vis_sentences=annotation.utterances,
-                    knp_document=knp_document,
+                    document=knp_document,
                     tasks=self.tasks,
                     task_to_extractor=self.task_to_extractor,
+                    image_id=image_id,
+                    vis_sentences=annotation.utterances,
                     candidates=candidates,
                     iou_mapper=iou_mapper,
                 )
@@ -391,12 +392,12 @@ class MMRefDataset(BaseDataset):
         )
 
         """Convert example to visual feature"""
-        vis_embeds: list[torch.Tensor] = []
+        vis_embeds_list: list[torch.Tensor] = []
         vis_attention_mask: list[bool] = []
         for candidate in example.candidates:
-            vis_embeds.append(candidate.feature)
+            vis_embeds_list.append(candidate.feature)
             vis_attention_mask.append(True if candidate.class_id != -1 else False)
-        vis_embeds = torch.stack(vis_embeds)  # -> torch.Tensor
+        vis_embeds = torch.stack(vis_embeds_list)  # -> torch.Tensor
 
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
         candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)

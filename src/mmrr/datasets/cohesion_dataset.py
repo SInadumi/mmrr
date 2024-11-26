@@ -55,17 +55,17 @@ class CohesionDataset(BaseDataset):
         flip_reader_writer: bool,
     ) -> None:
         super().__init__(
+            tasks=[Task(task) for task in tasks],
             tokenizer=tokenizer,
             training=training,
         )
 
         self.dataset_path = Path(dataset_path)
         self.data_path = Path(data_path)
-        self.exophora_referents: list[ExophoraReferentType] = [
+        self.exophora_referents: list[ExophoraReferent] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
         self.special_tokens: list[str] = list(special_tokens)
-        self.tasks: list[Task] = [Task(task) for task in tasks]
         self.cases: list[str] = list(cases)
         self.bar_rels: list[str] = list(bar_rels)
         self.max_seq_length = max_seq_length

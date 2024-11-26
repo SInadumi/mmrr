@@ -17,22 +17,22 @@ class MMRefExample(BaseExample):
         self.sentence_indices: list = []
         self.phrases: dict[Task, list[MMRefBasePhrase]] = {}
         self.sid_to_objects: dict[str, list] = {}
-        self.candidates: list[ObjectFeature] = None
+        self.candidates: list[ObjectFeature] = []
 
     def load(
         self,
-        knp_document: Document,
-        image_id: str,
-        vis_sentences: list[SentenceAnnotation],
+        document: Document,
         tasks: list[Task],
         task_to_extractor: dict[Task, BaseExtractor],
+        image_id: str,
+        vis_sentences: list[SentenceAnnotation],
         candidates: list[ObjectFeature],
         iou_mapper: dict[str, h5py.Group],
     ):
-        self.set_knp_params(knp_document)
+        self.set_knp_params(document)
         self.image_id = image_id
         self.sentence_indices = [sentence.sid for sentence in vis_sentences]
-        base_phrases: list[BasePhrase] = knp_document.base_phrases
+        base_phrases: list[BasePhrase] = document.base_phrases
         vis_phrases: list[PhraseAnnotation] = [
             phrase for sentence in vis_sentences for phrase in sentence.phrases
         ]
@@ -69,9 +69,10 @@ class MMRefExample(BaseExample):
             mmref_base_phrase.is_target = extractor.is_target(visual_phrase)
             # set parameters: `referent_candidates` and `rel2tags`
             if mmref_base_phrase.is_target:
-                rel2tags: dict[str, list[int]] = extractor.extract_rels(
+                rel2tags = extractor.extract_rels(
                     visual_phrase, self.candidates, iou_mapper
                 )
+                assert isinstance(rel2tags, dict)
                 mmref_base_phrase.rel2tags = rel2tags
 
         return mmref_base_phrases

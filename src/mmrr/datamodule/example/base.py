@@ -1,19 +1,30 @@
-from typing import Optional
+from abc import ABC, abstractmethod
+from typing import Any, Optional
 
 from rhoknp import Document
 from tokenizers import Encoding
 
+from mmrr.tools.extractors.base import BaseExtractor
+from mmrr.tools.task import Task
 from mmrr.utils.sub_document import extract_target_sentences
 
 
-class BaseExample:
+class BaseExample(ABC):
     def __init__(self) -> None:
         self.example_id: int = -1
         self.doc_id: str = ""
         self.analysis_target_morpheme_indices: list[int] = []
         self.encoding: Optional[Encoding] = None
 
-    def load(self):
+    @abstractmethod
+    def load(
+        self,
+        document: Document,
+        tasks: list[Task],
+        task_to_extractor: dict[Task, BaseExtractor],
+        *args: Any,
+        **kwargs: Any,
+    ):
         raise NotImplementedError
 
     def set_knp_params(self, document: Document):
