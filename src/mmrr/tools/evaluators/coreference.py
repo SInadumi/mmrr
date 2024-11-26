@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Collection, Dict, List, Optional, Set
+from typing import Callable, Collection, Optional
 
 import pandas as pd
 from rhoknp import BasePhrase, Document
@@ -24,14 +24,14 @@ class CoreferenceResolutionEvaluator:
         exophora_referent_types: Collection[ExophoraReferentType],
         is_target_mention: Optional[Callable[[BasePhrase], bool]] = None,
     ) -> None:
-        self.exophora_referent_types: List[ExophoraReferentType] = list(
+        self.exophora_referent_types: list[ExophoraReferentType] = list(
             exophora_referent_types
         )
         self.rel_type = "coreference"
         self.is_target_mention: Callable[[BasePhrase], bool] = is_target_mention or (
             lambda _: True
         )
-        self.comp_result: Dict[tuple, str] = {}
+        self.comp_result: dict[tuple, str] = {}
 
     def run(self, predicted_document: Document, gold_document: Document) -> pd.Series:
         """Compute coreference resolution scores"""
@@ -41,7 +41,7 @@ class CoreferenceResolutionEvaluator:
             index=[self.rel_type],
             columns=["endophora", "exophora"],
         )
-        local_comp_result: Dict[tuple, str] = {}
+        local_comp_result: dict[tuple, str] = {}
         for predicted_mention, gold_mention in zip(
             predicted_document.base_phrases, gold_document.base_phrases
         ):
@@ -133,8 +133,8 @@ class CoreferenceResolutionEvaluator:
 
     @staticmethod
     def _filter_mentions(
-        other_mentions: List[BasePhrase], mention: BasePhrase
-    ) -> List[BasePhrase]:
+        other_mentions: list[BasePhrase], mention: BasePhrase
+    ) -> list[BasePhrase]:
         """Filter out cataphora mentions"""
         return [
             another_mention
@@ -143,8 +143,8 @@ class CoreferenceResolutionEvaluator:
         ]
 
     def _filter_exophora_referents(
-        self, exophora_referents: List[ExophoraReferent]
-    ) -> Set[str]:
+        self, exophora_referents: list[ExophoraReferent]
+    ) -> set[str]:
         filtered = set()
         for orig_exophora_referent in exophora_referents:
             exophora_referent = copy.copy(orig_exophora_referent)

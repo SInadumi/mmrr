@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 
 from rhoknp import BasePhrase
 from rhoknp.cohesion import ExophoraReferent, ExophoraReferentType
@@ -7,13 +7,13 @@ from .base import BaseExtractor, T, U
 
 
 class CoreferenceExtractor(BaseExtractor):
-    def __init__(self, exophora_referent_types: List[ExophoraReferentType]) -> None:
+    def __init__(self, exophora_referent_types: list[ExophoraReferentType]) -> None:
         super().__init__(exophora_referent_types)
 
-    def extract_rels(self, base_phrase: T) -> List[Union[BasePhrase, ExophoraReferent]]:
+    def extract_rels(self, base_phrase: T) -> list[Union[BasePhrase, ExophoraReferent]]:
         assert isinstance(base_phrase, BasePhrase)  # `base_phrase` means mention
-        referents: List[Union[BasePhrase, ExophoraReferent]] = []
-        candidates: List[BasePhrase] = self.get_candidates(
+        referents: list[Union[BasePhrase, ExophoraReferent]] = []
+        candidates: list[BasePhrase] = self.get_candidates(
             base_phrase, base_phrase.document.base_phrases
         )
         for coreferent in base_phrase.get_coreferents(

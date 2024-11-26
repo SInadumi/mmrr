@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Dict, List
 
 from rhoknp import BasePhrase
 from rhoknp.cohesion import (
@@ -14,16 +13,16 @@ from .base import BaseExtractor, T, U
 
 class BridgingExtractor(BaseExtractor):
     def __init__(
-        self, rel_types: List[str], exophora_referent_types: List[ExophoraReferentType]
+        self, rel_types: list[str], exophora_referent_types: list[ExophoraReferentType]
     ) -> None:
         super().__init__(exophora_referent_types)
         assert "ノ" in rel_types, '"ノ" not found in rel_types'
         self.rel_types = rel_types
 
-    def extract_rels(self, base_phrase: T) -> Dict[str, List[Argument]]:
+    def extract_rels(self, base_phrase: T) -> dict[str, list[Argument]]:
         assert isinstance(base_phrase, BasePhrase)  # `base_phrase` means anaphor
-        all_referents: Dict[str, List[Argument]] = defaultdict(list)
-        candidates: List[BasePhrase] = self.get_candidates(
+        all_referents: dict[str, list[Argument]] = defaultdict(list)
+        candidates: list[BasePhrase] = self.get_candidates(
             base_phrase, base_phrase.document.base_phrases
         )
         for rel_type in self.rel_types:
