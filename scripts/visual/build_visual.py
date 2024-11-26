@@ -79,7 +79,7 @@ class ImageTextAugmenter:
         )
 
         # collect sids corresponding to utterances
-        sid_mapper: list[list[int]] = [
+        sid_mapper: list[list[str]] = [
             u_info.sids for u_info in dataset_info.utterances
         ]
         assert len(sid_mapper) == len(annotation.utterances)

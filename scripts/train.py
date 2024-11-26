@@ -3,7 +3,7 @@ import math
 import warnings
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Union
+from typing import TypeVar, Union
 
 import hydra
 import lightning.pytorch as pl
@@ -16,6 +16,7 @@ from lightning.pytorch.utilities.warnings import PossibleUserWarning
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from mmrr.datamodule.multitask_datamodule import MTDataModule
+from mmrr.modules import CohesionModule, MMRefModule
 from mmrr.utils.util import current_datetime_string
 from utils import initialize_parameters, save_results
 
@@ -38,6 +39,8 @@ OmegaConf.register_new_resolver(
     "now", current_datetime_string, replace=True, use_cache=True
 )
 OmegaConf.register_new_resolver("len", len, replace=True, use_cache=True)
+
+T = TypeVar("T", CohesionModule, MMRefModule)
 
 
 @hydra.main(config_path="../configs", config_name="", version_base=None)
@@ -95,7 +98,6 @@ def main(cfg: DictConfig):
     datamodule: pl.LightningDataModule = MTDataModule(cfg=cfg.datamodule)
 
     # Instantiate lightning module
-    target_module: pl.LightningDataModule
     target_module = hydra.utils.instantiate(
         cfg.module.target_module.cls, hparams=cfg, _recursive_=False
     )
@@ -108,6 +110,8 @@ def main(cfg: DictConfig):
             cfg.module.source_module.load_from_checkpoint, _recursive_=False
         )
         # Overwrite text encoder parameters
+        assert isinstance(target_module, tuple(T.__constraints__))
+        assert isinstance(source_module, tuple(T.__constraints__))
         initialize_parameters(target_module.encoder, source_module.encoder)
     if cfg.compile is True:
         target_module = torch.compile(target_module)  # type: ignore

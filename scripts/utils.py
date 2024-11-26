@@ -4,7 +4,6 @@ from functools import reduce
 from operator import add
 from pathlib import Path
 
-import lightning.pytorch as pl
 import torch
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from rhoknp import Document
@@ -14,9 +13,7 @@ from mmrr.tools.evaluators.cohesion import CohesionEvaluator, CohesionScore
 
 
 @torch.no_grad()
-def initialize_parameters(
-    target: pl.LightningDataModule, source: pl.LightningDataModule
-) -> None:
+def initialize_parameters(target: torch.nn.Module, source: torch.nn.Module) -> None:
     for tp, sp in zip(target.parameters(), source.parameters()):
         tp.copy_(sp)
 
