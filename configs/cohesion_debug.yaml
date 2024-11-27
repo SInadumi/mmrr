@@ -4,7 +4,7 @@ defaults:
       [early_stopping_cohesion, model_checkpoint, model_summary, progress_bar]
   - datamodule: cohesion_jcre3
   - logger: null
-  - model: cohesion_baseline
+  - model: cohesion_single
   - module: cohesion
   - optimizer: adamw
   - scheduler: cosine_schedule_with_warmup

@@ -7,7 +7,7 @@ from mmrr.modules.model.components.modules import LoRADelta, Mlp
 from mmrr.modules.model.dist import calc_4d_dot_product
 
 
-class BaseHeads(nn.Module):
+class CAModelHeads(nn.Module):
     def __init__(
         self,
         hidden_dropout_prob: float,

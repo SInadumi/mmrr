@@ -2,7 +2,7 @@ defaults:
   - base.yaml
 
 relation_head:
-  _target_: mmrr.modules.model.components.BaseHeads
+  _target_: mmrr.modules.model.components.CAModelHeads
   hidden_dropout_prob: ${model.hidden_dropout_prob}
 binary_head:
   _target_: mmrr.modules.model.components.TokenBinaryClassificationHead
