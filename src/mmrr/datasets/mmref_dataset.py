@@ -174,14 +174,6 @@ class MMRefDataset(BaseDataset):
         return ret
 
     @property
-    def special_indices(self) -> list[int]:
-        return list(self.special_to_index.values())
-
-    @property
-    def num_special_tokens(self) -> int:
-        return len(self.special_tokens)
-
-    @property
     def rel_types(self) -> list[str]:
         return [rel_type for task in self.tasks for rel_type in self.task_to_rels[task]]
 
@@ -301,9 +293,9 @@ class MMRefDataset(BaseDataset):
                 is_split_into_words=False,
                 padding=PaddingStrategy.MAX_LENGTH,
                 truncation=False,
-                max_length=self.max_seq_length - self.num_special_tokens,
+                max_length=self.max_seq_length - len(self.special_tokens),
             ).encodings[0]
-            if len(encoding.ids) > self.max_seq_length - self.num_special_tokens:
+            if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
                 continue
             example.encoding = encoding
             example.example_id = idx
