@@ -325,14 +325,14 @@ class CohesionDataset(BaseDataset):
     ) -> CohesionInputFeatures:
         """Loads a data file into a list of input features"""
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
-        candidates_set: list[list[list[int]]] = []  # (rel, src, tgt)
+        candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
                 scores, candidates = self._convert_annotation_to_feature(
                     example.phrases[task], rel, example.encoding
                 )
                 scores_set.append(scores)
-                candidates_set.append(candidates)
+                candidates_set.append(candidates)  # False -> mask, True -> keep
 
         assert example.encoding is not None, "encoding isn't set"
 
@@ -361,13 +361,7 @@ class CohesionDataset(BaseDataset):
             attention_mask=merged_encoding.attention_mask,
             token_type_ids=merged_encoding.type_ids,
             source_mask=source_mask,
-            target_mask=[
-                [
-                    [(x in cands) for x in range(self.max_seq_length)]
-                    for cands in candidates
-                ]
-                for candidates in candidates_set
-            ],  # False -> mask, True -> keep
+            target_mask=candidates_set,
             source_label=is_analysis_targets,
             target_label=scores_set,
         )
@@ -377,11 +371,13 @@ class CohesionDataset(BaseDataset):
         phrases: list[CohesionBasePhrase],
         rel_type: str,
         encoding: Encoding,
-    ) -> tuple[list[list[float]], list[list[int]]]:
+    ) -> tuple[list[list[float]], list[list[bool]]]:
         scores_set: list[list[float]] = [
             [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
         ]
-        candidates_set: list[list[int]] = [[] for _ in range(self.max_seq_length)]
+        candidates_set: list[list[bool]] = [
+            [False] * self.max_seq_length for _ in range(self.max_seq_length)
+        ]
 
         for phrase in phrases:
             scores: list[float] = [0.0] * self.max_seq_length
@@ -401,13 +397,15 @@ class CohesionDataset(BaseDataset):
                         for token_index in range(*token_index_span):
                             scores[token_index] = 1.0
 
-            token_level_candidates: list[int] = []
+            token_level_candidates: list[bool] = [False] * self.max_seq_length
             for candidate in phrase.referent_candidates:
                 token_index_span = encoding.word_to_tokens(
                     candidate.head_morpheme_global_index
                 )
-                token_level_candidates += range(*token_index_span)
-            token_level_candidates += self.special_indices
+                for token_index in range(*token_index_span):
+                    token_level_candidates[token_index] = True
+            for special_token_global_index in self.special_indices:
+                token_level_candidates[special_token_global_index] = True
 
             token_index_span = encoding.word_to_tokens(
                 phrase.head_morpheme_global_index
