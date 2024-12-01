@@ -76,11 +76,8 @@ class CohesionModule(BaseModule[CohesionMetric]):
         source_mask: torch.Tensor = batch["source_mask"]  # (b, seq)
         target_mask: torch.Tensor = batch["target_mask"]  # (b, rel, seq, seq)
 
-        relation_mask = (
-            source_mask.unsqueeze(1).unsqueeze(3) & target_mask
-        )  # (b, rel, seq, seq)
         losses["relation_loss"] = cross_entropy_loss(
-            ret["relation_logits"], batch["target_label"], relation_mask
+            ret["relation_logits"], batch["target_label"], target_mask
         )
 
         source_label: torch.Tensor = batch["source_label"]  # (b, task, seq)
