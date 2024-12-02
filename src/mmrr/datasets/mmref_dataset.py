@@ -429,22 +429,17 @@ class MMRefDataset(BaseDataset):
         ]  # (src, tgt)
 
         for mmref_base_phrase in mmref_base_phrases:
-            scores: list[float] = [0.0] * self.max_seq_length
-            token_level_candidates: list[bool] = [False] * self.max_seq_length
+            token_index_span = encoding.word_to_tokens(
+                mmref_base_phrase.head_morpheme_global_index
+            )
             if mmref_base_phrase.is_target is True:
                 assert mmref_base_phrase.rel2tags is not None
                 # 学習・解析対象基本句
                 for cid in mmref_base_phrase.rel2tags.get(rel_type, []):
                     assert cid < self.max_seq_length
-                    scores[cid] = 1.0
-                    token_level_candidates[cid] = True
-
-            token_index_span = encoding.word_to_tokens(
-                mmref_base_phrase.head_morpheme_global_index
-            )
-            # use the head subword as the representative of the source word
-            scores_set[token_index_span[0]] = scores
-            candidates_set[token_index_span[0]] = token_level_candidates
+                    # use the head subword as the representative of the source word
+                    scores_set[token_index_span[0]][cid] = 1.0
+                    candidates_set[token_index_span[0]][cid] = True
 
         return scores_set, candidates_set
 
