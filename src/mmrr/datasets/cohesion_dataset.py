@@ -217,9 +217,8 @@ class CohesionDataset(BaseDataset):
     def _post_process_examples(
         self, examples: list[KyotoExample]
     ) -> list[KyotoExample]:
-        idx = 0
         filtered = []
-        for example in examples:
+        for idx, example in enumerate(examples):
             phrases = next(iter(example.phrases.values()))
             morphemes = [
                 morpheme for phrase in phrases for morpheme in phrase.morphemes
@@ -236,7 +235,6 @@ class CohesionDataset(BaseDataset):
             example.encoding = encoding
             example.example_id = idx
             filtered.append(example)
-            idx += 1
         return filtered
 
     def _load_example_from_document(self, document: Document) -> KyotoExample:
