@@ -64,34 +64,37 @@ class KyotoExample(BaseExample):
             )
             for base_phrase in base_phrases
         ]
+
         for base_phrase, cohesion_base_phrase in zip(
             base_phrases, cohesion_base_phrases
         ):
-            if cohesion_base_phrase.is_target:
-                all_rels = extractor.extract_rels(base_phrase)
-                rel2tags: dict[str, list[str]]  # rel_type to tags
-                if isinstance(extractor, (PasExtractor, BridgingExtractor)):
-                    assert isinstance(all_rels, dict)
-                    rel2tags = {
-                        rel_type: _get_argument_tags(all_rels[rel_type])
-                        for rel_type in rel_types
-                    }
-                elif isinstance(extractor, CoreferenceExtractor):
-                    assert rel_types == ["="]
-                    assert isinstance(all_rels, list)
-                    rel2tags = {"=": _get_referent_tags(all_rels)}
-                else:
-                    raise AssertionError
-                if (
-                    flip_writer_reader_according_to_type_id is True
-                    and self.sid_to_type_id.get(base_phrase.sentence.sid) == 1
-                ):
-                    flip_map = {"[著者]": "[読者]", "[読者]": "[著者]"}
-                    rel2tags = {
-                        rel_type: [flip_map.get(s, s) for s in tags]
-                        for rel_type, tags in rel2tags.items()
-                    }
-                cohesion_base_phrase.rel2tags = rel2tags
+            all_rels = extractor.extract_rels(base_phrase)
+            if isinstance(extractor, (PasExtractor, BridgingExtractor)):
+                assert isinstance(all_rels, dict)
+                rel2tags = {
+                    rel_type: _get_argument_tags(all_rels[rel_type])
+                    for rel_type in rel_types
+                }
+            elif isinstance(extractor, CoreferenceExtractor):
+                assert rel_types == ["="]
+                assert isinstance(all_rels, list)
+                rel2tags = {"=": _get_referent_tags(all_rels)}
+            else:
+                raise AssertionError
+
+            # flip reader-writer tags for jcre3
+            if (
+                flip_writer_reader_according_to_type_id is True
+                and self.sid_to_type_id.get(base_phrase.sentence.sid) == 1
+            ):
+                flip_map = {"[著者]": "[読者]", "[読者]": "[著者]"}
+                rel2tags = {
+                    rel_type: [flip_map.get(s, s) for s in tags]
+                    for rel_type, tags in rel2tags.items()
+                }
+
+            # set parameters
+            cohesion_base_phrase.rel2tags = rel2tags
             referent_candidates = extractor.get_candidates(
                 base_phrase, base_phrase.document.base_phrases
             )

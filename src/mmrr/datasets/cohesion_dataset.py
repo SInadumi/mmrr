@@ -396,10 +396,9 @@ class CohesionDataset(BaseDataset):
 
         for cohesion_base_phrase in cohesion_base_phrases:
             scores: list[float] = [0.0] * self.max_seq_length
-            # phrase.rel2tags が None の場合は推論時，もしくは学習対象外の基本句．
-            # その場合は scores が全てゼロになるため loss が計算されない．
-            if cohesion_base_phrase.rel2tags is not None:
+            if cohesion_base_phrase.is_target is True:
                 # 学習・解析対象基本句
+                assert cohesion_base_phrase.rel2tags is not None
                 for tag in cohesion_base_phrase.rel2tags[rel_type]:
                     if tag in self.special_tokens:
                         token_index = special_token_indexer.get_token_level_index(tag)

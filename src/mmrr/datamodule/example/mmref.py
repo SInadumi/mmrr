@@ -65,14 +65,12 @@ class MMRefExample(BaseExample):
             visual_phrase: PhraseAnnotation = visual_phrases[idx]
             mmref_base_phrase: MMRefBasePhrase = mmref_base_phrases[idx]
 
-            # set a parameter: `is_target`
+            # set parameters
             mmref_base_phrase.is_target = extractor.is_target(visual_phrase)
-            # set parameters: `referent_candidates` and `rel2tags`
-            if mmref_base_phrase.is_target:
-                rel2tags = extractor.extract_rels(
-                    visual_phrase, self.candidates, iou_mapper
-                )
-                assert isinstance(rel2tags, dict)
-                mmref_base_phrase.rel2tags = rel2tags
+            rel2tags = extractor.extract_rels(
+                visual_phrase, self.candidates, iou_mapper
+            )
+            assert isinstance(rel2tags, dict)
+            mmref_base_phrase.rel2tags = rel2tags
 
         return mmref_base_phrases
