@@ -77,7 +77,7 @@ class CohesionDataset(BaseDataset):
         ]
         self.task_to_extractor: dict[Task, BaseExtractor] = {
             Task.PAS_ANALYSIS: PasExtractor(
-                list(self.cases),
+                self.cases,
                 exophora_referent_types,
                 verbal_predicate=True,
                 nominal_predicate=True,

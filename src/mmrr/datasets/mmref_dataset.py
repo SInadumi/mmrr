@@ -70,10 +70,6 @@ class MMRefDataset(BaseDataset):
         self.object_hidden_size = object_hidden_size
         self.dataset_name = self.data_path.parts[-2]
 
-        assert len(self.tasks) > 0
-        assert self.max_seq_length > 0
-        assert self.object_hidden_size > 0
-
         exophora_referent_types: list[ExophoraReferentType] = [
             er.type for er in self.exophora_referents
         ]
