@@ -278,9 +278,8 @@ class MMRefDataset(BaseDataset):
             encoding: Encoding = self.tokenizer(
                 " ".join(morphemes),
                 is_split_into_words=False,
-                padding=PaddingStrategy.MAX_LENGTH,
+                padding=PaddingStrategy.DO_NOT_PAD,
                 truncation=False,
-                max_length=self.max_seq_length - len(self.special_tokens),
             ).encodings[0]
             if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
                 continue
@@ -377,8 +376,18 @@ class MMRefDataset(BaseDataset):
         example: MMRefExample,
     ) -> MMRefInputFeatures:
         """Convert example to textual feature"""
+        assert example.encoding is not None
+        padding_encoding: Encoding = self.tokenizer(
+            "",
+            add_special_tokens=False,
+            padding=PaddingStrategy.MAX_LENGTH,
+            truncation=False,
+            max_length=self.max_seq_length
+            - len(example.encoding.ids)
+            - len(self.special_tokens),
+        ).encodings[0]
         merged_encoding: Encoding = Encoding.merge(
-            [example.encoding, self.special_encoding]
+            [example.encoding, self.special_encoding, padding_encoding]
         )
 
         """Convert example to visual feature"""

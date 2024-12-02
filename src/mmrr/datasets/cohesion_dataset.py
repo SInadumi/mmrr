@@ -15,7 +15,7 @@ from tqdm import tqdm
 from transformers import PreTrainedTokenizerBase
 from transformers.file_utils import PaddingStrategy
 
-from mmrr.datamodule.example import KyotoExample
+from mmrr.datamodule.example import KyotoExample, SpecialTokenIndexer
 from mmrr.tools.extractors import (
     BridgingExtractor,
     CoreferenceExtractor,
@@ -69,10 +69,6 @@ class CohesionDataset(BaseDataset):
         self.cases: list[str] = list(cases)
         self.bar_rels: list[str] = list(bar_rels)
         self.max_seq_length = max_seq_length
-        self.special_to_index: dict[str, int] = {
-            token: max_seq_length - len(self.special_tokens) + i
-            for i, token in enumerate(self.special_tokens)
-        }
         self.flip_reader_writer: bool = flip_reader_writer
         self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
 
@@ -130,10 +126,6 @@ class CohesionDataset(BaseDataset):
     @property
     def documents(self) -> list[Document]:
         return list(self.doc_id2document.values())
-
-    @property
-    def special_indices(self) -> list[int]:
-        return list(self.special_to_index.values())
 
     @property
     def rel_types(self) -> list[str]:
@@ -226,13 +218,16 @@ class CohesionDataset(BaseDataset):
             encoding: Encoding = self.tokenizer(
                 " ".join(morphemes),
                 is_split_into_words=False,
-                padding=PaddingStrategy.MAX_LENGTH,
+                padding=PaddingStrategy.DO_NOT_PAD,
                 truncation=False,
-                max_length=self.max_seq_length - len(self.special_tokens),
             ).encodings[0]
             if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
                 continue
+            special_token_indexer = SpecialTokenIndexer(
+                self.special_tokens, len(encoding.ids), len(morphemes)
+            )
             example.encoding = encoding
+            example.special_token_indexer = special_token_indexer
             example.example_id = idx
             filtered.append(example)
         return filtered
@@ -276,10 +271,14 @@ class CohesionDataset(BaseDataset):
             (task, rel) for task in self.tasks for rel in self.task_to_rels[task]
         ]
         assert len(relation_logits) == len(task_and_rels) == len(self.rel_types)
+        assert example.special_token_indexer is not None
         for (task, _), logits in zip(task_and_rels, relation_logits):
             predictions.append(
                 self._token_to_phrase_level(
-                    logits, example.phrases[task], example.encoding
+                    logits,
+                    example.phrases[task],
+                    example.encoding,
+                    example.special_token_indexer,
                 )
             )
         return np.array(predictions).transpose(1, 0, 2)  # (phrase, rel, phrase+special)
@@ -289,6 +288,7 @@ class CohesionDataset(BaseDataset):
         token_level_logits_matrix: np.ndarray,  # (seq, seq)
         phrases: list[CohesionBasePhrase],
         encoding: Encoding,
+        special_token_indexer: SpecialTokenIndexer,
     ) -> np.ndarray:  # (phrase, phrase+special)
         phrase_level_scores_matrix: list[np.ndarray] = []
         for phrase in phrases:
@@ -313,9 +313,12 @@ class CohesionDataset(BaseDataset):
                     sum(sliced_token_level_logits) / len(sliced_token_level_logits)
                 )
             phrase_level_logits += [
-                token_level_logits[idx] for idx in self.special_indices
+                token_level_logits[idx]
+                for idx in special_token_indexer.token_level_indices
             ]
-            assert len(phrase_level_logits) == len(phrases) + len(self.special_to_index)
+            assert len(phrase_level_logits) == len(phrases) + len(
+                special_token_indexer.token_level_indices
+            )
             phrase_level_scores_matrix.append(softmax(np.array(phrase_level_logits)))
         return np.array(phrase_level_scores_matrix)
 
@@ -325,10 +328,14 @@ class CohesionDataset(BaseDataset):
         """Loads a data file into a list of input features"""
         scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
         candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
+        assert example.special_token_indexer is not None
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
                 scores, candidates = self._convert_annotation_to_feature(
-                    example.phrases[task], rel, example.encoding
+                    example.phrases[task],
+                    rel,
+                    example.encoding,
+                    example.special_token_indexer,
                 )
                 scores_set.append(scores)
                 candidates_set.append(candidates)  # False -> mask, True -> keep
@@ -350,9 +357,17 @@ class CohesionDataset(BaseDataset):
                 for token_index in range(*token_index_span):
                     is_targets[token_index] = int(phrase.is_target)
             is_analysis_targets.append(is_targets)
-
+        padding_encoding: Encoding = self.tokenizer(
+            "",
+            add_special_tokens=False,
+            padding=PaddingStrategy.MAX_LENGTH,
+            truncation=False,
+            max_length=self.max_seq_length
+            - len(example.encoding.ids)
+            - len(self.special_tokens),
+        ).encodings[0]
         merged_encoding: Encoding = Encoding.merge(
-            [example.encoding, self.special_encoding]
+            [example.encoding, self.special_encoding, padding_encoding]
         )
         return CohesionInputFeatures(
             example_id=example.example_id,
@@ -370,6 +385,7 @@ class CohesionDataset(BaseDataset):
         phrases: list[CohesionBasePhrase],
         rel_type: str,
         encoding: Encoding,
+        special_token_indexer: SpecialTokenIndexer,
     ) -> tuple[list[list[float]], list[list[bool]]]:
         scores_set: list[list[float]] = [
             [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
@@ -385,8 +401,10 @@ class CohesionDataset(BaseDataset):
             if phrase.rel2tags is not None:
                 # 学習・解析対象基本句
                 for arg_string in phrase.rel2tags[rel_type]:
-                    if arg_string in self.special_to_index:
-                        token_index = self.special_to_index[arg_string]
+                    if arg_string in self.special_tokens:
+                        token_index = special_token_indexer.get_token_level_index(
+                            arg_string
+                        )
                         scores[token_index] = 1.0
                     else:
                         token_index_span: tuple[int, int] = encoding.word_to_tokens(
@@ -403,7 +421,7 @@ class CohesionDataset(BaseDataset):
                 )
                 for token_index in range(*token_index_span):
                     token_level_candidates[token_index] = True
-            for special_token_global_index in self.special_indices:
+            for special_token_global_index in special_token_indexer.token_level_indices:
                 token_level_candidates[special_token_global_index] = True
 
             token_index_span = encoding.word_to_tokens(
