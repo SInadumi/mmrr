@@ -382,7 +382,7 @@ class CohesionDataset(BaseDataset):
 
     def _convert_annotation_to_feature(
         self,
-        phrases: list[CohesionBasePhrase],
+        cohesion_base_phrases: list[CohesionBasePhrase],
         rel_type: str,
         encoding: Encoding,
         special_token_indexer: SpecialTokenIndexer,
@@ -394,28 +394,26 @@ class CohesionDataset(BaseDataset):
             [False] * self.max_seq_length for _ in range(self.max_seq_length)
         ]
 
-        for phrase in phrases:
+        for cohesion_base_phrase in cohesion_base_phrases:
             scores: list[float] = [0.0] * self.max_seq_length
             # phrase.rel2tags が None の場合は推論時，もしくは学習対象外の基本句．
             # その場合は scores が全てゼロになるため loss が計算されない．
-            if phrase.rel2tags is not None:
+            if cohesion_base_phrase.rel2tags is not None:
                 # 学習・解析対象基本句
-                for arg_string in phrase.rel2tags[rel_type]:
-                    if arg_string in self.special_tokens:
-                        token_index = special_token_indexer.get_token_level_index(
-                            arg_string
-                        )
+                for tag in cohesion_base_phrase.rel2tags[rel_type]:
+                    if tag in self.special_tokens:
+                        token_index = special_token_indexer.get_token_level_index(tag)
                         scores[token_index] = 1.0
                     else:
                         token_index_span: tuple[int, int] = encoding.word_to_tokens(
-                            phrases[int(arg_string)].head_morpheme_global_index,
+                            cohesion_base_phrases[int(tag)].head_morpheme_global_index,
                         )
                         # 1.0 for all subwords that compose the target word
                         for token_index in range(*token_index_span):
                             scores[token_index] = 1.0
 
             token_level_candidates: list[bool] = [False] * self.max_seq_length
-            for candidate in phrase.referent_candidates:
+            for candidate in cohesion_base_phrase.referent_candidates:
                 token_index_span = encoding.word_to_tokens(
                     candidate.head_morpheme_global_index
                 )
@@ -425,7 +423,7 @@ class CohesionDataset(BaseDataset):
                 token_level_candidates[special_token_global_index] = True
 
             token_index_span = encoding.word_to_tokens(
-                phrase.head_morpheme_global_index
+                cohesion_base_phrase.head_morpheme_global_index
             )
             # use the head subword as the representative of the source word
             scores_set[token_index_span[0]] = scores
