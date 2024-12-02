@@ -325,20 +325,27 @@ class CohesionDataset(BaseDataset):
     def _convert_example_to_feature(
         self, example: KyotoExample
     ) -> CohesionInputFeatures:
-        """Loads a data file into a list of input features"""
-        scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
-        candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
+        """Loads a data file into a list of input features (token level)"""
+        cohesion_labels: list[list[list[float]]] = []  # (rel, src, tgt)
+        cohesion_mask: list[list[list[bool]]] = []  # (rel, src, tgt)
         assert example.special_token_indexer is not None
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
-                scores, candidates = self._convert_annotation_to_feature(
-                    example.phrases[task],
-                    rel,
-                    example.encoding,
-                    example.special_token_indexer,
+                cohesion_labels.append(
+                    self._convert_annotation_to_rel_labels(
+                        example.phrases[task],
+                        rel,
+                        example.encoding,
+                        example.special_token_indexer,
+                    )
                 )
-                scores_set.append(scores)
-                candidates_set.append(candidates)  # False -> mask, True -> keep
+                cohesion_mask.append(
+                    self._convert_annotation_to_rel_mask(
+                        example.phrases[task],
+                        example.encoding,
+                        example.special_token_indexer,
+                    )
+                )  # False -> mask, True -> keep
 
         assert example.encoding is not None, "encoding isn't set"
 
@@ -375,60 +382,61 @@ class CohesionDataset(BaseDataset):
             attention_mask=merged_encoding.attention_mask,
             token_type_ids=merged_encoding.type_ids,
             source_mask=source_mask,
-            target_mask=candidates_set,
+            target_mask=cohesion_mask,
             source_label=is_analysis_targets,
-            target_label=scores_set,
+            target_label=cohesion_labels,
         )
 
-    def _convert_annotation_to_feature(
+    def _convert_annotation_to_rel_labels(
         self,
         cohesion_base_phrases: list[CohesionBasePhrase],
         rel_type: str,
         encoding: Encoding,
         special_token_indexer: SpecialTokenIndexer,
-    ) -> tuple[list[list[float]], list[list[bool]]]:
-        scores_set: list[list[float]] = [
-            [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
-        ]
-        candidates_set: list[list[bool]] = [
-            [False] * self.max_seq_length for _ in range(self.max_seq_length)
-        ]
-
+    ) -> list[list[float]]:
+        rel_labels = [[0.0] * self.max_seq_length for _ in range(self.max_seq_length)]
         for cohesion_base_phrase in cohesion_base_phrases:
-            scores: list[float] = [0.0] * self.max_seq_length
-            if cohesion_base_phrase.is_target is True:
-                # 学習・解析対象基本句
-                assert cohesion_base_phrase.rel2tags is not None
-                for tag in cohesion_base_phrase.rel2tags[rel_type]:
-                    if tag in self.special_tokens:
-                        token_index = special_token_indexer.get_token_level_index(tag)
-                        scores[token_index] = 1.0
-                    else:
-                        token_index_span: tuple[int, int] = encoding.word_to_tokens(
-                            cohesion_base_phrases[int(tag)].head_morpheme_global_index,
-                        )
-                        # 1.0 for all subwords that compose the target word
-                        for token_index in range(*token_index_span):
-                            scores[token_index] = 1.0
-
-            token_level_candidates: list[bool] = [False] * self.max_seq_length
-            for candidate in cohesion_base_phrase.referent_candidates:
-                token_index_span = encoding.word_to_tokens(
-                    candidate.head_morpheme_global_index
-                )
-                for token_index in range(*token_index_span):
-                    token_level_candidates[token_index] = True
-            for special_token_global_index in special_token_indexer.token_level_indices:
-                token_level_candidates[special_token_global_index] = True
-
-            token_index_span = encoding.word_to_tokens(
+            # use the head subword as the representative of the source word
+            source_index_span = encoding.word_to_tokens(
                 cohesion_base_phrase.head_morpheme_global_index
             )
-            # use the head subword as the representative of the source word
-            scores_set[token_index_span[0]] = scores
-            candidates_set[token_index_span[0]] = token_level_candidates
+            if cohesion_base_phrase.is_target is False:
+                continue
+            # 学習・解析対象基本句
+            assert cohesion_base_phrase.rel2tags is not None
+            for tag in cohesion_base_phrase.rel2tags[rel_type]:
+                if tag in self.special_tokens:
+                    token_index = special_token_indexer.get_token_level_index(tag)
+                    rel_labels[source_index_span[0]][token_index] = 1.0
+                else:
+                    target_index_span: tuple[int, int] = encoding.word_to_tokens(
+                        cohesion_base_phrases[int(tag)].head_morpheme_global_index,
+                    )
+                    for token_index in range(*target_index_span):
+                        rel_labels[source_index_span[0]][token_index] = 1.0
+        return rel_labels
 
-        return scores_set, candidates_set  # token level
+    def _convert_annotation_to_rel_mask(
+        self,
+        cohesion_base_phrases: list[CohesionBasePhrase],
+        encoding: Encoding,
+        special_token_indexer: SpecialTokenIndexer,
+    ) -> list[list[bool]]:
+        rel_mask = [[False] * self.max_seq_length for _ in range(self.max_seq_length)]
+        for cohesion_base_phrase in cohesion_base_phrases:
+            # use the head subword as the representative of the source word
+            source_index_span = encoding.word_to_tokens(
+                cohesion_base_phrase.head_morpheme_global_index
+            )
+            for candidate in cohesion_base_phrase.referent_candidates:
+                target_index_span = encoding.word_to_tokens(
+                    candidate.head_morpheme_global_index
+                )
+                for token_index in range(*target_index_span):
+                    rel_mask[source_index_span[0]][token_index] = True
+            for special_token_global_index in special_token_indexer.token_level_indices:
+                rel_mask[source_index_span[0]][special_token_global_index] = True
+        return rel_mask
 
     def __len__(self) -> int:
         return len(self.examples)
