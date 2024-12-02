@@ -121,7 +121,16 @@ class MMRefDataset(BaseDataset):
         self.iou_mapper = h5py.File(
             Path(object_file_root) / f"{object_file_name}_iou_mapper.h5", "r"
         )
+
         self.pad_mask = ObjectFeature(feature=torch.zeros(self.object_hidden_size))
+        self.special_encoding: Encoding = self.tokenizer(
+            self.special_tokens,
+            is_split_into_words=True,
+            padding=PaddingStrategy.DO_NOT_PAD,
+            truncation=False,
+            add_special_tokens=False,
+        ).encodings[0]
+
         try:
             self.examples: list[MMRefExample] = self._load_examples_per_frame(
                 image_text_annotations, sid2knp_sentence
@@ -132,14 +141,6 @@ class MMRefDataset(BaseDataset):
         finally:
             self.objects.close()
             self.iou_mapper.close()
-
-        self.special_encoding: Encoding = self.tokenizer(
-            self.special_tokens,
-            is_split_into_words=True,
-            padding=PaddingStrategy.DO_NOT_PAD,
-            truncation=False,
-            add_special_tokens=False,
-        ).encodings[0]
 
     @staticmethod
     def _load_visual_annotation(
@@ -274,7 +275,21 @@ class MMRefDataset(BaseDataset):
     ) -> list[MMRefExample]:
         filtered = []
         for idx, example in enumerate(examples):
-            phrases = example.phrases[self.tasks[0]]
+            phrases = next(iter(example.phrases.values()))
+            morphemes = [
+                morpheme for phrase in phrases for morpheme in phrase.morphemes
+            ]
+            encoding: Encoding = self.tokenizer(
+                " ".join(morphemes),
+                is_split_into_words=False,
+                padding=PaddingStrategy.MAX_LENGTH,
+                truncation=False,
+                max_length=self.max_seq_length - len(self.special_tokens),
+            ).encodings[0]
+            if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
+                continue
+            example.encoding = encoding
+            example.example_id = idx
 
             # truncate candidates
             if len(example.candidates) > self.max_seq_length:
@@ -286,19 +301,6 @@ class MMRefDataset(BaseDataset):
             if len(example.candidates) < self.max_seq_length:
                 example.candidates = self._pad_candidates(example.candidates)
 
-            encoding: Encoding = self.tokenizer(
-                " ".join(
-                    [morpheme for phrase in phrases for morpheme in phrase.morphemes],
-                ),
-                is_split_into_words=False,
-                padding=PaddingStrategy.MAX_LENGTH,
-                truncation=False,
-                max_length=self.max_seq_length - len(self.special_tokens),
-            ).encodings[0]
-            if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
-                continue
-            example.encoding = encoding
-            example.example_id = idx
             filtered.append(example)
         return filtered
 

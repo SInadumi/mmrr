@@ -114,10 +114,6 @@ class CohesionDataset(BaseDataset):
                 }
             )
 
-        self.examples: list[KyotoExample] = self._load_examples(
-            self.documents, str(data_path)
-        )
-
         self.special_encoding: Encoding = self.tokenizer(
             self.special_tokens,
             is_split_into_words=True,
@@ -125,6 +121,10 @@ class CohesionDataset(BaseDataset):
             truncation=False,
             add_special_tokens=False,
         ).encodings[0]
+
+        self.examples: list[KyotoExample] = self._load_examples(
+            self.documents, str(data_path)
+        )
 
     # getter for knp documents
     @property
@@ -221,10 +221,11 @@ class CohesionDataset(BaseDataset):
         filtered = []
         for example in examples:
             phrases = next(iter(example.phrases.values()))
+            morphemes = [
+                morpheme for phrase in phrases for morpheme in phrase.morphemes
+            ]
             encoding: Encoding = self.tokenizer(
-                " ".join(
-                    [morpheme for phrase in phrases for morpheme in phrase.morphemes]
-                ),
+                " ".join(morphemes),
                 is_split_into_words=False,
                 padding=PaddingStrategy.MAX_LENGTH,
                 truncation=False,
