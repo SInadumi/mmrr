@@ -66,10 +66,6 @@ class MMRefDataset(BaseDataset):
         ]
         self.special_tokens: list[str] = list(special_tokens)
         self.cases = list(cases)
-        self.special_to_index: dict[str, int] = {
-            token: max_seq_length - len(self.special_tokens) + i
-            for i, token in enumerate(self.special_tokens)
-        }
         self.max_seq_length = max_seq_length
         self.object_hidden_size = object_hidden_size
         self.dataset_name = self.data_path.parts[-2]
