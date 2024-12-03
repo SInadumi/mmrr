@@ -409,11 +409,29 @@ class MMRefDataset(BaseDataset):
             input_ids=merged_encoding.ids,
             attention_mask=merged_encoding.attention_mask,
             token_type_ids=merged_encoding.type_ids,
+            subword_map=self._generate_subword_map(
+                merged_encoding.word_ids, example.encoding
+            ),
             vis_embeds=vis_embeds,
             vis_attention_mask=vis_attention_mask,
             target_mask=candidates_set,
             target_label=scores_set,
         )
+
+    def _generate_subword_map(
+        self,
+        word_ids: list[Union[int, None]],
+        encoding: Encoding,
+    ) -> list[list[bool]]:  # (seq, seq):
+        subword_map = [
+            [False] * self.max_seq_length for _ in range(self.max_seq_length)
+        ]
+        for token_index, word_id in enumerate(word_ids):
+            if word_id is None:
+                continue
+            for token_id in range(*encoding.word_to_tokens(word_id)):
+                subword_map[token_index][token_id] = True
+        return subword_map
 
     def _convert_annotation_to_feature(
         self,

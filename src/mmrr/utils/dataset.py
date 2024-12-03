@@ -63,6 +63,7 @@ class MMRefInputFeatures:
     input_ids: list[int]
     attention_mask: list[bool]
     token_type_ids: list[int]
+    subword_map: list[list[bool]]
     vis_embeds: torch.Tensor
     vis_attention_mask: list[bool]
     target_mask: list[list[list[bool]]]
