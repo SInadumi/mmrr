@@ -13,8 +13,6 @@ from mmrr.modules.model.loss import cross_entropy_loss
 
 from .base import BaseModule
 
-IGNORE_INDEX = -100
-
 
 class MMRefModule(BaseModule[MMRefMetric]):
     def __init__(self, hparams: DictConfig):
