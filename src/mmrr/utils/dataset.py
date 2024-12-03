@@ -37,6 +37,7 @@ class CohesionInputFeatures:
     input_ids: list[int]
     attention_mask: list[bool]
     token_type_ids: list[int]
+    subword_map: list[list[bool]]
     source_mask: list[bool]
     target_mask: list[list[list[bool]]]
     source_label: list[list[int]]

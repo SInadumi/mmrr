@@ -382,11 +382,39 @@ class CohesionDataset(BaseDataset):
             input_ids=merged_encoding.ids,
             attention_mask=merged_encoding.attention_mask,
             token_type_ids=merged_encoding.type_ids,
+            subword_map=self._generate_subword_map(
+                merged_encoding.word_ids,
+                example.encoding,
+                example.special_token_indexer,
+            ),
             source_mask=source_mask,
             target_mask=cohesion_mask,
             source_label=source_label,
             target_label=cohesion_labels,
         )
+
+    def _generate_subword_map(
+        self,
+        word_ids: list[Union[int, None]],
+        encoding: Encoding,
+        special_token_indexer: SpecialTokenIndexer,
+        include_special_tokens: bool = True,
+    ) -> list[list[bool]]:  # (seq, seq)
+        subword_map = [
+            [False] * self.max_seq_length for _ in range(self.max_seq_length)
+        ]
+        for token_index, word_id in enumerate(word_ids):
+            if (
+                word_id is None
+                or token_index in special_token_indexer.token_level_indices
+            ):
+                continue
+            for token_id in range(*encoding.word_to_tokens(word_id)):
+                subword_map[token_index][token_id] = True
+        if include_special_tokens is True:
+            for token_index in special_token_indexer.token_level_indices:
+                subword_map[token_index][token_index] = True
+        return subword_map
 
     def _convert_annotation_to_rel_labels(
         self,
