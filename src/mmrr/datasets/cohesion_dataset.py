@@ -354,16 +354,17 @@ class CohesionDataset(BaseDataset):
             for token_index in range(*example.encoding.word_to_tokens(global_index)):
                 source_mask[token_index] = True
 
-        is_analysis_targets: list[list[int]] = []  # (task, src)
-        for task in self.tasks:
-            is_targets: list[int] = [IGNORE_INDEX] * self.max_seq_length
+        source_label: list[list[int]] = [
+            [IGNORE_INDEX] * self.max_seq_length for _ in range(len(self.tasks))
+        ]  # (task, src)
+        for task_index, task in enumerate(self.tasks):
             for phrase in example.phrases[task]:
                 token_index_span: tuple[int, int] = example.encoding.word_to_tokens(
                     phrase.head_morpheme_global_index
                 )
                 for token_index in range(*token_index_span):
-                    is_targets[token_index] = int(phrase.is_target)
-            is_analysis_targets.append(is_targets)
+                    source_label[task_index][token_index] = int(phrase.is_target)
+
         padding_encoding: Encoding = self.tokenizer(
             "",
             add_special_tokens=False,
@@ -383,7 +384,7 @@ class CohesionDataset(BaseDataset):
             token_type_ids=merged_encoding.type_ids,
             source_mask=source_mask,
             target_mask=cohesion_mask,
-            source_label=is_analysis_targets,
+            source_label=source_label,
             target_label=cohesion_labels,
         )
 
