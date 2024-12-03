@@ -16,6 +16,7 @@ class ProbabilityJsonWriter:
         self.rel_types: list[str] = dataset.rel_types
         self.tasks: list[Task] = dataset.tasks
         self.task_to_rels: dict[Task, list[str]] = dataset.task_to_rels
+        self.clipping_threshold: float = 0.0  # HACK
 
     def write_sentence_predictions(
         self,
@@ -83,7 +84,7 @@ class ProbabilityJsonWriter:
                         if mmref_base_phrase.rel2tags.get(rel_type) is None:
                             continue
                         candidate_predictions: list[ObjectFeature] = (
-                            self.update_object_features(
+                            self._update_object_features(
                                 example.candidates,
                                 rel_type_to_candidate[rel_type],
                                 rel_type_to_probability[rel_type],
@@ -116,8 +117,8 @@ class ProbabilityJsonWriter:
 
         return phrase_predictions
 
-    @staticmethod
-    def update_object_features(
+    def _update_object_features(
+        self,
         object_annotations: list[ObjectFeature],
         candidates: list[int],
         probabilities: list[float],
@@ -127,6 +128,6 @@ class ProbabilityJsonWriter:
             prediction: ObjectFeature = object_annotations[candidate_idx]
             prediction.confidence = prob
             # HACK: clipping
-            if prob > 0.01:
+            if prob > self.clipping_threshold:
                 object_predictions.append(prediction)
         return object_predictions
