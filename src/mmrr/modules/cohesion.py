@@ -15,6 +15,7 @@ from mmrr.modules.model.loss import (
     binary_cross_entropy_with_logits,
     cross_entropy_loss,
 )
+from mmrr.modules.model.pooling import PoolingStrategy, pool_subwords
 from mmrr.utils.util import IGNORE_INDEX
 
 from .base import BaseModule
@@ -60,8 +61,11 @@ class CohesionModule(BaseModule[CohesionMetric]):
             attention_mask=batch["attention_mask"],
             token_type_ids=batch["token_type_ids"],
         ).last_hidden_state  # (b, seq) -> (b, seq, hid)
-        relation_logits = self.relation_classifier(encoded)
-        source_mask_logits = self.analysis_target_classifier(encoded)
+        pooled = pool_subwords(
+            encoded, batch["subword_map"], PoolingStrategy.FIRST
+        )  # (b, seq, hid)
+        relation_logits = self.relation_classifier(pooled)
+        source_mask_logits = self.analysis_target_classifier(pooled)
         return {
             "relation_logits": relation_logits.masked_fill(
                 ~batch["target_mask"], -1024.0

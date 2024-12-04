@@ -10,6 +10,7 @@ from typing_extensions import override
 
 from mmrr.metrics import MMRefMetric
 from mmrr.modules.model.loss import cross_entropy_loss
+from mmrr.modules.model.pooling import PoolingStrategy, pool_subwords
 
 from .base import BaseModule
 
@@ -44,8 +45,11 @@ class MMRefModule(BaseModule[MMRefMetric]):
             attention_mask=batch["attention_mask"],
             token_type_ids=batch["token_type_ids"],
         ).last_hidden_state  # (b, seq) -> (b, seq, hid)
+        pooled_text = pool_subwords(
+            encoded_text, batch["subword_map"], PoolingStrategy.FIRST
+        )
         relation_logits = self.relation_classifier(
-            source_hidden_state=encoded_text, target_hidden_state=batch["vis_embeds"]
+            source_hidden_state=pooled_text, target_hidden_state=batch["vis_embeds"]
         )
         return {
             "relation_logits": relation_logits.masked_fill(
