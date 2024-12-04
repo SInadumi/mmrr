@@ -17,11 +17,19 @@ ExampleType = Union[KyotoExample, MMRefExample]
 class BaseDataset(torch.utils.data.Dataset):
     def __init__(
         self,
+        dataset_path: Path,
+        data_path: Path,
+        cases: list[str],
+        max_seq_length: int,
         tasks: list[Task],
         tokenizer: PreTrainedTokenizerBase,
         training: bool,
     ):
         super().__init__()
+        self.dataset_path = dataset_path
+        self.data_path = data_path
+        self.cases = cases
+        self.max_seq_length = max_seq_length
         self.tasks = tasks
         self.tokenizer: PreTrainedTokenizerBase = tokenizer
         self.training: bool = training

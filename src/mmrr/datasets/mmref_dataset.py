@@ -53,18 +53,18 @@ class MMRefDataset(BaseDataset):
         training: bool,
     ) -> None:
         super().__init__(
+            dataset_path=Path(dataset_path),
+            data_path=Path(data_path),
+            cases=list(cases),
+            max_seq_length=max_seq_length,
             tasks=[Task(task) for task in tasks],
             tokenizer=tokenizer,
             training=training,
         )
 
-        self.dataset_path = Path(dataset_path)
-        self.data_path = Path(data_path)
         self.exophora_referents: list[ExophoraReferent] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
-        self.cases = list(cases)
-        self.max_seq_length = max_seq_length
         self.object_hidden_size = object_hidden_size
         self.dataset_name = self.data_path.parts[-2]
 

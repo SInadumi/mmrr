@@ -55,20 +55,20 @@ class CohesionDataset(BaseDataset):
         flip_reader_writer: bool,
     ) -> None:
         super().__init__(
+            dataset_path=Path(dataset_path),
+            data_path=Path(data_path),
+            cases=list(cases),
+            max_seq_length=max_seq_length,
             tasks=[Task(task) for task in tasks],
             tokenizer=tokenizer,
             training=training,
         )
 
-        self.dataset_path = Path(dataset_path)
-        self.data_path = Path(data_path)
         self.exophora_referents: list[ExophoraReferent] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
         self.special_tokens: list[str] = list(special_tokens)
-        self.cases: list[str] = list(cases)
         self.bar_rels: list[str] = list(bar_rels)
-        self.max_seq_length = max_seq_length
         self.flip_reader_writer: bool = flip_reader_writer
         self.is_jcre3_dataset = self.data_path.parts[-2] == "jcre3"
 
