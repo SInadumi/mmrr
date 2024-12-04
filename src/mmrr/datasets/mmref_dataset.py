@@ -20,8 +20,7 @@ from transformers import PreTrainedTokenizerBase
 from transformers.file_utils import PaddingStrategy
 
 from mmrr.datamodule.example import MMRefExample
-from mmrr.tools.extractors import MMRefExtractor
-from mmrr.tools.extractors.base import BaseExtractor
+from mmrr.tools.extractors import BaseExtractor, MMRefExtractor
 from mmrr.tools.task import Task
 from mmrr.utils.annotation import ImageTextAnnotation, SentenceAnnotation
 from mmrr.utils.dataset import (

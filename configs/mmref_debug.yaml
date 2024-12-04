@@ -21,7 +21,7 @@ source_checkpoint: "" # specify trained cohesion model
 
 # experimental settings
 cases: ["ガ", "ヲ", "ニ"]
-exophora_referents:
+exophora_referents: # same as `source_checkpoint`
   - 著者
   - 読者
   - 不特定:人

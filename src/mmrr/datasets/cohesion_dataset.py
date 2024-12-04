@@ -17,11 +17,11 @@ from transformers.file_utils import PaddingStrategy
 
 from mmrr.datamodule.example import KyotoExample, SpecialTokenIndexer
 from mmrr.tools.extractors import (
+    BaseExtractor,
     BridgingExtractor,
     CoreferenceExtractor,
     PasExtractor,
 )
-from mmrr.tools.extractors.base import BaseExtractor
 from mmrr.tools.task import Task
 from mmrr.utils.annotation import DatasetInfo
 from mmrr.utils.dataset import CohesionBasePhrase, CohesionInputFeatures

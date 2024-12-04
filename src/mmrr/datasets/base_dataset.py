@@ -31,8 +31,8 @@ class BaseDataset(torch.utils.data.Dataset):
         self.cases = cases
         self.max_seq_length = max_seq_length
         self.tasks = tasks
-        self.tokenizer: PreTrainedTokenizerBase = tokenizer
-        self.training: bool = training
+        self.tokenizer = tokenizer
+        self.training = training
 
     @staticmethod
     def load_documents(document_path: Path, ext: str = "knp") -> list[Document]:
