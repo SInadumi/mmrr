@@ -50,7 +50,6 @@ class MMRefDataset(BaseDataset):
         tokenizer: PreTrainedTokenizerBase,
         exophora_referents: ListConfig,
         include_nonidentical: bool,
-        special_tokens: ListConfig,
         training: bool,
     ) -> None:
         super().__init__(
@@ -64,7 +63,6 @@ class MMRefDataset(BaseDataset):
         self.exophora_referents: list[ExophoraReferent] = [
             ExophoraReferent(s) for s in exophora_referents
         ]
-        self.special_tokens: list[str] = list(special_tokens)
         self.cases = list(cases)
         self.max_seq_length = max_seq_length
         self.object_hidden_size = object_hidden_size
@@ -113,15 +111,7 @@ class MMRefDataset(BaseDataset):
         self.iou_mapper = h5py.File(
             Path(object_file_root) / f"{object_file_name}_iou_mapper.h5", "r"
         )
-
         self.pad_mask = ObjectFeature(feature=torch.zeros(self.object_hidden_size))
-        self.special_encoding: Encoding = self.tokenizer(
-            self.special_tokens,
-            is_split_into_words=True,
-            padding=PaddingStrategy.DO_NOT_PAD,
-            truncation=False,
-            add_special_tokens=False,
-        ).encodings[0]
 
         try:
             self.examples: list[MMRefExample] = self._load_examples_per_frame(
@@ -277,7 +267,7 @@ class MMRefDataset(BaseDataset):
                 padding=PaddingStrategy.DO_NOT_PAD,
                 truncation=False,
             ).encodings[0]
-            if len(encoding.ids) > self.max_seq_length - len(self.special_tokens):
+            if len(encoding.ids) > self.max_seq_length:
                 continue
             example.encoding = encoding
             example.example_id = idx
@@ -378,13 +368,9 @@ class MMRefDataset(BaseDataset):
             add_special_tokens=False,
             padding=PaddingStrategy.MAX_LENGTH,
             truncation=False,
-            max_length=self.max_seq_length
-            - len(example.encoding.ids)
-            - len(self.special_tokens),
+            max_length=self.max_seq_length - len(example.encoding.ids),
         ).encodings[0]
-        merged_encoding: Encoding = Encoding.merge(
-            [example.encoding, self.special_encoding, padding_encoding]
-        )
+        merged_encoding: Encoding = Encoding.merge([example.encoding, padding_encoding])
 
         """Convert example to visual feature"""
         vis_embeds_list: list[torch.Tensor] = []
