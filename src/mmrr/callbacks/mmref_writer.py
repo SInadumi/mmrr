@@ -24,11 +24,13 @@ class MMRefWriter(BasePredictionWriter):
         self,
         prediction_destination: Union[Path, TextIO, None] = None,
         json_destination: Union[Path, TextIO, None] = None,
+        clipping_threshold: float = 0.0,
     ) -> None:
         super().__init__(write_interval="epoch")
 
         self.prediction_destination: Union[Path, TextIO, None] = prediction_destination
         self.json_destination: Union[Path, TextIO, None] = json_destination
+        self.clipping_threshold = clipping_threshold
         for dest in (self.prediction_destination, self.json_destination):
             if dest is None:
                 continue
@@ -60,7 +62,7 @@ class MMRefWriter(BasePredictionWriter):
     ) -> None:
         dataset: Dataset = trainer.predict_dataloaders.dataset  # type: ignore
         assert isinstance(dataset, MMRefDataset)
-        json_writer = ProbabilityJsonWriter(dataset)
+        json_writer = ProbabilityJsonWriter(dataset, clipping_threshold=self.clipping_threshold)
         for pred in predictions:
             batch_example_ids = pred["example_ids"]  # (b)
             batch_relation_logits = pred["relation_logits"]  # (b, rel, seq, seq)

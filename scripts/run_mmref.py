@@ -37,7 +37,8 @@ class Analyzer:
             checkpoint_path=hydra.utils.to_absolute_path(cfg.checkpoint),
             map_location=self.device,
         )
-        cfg_train: DictConfig = self.model.hparams
+        cfg_train = self.model.hparams
+        assert isinstance(cfg_train, DictConfig)
         OmegaConf.set_struct(cfg_train, False)  # enable to add new key-value pairs
         self.cfg = OmegaConf.merge(cfg_train, cfg)
         assert isinstance(self.cfg, DictConfig)
@@ -45,7 +46,7 @@ class Analyzer:
         callbacks: list[Callback] = list(
             map(hydra.utils.instantiate, self.cfg.get("callbacks", {}).values())
         )
-        self.prediction_writer = MMRefWriter()
+        self.prediction_writer = MMRefWriter(clipping_threshold=self.cfg.clipping_threshold)
 
         # Instantiate lightning trainer
         self.trainer: pl.Trainer = hydra.utils.instantiate(

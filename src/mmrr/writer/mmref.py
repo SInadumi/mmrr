@@ -12,11 +12,11 @@ from mmrr.utils.prediction import (
 
 
 class ProbabilityJsonWriter:
-    def __init__(self, dataset: MMRefDataset) -> None:
+    def __init__(self, dataset: MMRefDataset, clipping_threshold: float=0.0) -> None:
         self.rel_types: list[str] = dataset.rel_types
         self.tasks: list[Task] = dataset.tasks
         self.task_to_rels: dict[Task, list[str]] = dataset.task_to_rels
-        self.clipping_threshold: float = 0.0  # HACK
+        self.clipping_threshold: float = clipping_threshold
 
     def write_sentence_predictions(
         self,

@@ -9,6 +9,7 @@ input_dir: null
 # File dir/name of the object features (xxx.h5 and xxx_mapper.h5)
 object_file_root: null
 object_file_name: null
+clipping_threshold: 0.01 # threshold for candidate probabilities
 
 # Directory where analyzed knp files are exported.
 export_dir: null
