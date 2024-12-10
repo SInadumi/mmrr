@@ -49,7 +49,7 @@ class ProbabilityJsonWriter:
         self.rel_types: list[str] = dataset.rel_types
         self.documents: list[Document] = dataset.documents
         self.special_tokens: list[str] = dataset.special_tokens
-        self.num_special_tokens = dataset.num_special_tokens
+        self.num_special_tokens = len(self.special_tokens)
 
     def write(
         self,
