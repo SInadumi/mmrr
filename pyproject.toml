@@ -32,7 +32,6 @@ doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 
 [tool.mypy]
 python_version = 3.9
-signore_missing_imports = true
 
 [tool.poetry]
 name = "mmrr"
