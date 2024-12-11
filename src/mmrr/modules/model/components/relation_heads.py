@@ -3,7 +3,11 @@ import math
 import torch
 from torch import nn
 
-from mmrr.modules.model.components.modules import LoRADelta, Mlp
+from mmrr.modules.model.components.modules import (
+    GroundingDinoDecoderLayer,
+    LoRADelta,
+    Mlp,
+)
 from mmrr.modules.model.dist import calc_4d_dot_product
 
 
@@ -255,5 +259,83 @@ class LoRARelationWiseObjectSelectionHeads(nn.Module):
 
         relation_logits = calc_4d_dot_product(
             source_out.permute(0, 2, 1, 3), target_out.permute(0, 2, 1, 3)
+        )
+        return relation_logits
+
+
+class GroundingDinoMMRefHeads(nn.Module):
+    def __init__(
+        self,
+        num_relations: int,
+        hidden_dropout_prob: float,
+        source_hidden_size: int,
+        target_hidden_size: int,
+        decoder_attention_heads: int = 8,
+        layer_norm_eps: float = 1e-6,
+        num_layers: int = 2,
+        rank: int = 2,
+    ) -> None:
+        super().__init__()
+        self.output_size = source_hidden_size
+        self.l_source = nn.Linear(source_hidden_size, self.output_size)
+        self.l_target = nn.Linear(target_hidden_size, self.output_size)
+        self.delta_source = LoRADelta(
+            num_labels=num_relations,
+            input_hidden_size=self.output_size,
+            output_hidden_size=self.output_size,
+            rank=rank,
+        )
+        self.delta_target = LoRADelta(
+            num_labels=num_relations,
+            input_hidden_size=self.output_size,
+            output_hidden_size=self.output_size,
+            rank=rank,
+        )
+        self.layers = nn.ModuleList(
+            [
+                GroundingDinoDecoderLayer(
+                    d_model=self.output_size,
+                    decoder_attention_heads=decoder_attention_heads,
+                    dropout=hidden_dropout_prob,
+                    layer_norm_eps=layer_norm_eps
+                )
+                for _ in range(num_layers)
+            ]
+        )
+        self.layer_norm = nn.LayerNorm(self.output_size, layer_norm_eps)
+
+    def forward(
+        self,
+        source_hidden_state: torch.Tensor,  # (b, seq, hid_source) # tokens
+        target_hidden_state: torch.Tensor,  # (b, seq, hid_target) # candidates
+    ) -> torch.Tensor:  # (b, rel, seq, seq)
+        h_source = self.l_source(source_hidden_state)
+        h_target = self.l_target(target_hidden_state)   # -> (b, seq, hid_source)
+
+        hidden_states = h_target
+        for decoder_layer in self.layers:
+            layer_outputs = decoder_layer(
+                vision_encoder_hidden_states=hidden_states,
+                text_encoder_hidden_states=h_source,
+                output_attentions=True,
+            )
+            hidden_states = self.layer_norm(layer_outputs[0])
+
+        delta_source_out = torch.einsum(
+            "bsh,hil->bsli", source_hidden_state, self.delta_source()
+        )  # (b, seq, hid_source) -> (b, seq, rel, hid_source)
+        source_out = (
+            h_source.unsqueeze(2) + delta_source_out
+        )  # (b, seq, rel, hid_source)
+        delta_target_out = torch.einsum(
+            "bsh,hil->bsli", hidden_states, self.delta_target()
+        )  # (b, seq, hid_target) -> (b, seq, rel, hid_source)
+        target_out = (
+            hidden_states.unsqueeze(2) + delta_target_out
+        )  # (b, seq, rel, hid_source)
+
+        relation_logits = calc_4d_dot_product(
+            source_out.permute(0, 2, 1, 3),
+            target_out.permute(0, 2, 1, 3),
         )
         return relation_logits

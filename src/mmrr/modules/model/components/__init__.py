@@ -4,6 +4,7 @@ from .binary_heads import (
 )
 from .relation_heads import (
     CAModelHeads,
+    GroundingDinoMMRefHeads,
     KWJAHeads,
     LoRARelationWiseObjectSelectionHeads,
     LoRARelationWiseWordSelectionHead,
@@ -20,4 +21,5 @@ __all__ = [
     "LoRARelationWiseObjectSelectionHeads",
     "KWJAHeads",
     "CAModelHeads",
+    "GroundingDinoMMRefHeads",
 ]

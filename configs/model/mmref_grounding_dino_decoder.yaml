@@ -1,0 +1,11 @@
+defaults:
+  - base.yaml
+
+relation_head:
+  _target_: mmrr.modules.model.components.GroundingDinoMMRefHeads
+  hidden_dropout_prob: 0.1
+  target_hidden_size: ${object_hidden_size}
+  decoder_attention_heads: 8
+  layer_norm_eps: 1e-6
+  num_layers: 2
+  rank: 2
