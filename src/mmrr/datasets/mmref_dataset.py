@@ -379,15 +379,20 @@ class MMRefDataset(BaseDataset):
             vis_attention_mask.append(True if candidate.class_id != -1 else False)
         vis_embeds = torch.stack(vis_embeds_list)  # -> torch.Tensor
 
-        scores_set: list[list[list[float]]] = []  # (rel, src, tgt)
-        candidates_set: list[list[list[bool]]] = []  # (rel, src, tgt)
+        mmref_mask: list[list[list[bool]]] = []  # (rel, src, tgt)
+        mmref_label: list[list[list[float]]] = []  # (rel, src, tgt)
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
-                scores, candidates = self._convert_annotation_to_feature(
-                    example.phrases[task], rel, example.encoding
+                mmref_mask.append(
+                    self._convert_annotation_to_rel_mask(
+                        example.phrases[task], example.encoding, example.candidates
+                    )
                 )
-                scores_set.append(scores)
-                candidates_set.append(candidates)
+                mmref_label.append(
+                    self._convert_annotation_to_rel_labels(
+                        example.phrases[task], rel, example.encoding
+                    )
+                )
 
         return MMRefInputFeatures(
             example_id=example.example_id,
@@ -399,8 +404,8 @@ class MMRefDataset(BaseDataset):
             ),
             vis_embeds=vis_embeds,
             vis_attention_mask=vis_attention_mask,
-            target_mask=candidates_set,
-            target_label=scores_set,
+            target_mask=mmref_mask,
+            target_label=mmref_label,
         )
 
     def _generate_subword_map(
@@ -418,33 +423,49 @@ class MMRefDataset(BaseDataset):
                 subword_map[token_index][token_id] = True
         return subword_map
 
-    def _convert_annotation_to_feature(
+    def _convert_annotation_to_rel_labels(
         self,
         mmref_base_phrases: list[MMRefBasePhrase],
         rel_type: str,
         encoding: Encoding,
-    ) -> tuple[list[list[float]], list[list[bool]]]:
-        scores_set: list[list[float]] = [
+    ) -> list[list[float]]:
+        rel_labels: list[list[float]] = [
             [0.0] * self.max_seq_length for _ in range(self.max_seq_length)
-        ]  # (src, tgt)
-        candidates_set: list[list[bool]] = [
-            [False] * self.max_seq_length for _ in range(self.max_seq_length)
         ]  # (src, tgt)
 
         for mmref_base_phrase in mmref_base_phrases:
             token_index_span = encoding.word_to_tokens(
                 mmref_base_phrase.head_morpheme_global_index
             )
-            if mmref_base_phrase.is_target is True:
-                assert mmref_base_phrase.rel2tags is not None
-                # 学習・解析対象基本句
-                for cid in mmref_base_phrase.rel2tags.get(rel_type, []):
-                    assert cid < self.max_seq_length
-                    # use the head subword as the representative of the source word
-                    scores_set[token_index_span[0]][cid] = 1.0
-                    candidates_set[token_index_span[0]][cid] = True
+            if mmref_base_phrase.is_target is False:
+                continue
+            assert mmref_base_phrase.rel2tags is not None
+            # 学習・解析対象基本句
+            for cid in mmref_base_phrase.rel2tags.get(rel_type, []):
+                assert cid < self.max_seq_length
+                # use the head subword as the representative of the source word
+                rel_labels[token_index_span[0]][cid] = 1.0
 
-        return scores_set, candidates_set
+        return rel_labels
+
+    def _convert_annotation_to_rel_mask(
+        self,
+        mmref_base_phrases: list[MMRefBasePhrase],
+        encoding: Encoding,
+        candidates: list[ObjectFeature]
+    ) -> list[list[bool]]:
+        rel_mask: list[list[bool]] = [
+            [False] * self.max_seq_length for _ in range(self.max_seq_length)
+        ]  # (src, tgt)
+        for mmref_base_phrase in mmref_base_phrases:
+            token_index_span = encoding.word_to_tokens(
+                mmref_base_phrase.head_morpheme_global_index
+            )
+            for idx, candidate in enumerate(candidates):
+                if candidate.class_id != IGNORE_ID:
+                    # use the head subword as the representative of the source word
+                    rel_mask[token_index_span[0]][idx] = True
+        return rel_mask
 
     def __len__(self) -> int:
         return len(self.examples)

@@ -50,7 +50,7 @@ class MMRefModule(BaseModule[MMRefMetric]):
         )
         return {
             "relation_logits": relation_logits.masked_fill(
-                ~batch["vis_attention_mask"].unsqueeze(1).unsqueeze(2), -1024.0
+                ~batch["target_mask"], -1024.0
             ),
         }
 
