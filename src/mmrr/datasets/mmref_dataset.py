@@ -383,6 +383,11 @@ class MMRefDataset(BaseDataset):
         mmref_label: list[list[list[float]]] = []  # (rel, src, tgt)
         for task in self.tasks:
             for rel in self.task_to_rels[task]:
+                if task != Task.MM_COREFERENCE_RESOLUTION and self.dataset_name == "f30k_ent_jp":
+                    # HACK: flickr30k entities jp では間接参照に係る loss を計算しない
+                    mmref_mask.append([[False] * self.max_seq_length for _ in range(self.max_seq_length)])
+                    mmref_label.append([[0.0] * self.max_seq_length for _ in range(self.max_seq_length)])
+                    continue
                 mmref_mask.append(
                     self._convert_annotation_to_rel_mask(
                         example.phrases[task], example.encoding, example.candidates
