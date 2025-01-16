@@ -18,7 +18,7 @@ config_name: ${hydra:job.config_name}
 name: ${config_name}-${hydra:job.override_dirname}
 
 exp_dir: ${save_dir}/${name}
-run_id: ${now:%m%d}_${now:%H%M%S}
+run_id: ${now:%m%d}_${now:%H%M%S}_seed-${seed}
 run_dir: ${exp_dir}/${run_id}
 
 keys_to_resolve:

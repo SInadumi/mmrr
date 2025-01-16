@@ -22,7 +22,7 @@ document_split_stride: 2
 analysis_target_threshold: 0.3
 
 # experimental settings
-cases: ["ガ", "ヲ", "ニ", "ガ２", "デ", "ト", "カラ", "マデ"]
+cases: ["ガ", "ヲ", "ニ", "デ"]
 bar_rels: ["ノ"]
 exophora_referents:
   - 著者

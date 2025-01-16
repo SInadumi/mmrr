@@ -20,7 +20,7 @@ target_checkpoint: "" # path to trained checkpoint
 source_checkpoint: "" # specify trained cohesion model
 
 # experimental settings
-cases: ["ガ", "ヲ", "ニ"]
+cases: ["ガ", "ヲ", "ニ", "デ", "ノ"]
 exophora_referents: # same as `source_checkpoint`
   - 著者
   - 読者
