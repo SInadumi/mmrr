@@ -129,8 +129,14 @@ class MMRefScore:
             sep: 区切り文字 (default: ',')
         """
         result_dict = self.to_dict()
+        assert set(["mm_pas", "mm_coreference"]) & set(result_dict.keys())
+
         text = "task" + sep
-        columns: list[str] = list(result_dict["pas"].keys())
+        columns: list[str]
+        if "mm_pas" in result_dict:
+            columns = list(result_dict["mm_pas"].keys())
+        else:
+            columns = list(result_dict["mm_coreference"].keys())
         text += sep.join(columns) + "\n"
         for task, measures in result_dict.items():
             text += task + sep

@@ -191,8 +191,14 @@ class CohesionScore:
             sep: 区切り文字 (default: ',')
         """
         result_dict = self.to_dict()
+        assert set(["coreference", "pas", "bridging"]) & set(result_dict.keys())
+
         text = "task" + sep
-        columns: list[str] = list(result_dict["pas"].keys())
+        columns: list[str]
+        if "pas" in result_dict or "bridging" in result_dict:
+            columns = list(result_dict["pas"].keys())
+        else:
+            columns = list(result_dict["coreference"].keys())
         text += sep.join(columns) + "\n"
         for task, measures in result_dict.items():
             text += task + sep
