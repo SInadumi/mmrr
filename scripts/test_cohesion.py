@@ -13,7 +13,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from mmrr.callbacks import CohesionWriter
 from mmrr.datamodule.multitask_datamodule import MTDataModule
-from mmrr.datasets.cohesion_dataset import CohesionDataset
+from mmrr.datasets import CohesionDataset
 from mmrr.modules import CohesionModule
 from mmrr.utils.util import current_datetime_string
 from utils import save_prediction, save_results
