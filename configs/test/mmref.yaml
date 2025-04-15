@@ -1,0 +1,17 @@
+defaults:
+  - _self_
+
+checkpoint: null # path to trained checkpoint
+eval_set: test # or valid
+
+clipping_threshold: 0.0 # threshold for candidate probabilities
+
+eval_dir: ${run_dir}/eval_${eval_set}
+pred_dir: ${run_dir}/pred_${eval_set}
+gold_dir: ${run_dir}/gold_${eval_set}
+
+# environment-dependent settings
+devices: ${oc.env:DEVICES,1}
+max_batches_per_device: ${oc.env:MAX_BATCHES_PER_DEVICE,4}
+num_workers: ${oc.env:NUM_WORKERS,4}
+compile: ${oc.env:COMPILE,false}
