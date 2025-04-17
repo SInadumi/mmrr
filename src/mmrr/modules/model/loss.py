@@ -3,7 +3,8 @@ from typing import Optional
 import torch
 
 eps = 1e-6
-
+focal_alpha = -1
+focal_gamma = 2.0
 
 # softmax cross entropy loss
 def cross_entropy_loss(
@@ -25,6 +26,22 @@ def binary_cross_entropy_with_logits(
     losses = torch.nn.functional.binary_cross_entropy_with_logits(
         output, target.float(), reduction="none"
     )  # (b, seq, seq)
+    # reduce using masked mean
+    return torch.sum(losses * mask).div(torch.sum(mask) + eps)
+
+
+def sigmoid_focal_loss(
+    output: torch.Tensor, # (b, rel, seq, seq)
+    target: torch.Tensor, # (b, rel, seq, seq)
+    mask: torch.Tensor, # (b, rel, seq, seq)
+) -> torch.Tensor: # ()
+    p = torch.sigmoid(output)
+    ce_loss = torch.nn.functional.binary_cross_entropy_with_logits(output, target.float(), reduction="none")
+    p_t = p * target + (1 - p) * (1 - target)
+    losses = ce_loss * ((1 - p_t) ** focal_gamma)
+    if focal_alpha >= 0:
+        alpha_t = focal_alpha * target + (1 - focal_alpha) * (1 - target)
+        losses = alpha_t * losses
     # reduce using masked mean
     return torch.sum(losses * mask).div(torch.sum(mask) + eps)
 
