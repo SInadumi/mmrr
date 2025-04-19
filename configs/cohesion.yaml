@@ -13,7 +13,7 @@ defaults:
 
 dataset_path: ./data
 max_seq_length: 256
-model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
+model_name_or_path: "ku-nlp/deberta-v2-large-japanese"
 frw: false
 flip_reader_writer: ${frw}
 target_checkpoint: "" # path to trained checkpoint

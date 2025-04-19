@@ -15,7 +15,7 @@ dataset_path: ./data
 max_seq_length: 256
 object_file_name: ""
 object_hidden_size: 1024
-model_name_or_path: "ku-nlp/deberta-v2-base-japanese"
+model_name_or_path: "ku-nlp/deberta-v2-large-japanese"
 target_checkpoint: "" # path to trained checkpoint
 source_checkpoint: "" # specify trained cohesion model
 
