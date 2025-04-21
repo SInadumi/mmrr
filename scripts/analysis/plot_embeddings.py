@@ -101,6 +101,7 @@ def visualize_points(output_path: Path, embedding: np.ndarray, morphemes: list[M
                 name=f"{pos}",
             )
         )
+    # NOTE: https://github.com/plotly/plotly.py/issues/3469
     plotly.io.kaleido.scope.mathjax = None
     fig.write_image(output_path)
 
