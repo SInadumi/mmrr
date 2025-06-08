@@ -1,5 +1,10 @@
-# Multi-Modal Reference Relation Analysis
-This repository contains experiments code for cohesion analysis and multimodal reference resolution (mmref).
+# A Framework for Textual and Multimodal Reference Resolution
+[![arXiv](https://img.shields.io/badge/arXiv-2505.11726-b31b1b.svg)](https://arxiv.org/abs/2505.11726)
+
+This repository contains experiments code for textual reference resolution (i.e. cohesion analysis) and multimodal reference resolution, introduced by the following paper:
+
+**Disambiguating Reference in Visually Grounded Dialogues through Joint Modeling of Textual and Multimodal Semantic Structures**, Shun Inadumi, Nobuhiro Ueda, and Koichiro Yoshino, In ACL2025.
+
 
 ## Requirements
 - Python: >= 3.9, < 3.11
@@ -13,23 +18,15 @@ This repository contains experiments code for cohesion analysis and multimodal r
 ## Setup Environment
 1. Create a virtual environment and install dependencies
 ```bash
+# Create a virtual environment and install
 pyenv global [python >=3.9,<3.11]
 poetry env use path/to/python
 poetry install
-```
-2. Install Juman++/KNP
-See [Juman++](https://github.com/ku-nlp/jumanpp) and [KNP](https://github.com/ku-nlp/knp).  Here are the installation scripts using docker.
-```bash
-  docker pull kunlp/jumanpp-knp:latest
-  echo 'docker run -i --rm --platform linux/amd64 kunlp/jumanpp-knp jumanpp' > /somewhere/in/your/path/jumanpp
-  echo 'docker run -i --rm --platform linux/amd64 kunlp/jumanpp-knp knp' > /somewhere/in/your/path/knp
-```
-3. Log in wandb (optional)
-```bash
+
+# Log in wandb (optional)
 wandb login
-```
-4. Setup pre-commit (optional)
-```bash
+
+# Setup pre-commit (optional)
 # pipx install pre-commit
 pre-commit install
 ```
@@ -46,6 +43,9 @@ git clone --depth 1 git@github.com:nlab-mpg/Flickr30kEnt-JP.git "${DATASET_ROOT}
 git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASET_ROOT}/flickr30k_entities"
 ```
 
+<!-- > [!TIP]
+> If the full J-CRe3 dataset including videos and audio is not required, you may instead download the subset used in this study, which contains only the image folder. This subset can be downloaded from [here](). -->
+
 ### Construct annotations
 ```bash
 # JOBS: the number of jobs (default=1)
@@ -60,7 +60,12 @@ git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASE
 ```
 
 ### Extract region features
-See [SInadumi/Detic](https://github.com/SInadumi/Detic).
+First, clone the detection code from [SInadumi/Detic](https://github.com/SInadumi/Detic) and run the following script to detect objects.
+```bash
+poetry install
+bash extract_region_features_jcre3.sh
+```
+Then, run the following script to post-process the detection results:
 ```bash
 # ROOT_DIR: path to input/output dir (default="./data")
 # DETECTION_CONFIG: file name of the detection results (e.g. Detic, RegionCLIP, ...). This is required argument.
@@ -68,6 +73,9 @@ See [SInadumi/Detic](https://github.com/SInadumi/Detic).
 # calulate IoU between gold and predicted bounding boxes
 [ROOT_DIR=...] DETECTION_CONFIG=... bash ./scripts/visual/postprocess.sh
 ```
+
+<!-- > [!TIP]
+>  -->
 
 ## Training
 ```bash
@@ -92,8 +100,8 @@ For more options, see [cohesion configs](./configs/cohesion.yaml) and [mmref con
 ```bash
 poetry run python scripts/test_cohesion.py checkpoint=/path/to/trained/checkpoint eval_set=test devices=[0,1]
 ```
-### Multimodal Reference Resolution
-See [SInadumi/multimodal-reference](https://github.com/SInadumi/multimodal-reference) for J-CRe3 evaluation.
+### Multimodal Reference Resolution for J-CRe3
+Clone [SInadumi/multimodal-reference](https://github.com/SInadumi/multimodal-reference) and see `Run Prediction` and `Run Evaluation`.
 
 ## Debugging
 This is an example of the F30k-ent-jp preparation.
@@ -129,5 +137,7 @@ poetry run python -m pdb -cn mmref_debug object_file_name=`file_name` devices=[0
 - `DISABLE_CACHE`: If set, the data loader does not load or save cache.
 
 ## Acknowledgement
-- [Copyright (c) 2020, Nobuhiro Ueda](https://github.com/nobu-g/cohesion-analysis)
-- [Copyright (c) 2024, Nobuhiro Ueda](https://github.com/riken-grp/multimodal-reference)
+The code is based on a [Japanese cohesion analyzer](https://github.com/nobu-g/cohesion-analysis) licensed under [MIT License](https://github.com/nobu-g/cohesion-analysis/blob/main/LICENSE).
+
+## Citation
+TBA
