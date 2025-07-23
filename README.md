@@ -1,4 +1,5 @@
 # A Framework for Textual and Multimodal Reference Resolution
+[![Conference](https://img.shields.io/badge/ACL-2025-bbeaff.svg)](https://aclanthology.org/2025.acl-long.547/)
 [![arXiv](https://img.shields.io/badge/arXiv-2505.11726-b31b1b.svg)](https://arxiv.org/abs/2505.11726)
 
 This repository contains experiments code for textual reference resolution (i.e. cohesion analysis) and multimodal reference resolution, introduced by the following paper:
@@ -140,4 +141,13 @@ poetry run python -m pdb -cn mmref_debug object_file_name=`file_name` devices=[0
 The code is based on a [Japanese cohesion analyzer](https://github.com/nobu-g/cohesion-analysis) licensed under [MIT License](https://github.com/nobu-g/cohesion-analysis/blob/main/LICENSE).
 
 ## Citation
-TBA
+```
+@inproceedings{inadumi-etal-2025-disambiguating,
+    title = "Disambiguating Reference in Visually Grounded Dialogues through Joint Modeling of Textual and Multimodal Semantic Structures",
+    author = "Inadumi, Shun  and Ueda, Nobuhiro  and Yoshino, Koichiro",
+    booktitle = "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    year = "2025",
+    url = "https://aclanthology.org/2025.acl-long.547/",
+    pages = "11183--11198",
+}
+```
