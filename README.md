@@ -44,8 +44,8 @@ git clone --depth 1 git@github.com:nlab-mpg/Flickr30kEnt-JP.git "${DATASET_ROOT}
 git clone --depth 1 git@github.com:BryanPlummer/flickr30k_entities.git "${DATASET_ROOT}/flickr30k_entities"
 ```
 
-<!-- > [!TIP]
-> If the full J-CRe3 dataset including videos and audio is not required, you may instead download the subset used in this study, which contains only the image folder. This subset can be downloaded from [here](). -->
+> [!TIP]
+> If the full J-CRe3 dataset including videos and audio is not required, you may instead download the subset used in this study, which contains only the image folder. This subset can be downloaded from [here](https://huggingface.co/SInadumi/mmrr/blob/main/jcre3_image_and_info.tar.gz).
 
 ### Construct annotations
 ```bash
@@ -75,8 +75,8 @@ Then, run the following script to post-process the detection results:
 [ROOT_DIR=...] DETECTION_CONFIG=... bash ./scripts/visual/postprocess.sh
 ```
 
-<!-- > [!TIP]
->  -->
+> [!TIP]
+> The checkpoints and object detection results obtained using Detic in our experiments are available [here](https://huggingface.co/SInadumi/mmrr).
 
 ## Training
 ```bash
