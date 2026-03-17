@@ -109,9 +109,11 @@ class MMRefWriter(BasePredictionWriter):
         if isinstance(self.prediction_destination, Path):
             self.prediction_destination.mkdir(parents=True, exist_ok=True)
             self.prediction_destination.joinpath(f"{image_id}.json").write_text(
-                mmref_prediction.to_json(indent=2, ensure_ascii=False)
+                mmref_prediction.to_json(indent=2, ensure_ascii=False),
+                encoding="utf-8",
             )
         elif isinstance(self.prediction_destination, io.TextIOBase):
             self.prediction_destination.write(
-                mmref_prediction.to_json(indent=2, ensure_ascii=False)
+                mmref_prediction.to_json(indent=2, ensure_ascii=False),
+                encoding="utf-8",
             )
